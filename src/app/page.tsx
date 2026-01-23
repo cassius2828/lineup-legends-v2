@@ -27,7 +27,10 @@ export default async function Home() {
                 >
                   Explore
                 </Link>
-                <div className="flex items-center gap-3">
+                <Link
+                  href={`/profile/${session.user.id}`}
+                  className="flex items-center gap-2 transition-opacity hover:opacity-80"
+                >
                   {session.user.image && (
                     <img
                       src={session.user.image}
@@ -38,13 +41,13 @@ export default async function Home() {
                   <span className="text-sm text-white/70">
                     {session.user.name}
                   </span>
-                  <Link
-                    href="/api/auth/signout"
-                    className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
-                  >
-                    Sign Out
-                  </Link>
-                </div>
+                </Link>
+                <Link
+                  href="/api/auth/signout"
+                  className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+                >
+                  Sign Out
+                </Link>
               </>
             ) : (
               <Link

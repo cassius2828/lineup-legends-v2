@@ -1,11 +1,31 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { LineupCard } from "~/app/_components/LineupCard";
 import { api } from "~/trpc/react";
 
+type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
+
 export default function ExploreLineupsPage() {
-  const { data: lineups, isLoading } = api.lineup.getAll.useQuery();
+  const [sort, setSort] = useState<SortOption>("newest");
+  const utils = api.useUtils();
+
+  const { data: lineups, isLoading } = api.lineup.getAll.useQuery({ sort });
+  const { data: session } = api.profile.getMe.useQuery(undefined, { retry: false });
+
+  const voteMutation = api.lineup.vote.useMutation({
+    onSuccess: () => {
+      void utils.lineup.getAll.invalidate();
+    },
+  });
+
+  // Track user votes per lineup
+  const userVotes = new Map<string, "upvote" | "downvote">();
+
+  const handleVote = (lineupId: string, type: "upvote" | "downvote") => {
+    voteMutation.mutate({ lineupId, type });
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
@@ -34,6 +54,30 @@ export default function ExploreLineupsPage() {
           </div>
         </div>
 
+        {/* Sort Controls */}
+        <div className="mb-6 flex gap-2">
+          {(
+            [
+              { value: "newest", label: "Newest" },
+              { value: "oldest", label: "Oldest" },
+              { value: "highest-rated", label: "Highest Rated" },
+              { value: "most-votes", label: "Most Votes" },
+            ] as const
+          ).map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setSort(option.value)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                sort === option.value
+                  ? "bg-emerald-600 text-white"
+                  : "bg-white/10 text-white/70 hover:bg-white/20"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
         {/* Lineups Grid */}
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
@@ -50,6 +94,9 @@ export default function ExploreLineupsPage() {
                 lineup={lineup}
                 showOwner={true}
                 isOwner={false}
+                currentUserId={session?.id}
+                onVote={handleVote}
+                userVote={userVotes.get(lineup.id)}
               />
             ))}
           </div>
@@ -101,4 +148,3 @@ export default function ExploreLineupsPage() {
     </main>
   );
 }
-

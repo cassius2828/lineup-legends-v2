@@ -1,13 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { LineupCard } from "~/app/_components/LineupCard";
 import { api } from "~/trpc/react";
 
+type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
+
 export default function MyLineupsPage() {
+  const [sort, setSort] = useState<SortOption>("newest");
   const utils = api.useUtils();
-  
-  const { data: lineups, isLoading } = api.lineup.getByCurrentUser.useQuery();
+
+  const { data: lineups, isLoading } = api.lineup.getByCurrentUser.useQuery({ sort });
+  const { data: session } = api.profile.getMe.useQuery(undefined, { retry: false });
 
   const deleteLineup = api.lineup.delete.useMutation({
     onSuccess: () => {
@@ -64,6 +69,30 @@ export default function MyLineupsPage() {
           </div>
         </div>
 
+        {/* Sort Controls */}
+        <div className="mb-6 flex gap-2">
+          {(
+            [
+              { value: "newest", label: "Newest" },
+              { value: "oldest", label: "Oldest" },
+              { value: "highest-rated", label: "Highest Rated" },
+              { value: "most-votes", label: "Most Votes" },
+            ] as const
+          ).map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setSort(option.value)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                sort === option.value
+                  ? "bg-emerald-600 text-white"
+                  : "bg-white/10 text-white/70 hover:bg-white/20"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
         {/* Lineups Grid */}
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
@@ -80,6 +109,7 @@ export default function MyLineupsPage() {
                 lineup={lineup}
                 showOwner={false}
                 isOwner={true}
+                currentUserId={session?.id}
                 onDelete={handleDelete}
                 onToggleFeatured={handleToggleFeatured}
               />
@@ -133,4 +163,3 @@ export default function MyLineupsPage() {
     </main>
   );
 }
-

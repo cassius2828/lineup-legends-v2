@@ -53,6 +53,48 @@ model Lineup {
     // Owner reference
     ownerId String @db.ObjectId
     owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+    // Voting and rating aggregates
+    totalVotes   Int     @default(0)
+    avgRating    Float   @default(0)
+    timesGambled Int     @default(0)
+
+    // Relations
+    votes   Vote[]
+    ratings Rating[]
+}
+
+// Vote on a lineup (upvote or downvote)
+model Vote {
+    id       String   @id @default(auto()) @map("_id") @db.ObjectId
+    type     String   // "upvote" or "downvote"
+    
+    userId   String   @db.ObjectId
+    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    
+    lineupId String   @db.ObjectId
+    lineup   Lineup   @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+
+    @@unique([userId, lineupId])
+}
+
+// Rating on a lineup (1-10)
+model Rating {
+    id       String   @id @default(auto()) @map("_id") @db.ObjectId
+    value    Int      // 1-10
+    
+    userId   String   @db.ObjectId
+    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    
+    lineupId String   @db.ObjectId
+    lineup   Lineup   @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([userId, lineupId])
 }
 
 // Necessary for Next auth
@@ -86,13 +128,21 @@ model Session {
 model User {
     id            String    @id @default(auto()) @map("_id") @db.ObjectId
     name          String?
-    username      String?   // Optional username for display
+    username      String?   @unique
     email         String?   @unique
     emailVerified DateTime?
     image         String?
+    
+    // Profile fields
+    bio           String?   // Max 250 chars
+    profileImg    String?   // Custom profile image URL
+    bannerImg     String?   // Profile banner image URL
+    
     accounts      Account[]
     sessions      Session[]
     lineups       Lineup[]
+    votes         Vote[]
+    ratings       Rating[]
 }
 
 model VerificationToken {
