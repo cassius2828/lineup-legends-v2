@@ -404,3 +404,4 @@ const mutation = api.lineup.create.useMutation({
 5. **Handle errors gracefully**: Show user-friendly messages
 6. **Use SuperJSON for complex types**: Enables Date serialization
 
+

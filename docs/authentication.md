@@ -239,3 +239,4 @@ declare module "next-auth" {
 
 This ensures TypeScript knows `session.user.id` is always available when a session exists.
 
+

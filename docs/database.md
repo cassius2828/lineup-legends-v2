@@ -473,3 +473,4 @@ DATABASE_URL="mongodb://localhost:27017/lineup-legends"
 4. **Index frequently queried fields**: Add `@index` or `@@index` as needed
 5. **Monitor query performance**: Use Prisma's logging in development
 
+

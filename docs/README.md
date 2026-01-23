@@ -69,3 +69,4 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 
 When adding new features, please update the relevant documentation files to keep them current.
 
+

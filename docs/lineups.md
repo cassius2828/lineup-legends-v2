@@ -279,3 +279,4 @@ The lineup feature is designed to support future additions:
 - **Rating**: Rate lineups 1-5 stars
 - **Comments**: Discuss lineups with other users
 
+

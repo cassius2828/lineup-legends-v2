@@ -383,3 +383,4 @@ When adding new components:
 5. Follow existing Tailwind patterns
 6. Document in this file
 
+
