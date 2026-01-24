@@ -3,7 +3,22 @@
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-stencil: var(--font-stencil), ui-sans-serif, system-ui, sans-serif;
+  --font-stencil: var(--font-stencil), stick no bills, ui-sans-serif, system-ui, sans-serif;
+  
+  /* Soft Gold Color Palette */
+  --color-gold: #D4AF37;
+  --color-gold-light: #E5C158;
+  --color-gold-dark: #B8962E;
+  --color-gold-50: #FDF8E7;
+  --color-gold-100: #F9EDCC;
+  --color-gold-200: #F0D999;
+  --color-gold-300: #E5C158;
+  --color-gold-400: #DCAD33;
+  --color-gold-500: #D4AF37;
+  --color-gold-600: #B8962E;
+  --color-gold-700: #9A7B24;
+  --color-gold-800: #7C611B;
+  --color-gold-900: #5E4812;
 }
 
 /* Stencil font utility class */
@@ -42,4 +57,72 @@ section {
 /* Image loading placeholder */
 img {
   background-color: #1e293b;
+}
+
+/* Gold utility classes */
+.text-gold {
+  color: var(--color-gold);
+}
+
+.text-gold-light {
+  color: var(--color-gold-light);
+}
+
+.text-gold-dark {
+  color: var(--color-gold-dark);
+}
+
+.bg-gold {
+  background-color: var(--color-gold);
+}
+
+.bg-gold\/10 {
+  background-color: rgb(212 175 55 / 0.1);
+}
+
+.bg-gold\/20 {
+  background-color: rgb(212 175 55 / 0.2);
+}
+
+.border-gold {
+  border-color: var(--color-gold);
+}
+
+.border-gold-dark {
+  border-color: var(--color-gold-dark);
+}
+
+/* Gold glow effect */
+.glow-gold {
+  box-shadow: 0 0 20px rgb(212 175 55 / 0.3), 0 0 40px rgb(212 175 55 / 0.1);
+}
+
+.glow-gold-sm {
+  box-shadow: 0 0 10px rgb(212 175 55 / 0.2);
+}
+
+/* Gold gradient text */
+.text-gradient-gold {
+  background: linear-gradient(135deg, var(--color-gold-light) 0%, var(--color-gold) 50%, var(--color-gold-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gold gradient backgrounds */
+.bg-gradient-gold {
+  background: linear-gradient(135deg, var(--color-gold-dark) 0%, var(--color-gold) 50%, var(--color-gold-light) 100%);
+}
+
+/* Hover gold effect */
+.hover\:text-gold:hover {
+  color: var(--color-gold);
+}
+
+.hover\:bg-gold:hover {
+  background-color: var(--color-gold);
+}
+
+.hover\:glow-gold:hover {
+  box-shadow: 0 0 20px rgb(212 175 55 / 0.3), 0 0 40px rgb(212 175 55 / 0.1);
 }

@@ -79,7 +79,7 @@ export function PlayerSelector({
                   remainingBudget < 3
                     ? "text-red-400"
                     : remainingBudget < 6
-                      ? "text-amber-400"
+                      ? "text-gold"
                       : "text-emerald-400"
                 }`}
               >

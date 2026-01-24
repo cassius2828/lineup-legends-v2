@@ -103,7 +103,7 @@ export default function RateLineupPage() {
             </span>
             <span>
               Avg Rating:{" "}
-              <strong className="text-amber-400">
+              <strong className="text-gold">
                 {lineup.avgRating > 0 ? lineup.avgRating.toFixed(1) : "-"}
               </strong>
             </span>
@@ -122,9 +122,9 @@ export default function RateLineupPage() {
                 onClick={() => setSelectedRating(value)}
                 className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold transition-all ${
                   selectedRating === value
-                    ? "bg-amber-500 text-white scale-110"
+                    ? "bg-gold text-black scale-110"
                     : existingRating?.value === value
-                      ? "bg-amber-500/30 text-amber-400"
+                      ? "bg-gold/30 text-gold"
                       : "bg-white/10 text-white/70 hover:bg-white/20"
                 }`}
               >
@@ -150,7 +150,7 @@ export default function RateLineupPage() {
           <button
             onClick={handleSubmit}
             disabled={selectedRating === null || rateMutation.isPending}
-            className="flex-1 rounded-lg bg-amber-500 py-3 font-semibold text-white transition-colors hover:bg-amber-400 disabled:opacity-50"
+            className="flex-1 rounded-lg bg-gold py-3 font-semibold text-black transition-colors hover:bg-gold-light disabled:opacity-50"
           >
             {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
           </button>

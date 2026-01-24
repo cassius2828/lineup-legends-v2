@@ -15,7 +15,7 @@ const valueColors: Record<number, string> = {
   2: "bg-green-500",
   3: "bg-blue-500",
   4: "bg-purple-500",
-  5: "bg-amber-500",
+  5: "bg-gold",
 };
 
 export function PlayerCard({

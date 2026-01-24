@@ -1,31 +1,103 @@
+"use client";
+
+import { motion } from "framer-motion";
 import { cdnUrl } from "~/lib/cdn";
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const textVariants = {
+  hidden: { opacity: 0, y: 50, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] as const },
+  },
+};
 
 export function FeaturedSection() {
   return (
     <section className="relative min-h-[80vh] overflow-hidden">
-      {/* Background Image */}
-      <div
+      {/* Background Image with parallax-like effect */}
+      <motion.div
+        initial={{ scale: 1.15 }}
+        whileInView={{ scale: 1 }}
+        transition={{ duration: 1.5, ease: "easeOut" }}
+        viewport={{ once: true }}
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(${cdnUrl("olympic-paris-nba.jpeg")})`,
         }}
       />
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/50 to-slate-900" />
+      {/* Gradient Overlay with gold tint */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-slate-900" />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent" />
+
+      {/* Decorative elements */}
+      <div className="pointer-events-none absolute left-1/2 top-1/4 h-64 w-64 -translate-x-1/2 rounded-full bg-gold/10 blur-3xl" />
 
       {/* Content */}
-      <div className="relative z-10 flex min-h-[80vh] flex-col items-center justify-center px-4 py-24 text-center sm:px-8 lg:px-16">
-        <h2 className="font-stencil text-4xl uppercase tracking-wide text-white sm:text-5xl lg:text-7xl">
-          Featured Lineups
-        </h2>
+      <motion.div 
+        className="relative z-10 flex min-h-[80vh] flex-col items-center justify-center px-4 py-24 text-center sm:px-8 lg:px-16"
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-100px" }}
+      >
+        <motion.h2 
+          className="font-stencil text-4xl uppercase tracking-wide sm:text-5xl lg:text-7xl"
+          variants={textVariants}
+        >
+          <span className="text-gradient-gold">Featured</span>
+        </motion.h2>
+        <motion.h2 
+          className="font-stencil text-4xl uppercase tracking-wide text-white sm:text-5xl lg:text-7xl"
+          variants={textVariants}
+        >
+          Lineups
+        </motion.h2>
 
-        <p className="mt-8 max-w-2xl text-lg leading-relaxed text-white/70">
+        <motion.div 
+          className="mt-8 h-px w-48 bg-gradient-to-r from-transparent via-gold to-transparent"
+          variants={textVariants}
+        />
+
+        <motion.p 
+          className="mt-8 max-w-2xl text-lg leading-relaxed text-white/70"
+          variants={textVariants}
+        >
           Showcase your fantasy basketball prowess by sharing your lineups on
           social media or via text messages. Engage your friends and followers,
           and maybe even recruit some new competitors to join Lineup Legends.
-        </p>
-      </div>
+        </motion.p>
+
+        {/* Stats row */}
+        <motion.div 
+          className="mt-12 flex flex-wrap justify-center gap-12"
+          variants={textVariants}
+        >
+          <div className="text-center">
+            <p className="font-stencil text-4xl text-gold">500+</p>
+            <p className="mt-1 text-sm uppercase tracking-wide text-white/50">Lineups Created</p>
+          </div>
+          <div className="text-center">
+            <p className="font-stencil text-4xl text-gold">100+</p>
+            <p className="mt-1 text-sm uppercase tracking-wide text-white/50">Active Users</p>
+          </div>
+          <div className="text-center">
+            <p className="font-stencil text-4xl text-gold">50+</p>
+            <p className="mt-1 text-sm uppercase tracking-wide text-white/50">NBA Legends</p>
+          </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }
-

@@ -1,47 +1,115 @@
+"use client";
+
+import { motion } from "framer-motion";
 import { cdnUrl } from "~/lib/cdn";
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const textVariants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" as const },
+  },
+};
+
+const imageVariants = {
+  hidden: { opacity: 0, scale: 0.95, x: -30 },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
+    x: 0,
+    transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] as const },
+  },
+};
 
 export function WelcomeSection() {
   return (
-    <section className="bg-slate-900 px-4 py-24 sm:px-8 lg:px-16">
+    <section className="relative overflow-hidden bg-slate-900 px-4 py-24 sm:px-8 lg:px-16">
+      {/* Subtle gradient accent */}
+      <div className="pointer-events-none absolute -left-64 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-gold/5 blur-3xl" />
+      
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-12 lg:flex-row">
         {/* Left - Image */}
-        <div className="flex-1">
-          <picture>
-            <source
-              media="(max-width: 768px)"
-              srcSet={cdnUrl("create-lineup-mobile.png")}
-            />
-            <img
-              src={cdnUrl("create-lineup-screenshot.png")}
-              alt="Lineup Builder Interface"
-              className="w-full rounded-lg shadow-2xl shadow-black/50"
-            />
-          </picture>
-        </div>
+        <motion.div 
+          className="flex-1"
+          variants={imageVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+        >
+          <div className="relative">
+            {/* Gold accent border */}
+            <div className="absolute -inset-1 rounded-lg bg-gradient-to-br from-gold/20 via-transparent to-gold/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+            <picture>
+              <source
+                media="(max-width: 768px)"
+                srcSet={cdnUrl("create-lineup-mobile.png")}
+              />
+              <motion.img
+                src={cdnUrl("create-lineup-screenshot.png")}
+                alt="Lineup Builder Interface"
+                className="relative w-full rounded-lg shadow-2xl shadow-black/50"
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.3 }}
+              />
+            </picture>
+          </div>
+        </motion.div>
 
         {/* Right - Text */}
-        <div className="flex-1 text-center lg:text-left">
-          <h2 className="font-stencil text-4xl uppercase tracking-wide text-white sm:text-5xl lg:text-6xl">
+        <motion.div 
+          className="flex-1 text-center lg:text-left"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+        >
+          <motion.h2 
+            className="font-stencil text-4xl uppercase tracking-wide text-white/60 sm:text-5xl lg:text-6xl"
+            variants={textVariants}
+          >
             Welcome to
-          </h2>
-          <h2 className="font-stencil text-4xl uppercase tracking-wide text-white sm:text-5xl lg:text-6xl">
+          </motion.h2>
+          <motion.h2 
+            className="font-stencil text-4xl uppercase tracking-wide text-white sm:text-5xl lg:text-6xl"
+            variants={textVariants}
+          >
             Lineup
-          </h2>
-          <h2 className="font-stencil text-4xl uppercase tracking-wide text-white sm:text-5xl lg:text-6xl">
-            Legends
-          </h2>
+          </motion.h2>
+          <motion.h2 
+            className="font-stencil text-4xl uppercase tracking-wide sm:text-5xl lg:text-6xl"
+            variants={textVariants}
+          >
+            <span className="text-gradient-gold">Legends</span>
+          </motion.h2>
 
-          <p className="mt-8 max-w-xl text-lg leading-relaxed text-white/70">
+          <motion.div 
+            className="mt-6 h-px w-24 bg-gradient-to-r from-gold to-transparent lg:mx-0 mx-auto"
+            variants={textVariants}
+          />
+
+          <motion.p 
+            className="mt-8 max-w-xl text-lg leading-relaxed text-white/70"
+            variants={textVariants}
+          >
             The ultimate fantasy basketball lineup creation and management
             platform. Start by creating your lineup within a set budget,
             choosing from a pool of past and present players. Each player in
             their value tier is randomly selected to ensure a fair and exciting
             experience. Strategically manage your budget and player selections
             to build the best possible team.
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
       </div>
     </section>
   );
 }
-

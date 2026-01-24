@@ -1,45 +1,110 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "framer-motion";
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" as const },
+  },
+};
+
+const socialVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.3,
+    },
+  },
+};
+
+const socialItemVariants = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
+    transition: { duration: 0.4, ease: "easeOut" as const },
+  },
+};
 
 export function Footer() {
   return (
-    <footer className="bg-slate-950 px-4 py-16 sm:px-8 lg:px-16">
-      <div className="mx-auto max-w-7xl">
+    <footer className="relative overflow-hidden bg-slate-950 px-4 py-16 sm:px-8 lg:px-16">
+      {/* Subtle gold gradient at top */}
+      <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+      
+      <motion.div 
+        className="mx-auto max-w-7xl"
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+      >
         <div className="flex flex-col items-center justify-between gap-12 lg:flex-row lg:items-start">
           {/* Left - CTA Text */}
-          <div className="max-w-sm text-center lg:text-left">
-            <p className="font-stencil text-lg uppercase leading-relaxed tracking-wide text-amber-500">
+          <motion.div 
+            className="max-w-sm text-center lg:text-left"
+            variants={itemVariants}
+          >
+            <p className="font-stencil text-lg uppercase leading-relaxed tracking-wide text-gold">
               Join Lineup Legends – create, share, and dominate with your
               ultimate fantasy basketball lineups. Your journey as a top
               fantasy GM starts here!
             </p>
-          </div>
+          </motion.div>
 
           {/* Center - Contact Info */}
-          <div className="text-center text-white/70">
+          <motion.div 
+            className="text-center text-white/70"
+            variants={itemVariants}
+          >
             <p>Located in Northern California</p>
             <p className="mt-2">Cell: (707) 724-1815</p>
             <p className="mt-2">
               Email:{" "}
               <a
                 href="mailto:cassius.reynolds.dev@gmail.com"
-                className="text-amber-500 transition-colors hover:text-amber-400"
+                className="text-gold transition-colors hover:text-gold-light"
               >
                 cassius.reynolds.dev@gmail.com
               </a>
             </p>
-          </div>
+          </motion.div>
 
           {/* Right - Developer Credit */}
-          <div className="text-center lg:text-right">
+          <motion.div 
+            className="text-center lg:text-right"
+            variants={itemVariants}
+          >
             <p className="text-white/50">Developed by</p>
-            <p className="font-stencil mt-1 text-xl uppercase tracking-wide text-amber-500">
+            <p className="font-stencil mt-1 text-xl uppercase tracking-wide text-gradient-gold">
               Cassius Reynolds
             </p>
-          </div>
+          </motion.div>
         </div>
 
         {/* Social Icons */}
-        <div className="mt-12 flex items-center justify-center gap-6">
+        <motion.div 
+          className="mt-12 flex items-center justify-center gap-6"
+          variants={socialVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
           <SocialLink href="https://instagram.com" label="Instagram">
             <InstagramIcon />
           </SocialLink>
@@ -61,13 +126,16 @@ export function Footer() {
           >
             <GitHubIcon />
           </SocialLink>
-        </div>
+        </motion.div>
 
         {/* Copyright */}
-        <div className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-white/40">
+        <motion.div 
+          className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-white/40"
+          variants={itemVariants}
+        >
           © {new Date().getFullYear()} Lineup Legends. All rights reserved.
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </footer>
   );
 }
@@ -82,15 +150,20 @@ function SocialLink({
   children: React.ReactNode;
 }) {
   return (
-    <Link
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={label}
-      className="text-white/60 transition-colors hover:text-amber-500"
-    >
-      {children}
-    </Link>
+    <motion.div variants={socialItemVariants}>
+      <Link
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={label}
+        className="group relative block text-white/60 transition-all duration-300 hover:text-gold"
+      >
+        <span className="absolute -inset-2 rounded-full bg-gold/0 transition-all duration-300 group-hover:bg-gold/10" />
+        <span className="relative block transition-transform duration-300 group-hover:scale-110">
+          {children}
+        </span>
+      </Link>
+    </motion.div>
   );
 }
 
@@ -133,4 +206,3 @@ function GitHubIcon() {
     </svg>
   );
 }
-
