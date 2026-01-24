@@ -94,8 +94,8 @@ DATABASE_URL="mongodb://localhost:27017/lineup-legends"
 AUTH_SECRET="your-auth-secret-here"
 
 # OAuth Provider (example: Discord)
-AUTH_DISCORD_ID="your-discord-client-id"
-AUTH_DISCORD_SECRET="your-discord-client-secret"
+AUTH_GOOGLE_CLIENT_ID="your-discord-client-id"
+AUTH_GOOGLE_CLIENT_SECRET="your-discord-client-secret"
 ```
 
 > Generate an auth secret with: `npx auth secret`

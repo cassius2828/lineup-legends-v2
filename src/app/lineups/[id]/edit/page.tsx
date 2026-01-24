@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
-import type { Player } from "~/generated/prisma";
+import type { Player } from "../../../../../generated/prisma";
 
 const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
 const POSITION_LABELS = {

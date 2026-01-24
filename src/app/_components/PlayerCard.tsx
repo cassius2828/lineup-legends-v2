@@ -1,6 +1,6 @@
 "use client";
 
-import type { Player } from "~/generated/prisma";
+import type { Player } from "../../../generated/prisma";
 
 interface PlayerCardProps {
   player: Player;

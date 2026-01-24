@@ -57,8 +57,8 @@ Required environment variables for authentication:
 AUTH_SECRET="your-generated-secret"
 
 # Discord OAuth credentials
-AUTH_DISCORD_ID="your-discord-client-id"
-AUTH_DISCORD_SECRET="your-discord-client-secret"
+AUTH_GOOGLE_CLIENT_ID="your-discord-client-id"
+AUTH_GOOGLE_CLIENT_SECRET="your-discord-client-secret"
 ```
 
 Generate a secret with:

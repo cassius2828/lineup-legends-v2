@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PlayerSelector } from "~/app/_components/PlayerSelector";
 import { api } from "~/trpc/react";
-import type { Player } from "~/generated/prisma";
+import type { Player } from "../../../../generated/prisma";
 
 export default function CreateLineupPage() {
   const router = useRouter();

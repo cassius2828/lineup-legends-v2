@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { Player, Lineup, User } from "~/generated/prisma";
+import type { Player, Lineup, User } from "../../../generated/prisma";
 import { PlayerCard } from "./PlayerCard";
 import { formatDistanceToNow } from "date-fns";
 

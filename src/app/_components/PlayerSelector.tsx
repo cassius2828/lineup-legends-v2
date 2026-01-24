@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Player } from "~/generated/prisma";
+import type { Player } from "../../../generated/prisma";
 import { PlayerCard } from "./PlayerCard";
 
 interface PlayersByValue {

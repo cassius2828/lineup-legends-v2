@@ -1,0 +1,10 @@
+export { HeroSection } from "./HeroSection";
+export { WelcomeSection } from "./WelcomeSection";
+export { RatingSection } from "./RatingSection";
+export { CommentingSection } from "./CommentingSection";
+export { FriendsSection } from "./FriendsSection";
+export { GambleSection } from "./GambleSection";
+export { ShareSection } from "./ShareSection";
+export { FeaturedSection } from "./FeaturedSection";
+export { Footer } from "./Footer";
+
