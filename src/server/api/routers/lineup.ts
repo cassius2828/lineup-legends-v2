@@ -1,6 +1,11 @@
-import mongoose from "mongoose";
+import { type SortOrder } from "mongoose";
 import { z } from "zod";
-import type { LineupType } from "~/lib/types";
+import {
+  getIdString,
+  recalculateAvgRating,
+  recalculateTotalVotes,
+  transformLineup,
+} from "~/lib/utils";
 
 import {
   createTRPCRouter,
@@ -8,12 +13,13 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import {
+  Comment,
   Lineup,
   Player,
-  Vote,
   Rating,
-  Comment,
+  Vote,
   type ILineup,
+  type IPlayer,
 } from "~/server/models";
 
 const BUDGET_LIMIT = 15;
@@ -27,68 +33,6 @@ const lineupPopulateFields = [
   { path: "cId", model: "Player" },
   { path: "ownerId", model: "User" },
 ];
-
-// Helper to transform lineup for API response (rename populated fields)
-function transformLineup(lineup: ILineup | null) {
-  if (!lineup) return null;
-
-  const obj = lineup.toObject() as LineupType;
-
-  return {
-    ...obj,
-    id: obj._id?.toString(),
-    pgId: obj.pgId?.toString(),
-    sgId: obj.sgId?.toString(),
-    sfId: obj.sfId?.toString(),
-    pfId: obj.pfId?.toString(),
-    cId: obj.cId?.toString(),
-    ownerId: obj.ownerId?.toString(),
-    // pg, sg, sf, pf, c, owner are already correct from virtuals
-  };
-}
-
-// Helper to calculate total votes
-async function recalculateTotalVotes(lineupId: string) {
-  const votes = await Vote.aggregate<{ _id: null; total: number }>([
-    { $match: { lineupId: new mongoose.Types.ObjectId(lineupId) } },
-    {
-      $group: {
-        _id: null,
-        total: {
-          $sum: { $cond: [{ $eq: ["$type", "upvote"] }, 1, -1] },
-        },
-      },
-    },
-  ]);
-
-  const total = votes[0]?.total ?? 0;
-  await Lineup.findByIdAndUpdate(lineupId, { totalVotes: total });
-  return total;
-}
-
-// Helper to calculate average rating
-async function recalculateAvgRating(lineupId: string) {
-  const ratings = await Rating.aggregate<{
-    _id: mongoose.Types.ObjectId;
-    avgRating: number;
-  }>([
-    {
-      $match: { lineupId: new mongoose.Types.ObjectId(lineupId) },
-    },
-    {
-      $group: {
-        _id: "$lineupId",
-        avgRating: {
-          $avg: "$value",
-        },
-      },
-    },
-  ]);
-
-  const avgRating = ratings[0]?.avgRating ?? 0;
-  await Lineup.findByIdAndUpdate(lineupId, { avgRating });
-  return avgRating;
-}
 
 export const lineupRouter = createTRPCRouter({
   // Create a new lineup (protected - requires auth)
@@ -160,7 +104,7 @@ export const lineupRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      let sortOption: any = { createdAt: -1 };
+      let sortOption: Record<string, SortOrder> = { createdAt: -1 };
 
       switch (input?.sort) {
         case "oldest":
@@ -232,7 +176,7 @@ export const lineupRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ input }) => {
-      let sortOption: any = { createdAt: -1 };
+      let sortOption: Record<string, SortOrder> = { createdAt: -1 };
 
       switch (input?.sort) {
         case "oldest":
@@ -468,14 +412,6 @@ export const lineupRouter = createTRPCRouter({
         throw new Error("You do not have permission to edit this lineup.");
       }
 
-      // Get original IDs (handle both populated and non-populated cases)
-      const getIdString = (field: any) => {
-        if (!field) return null;
-        if (typeof field === "string") return field;
-        if (field._id) return field._id.toString();
-        return field.toString();
-      };
-
       const originalIds = new Set([
         getIdString(lineup.pgId),
         getIdString(lineup.sgId),
@@ -528,6 +464,7 @@ export const lineupRouter = createTRPCRouter({
   // ============================================
 
   // Gamble a player for a random player of similar value
+  // TODO: Create a more robust gambling mechanic that offers a wider range of players to gamble with
   gamble: protectedProcedure
     .input(
       z.object({
@@ -549,17 +486,21 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Get the current player at the position
-      const positionFieldMap: Record<string, string> = {
+      const positionFieldMap: Record<
+        "pg" | "sg" | "sf" | "pf" | "c",
+        keyof ILineup
+      > = {
         pg: "pgId",
         sg: "sgId",
         sf: "sfId",
         pf: "pfId",
         c: "cId",
       };
-      const positionField = positionFieldMap[input.position]!;
-      const currentPlayer = (lineup as any)[positionField];
+      const positionField = positionFieldMap[input.position];
+      // revisit to tighten this type
+      const currentPlayer = lineup[positionField] as IPlayer;
 
-      if (!currentPlayer || !currentPlayer.value) {
+      if (!currentPlayer?.value) {
         throw new Error("Current player not found.");
       }
 
@@ -575,14 +516,6 @@ export const lineupRouter = createTRPCRouter({
         possibleValues = [currentValue - 1, currentValue, currentValue + 1];
       }
 
-      // Get all player IDs currently in the lineup
-      const getIdString = (field: any) => {
-        if (!field) return null;
-        if (typeof field === "string") return field;
-        if (field._id) return field._id.toString();
-        return field.toString();
-      };
-
       const currentLineupPlayerIds = [
         getIdString(lineup.pgId),
         getIdString(lineup.sgId),
@@ -592,21 +525,22 @@ export const lineupRouter = createTRPCRouter({
       ].filter(Boolean);
 
       // Find eligible players (matching value, not already in lineup)
-      const eligiblePlayers = await Player.find({
-        value: { $in: possibleValues },
-        _id: { $nin: currentLineupPlayerIds },
-      });
+      const [newPlayer] = await Player.aggregate<IPlayer>([
+        {
+          $match: {
+            value: { $in: possibleValues },
+            _id: { $nin: currentLineupPlayerIds },
+          },
+        },
+        { $sample: { size: 1 } },
+      ]);
 
-      if (eligiblePlayers.length === 0) {
+      if (!newPlayer) {
         throw new Error("No eligible players available for gambling.");
       }
 
-      // Pick a random player
-      const randomIndex = Math.floor(Math.random() * eligiblePlayers.length);
-      const newPlayer = eligiblePlayers[randomIndex]!;
-
       // Update the lineup with the new player
-      const updateData: any = {
+      const updateData = {
         [positionField]: newPlayer._id,
         $inc: { timesGambled: 1 },
       };
@@ -619,10 +553,8 @@ export const lineupRouter = createTRPCRouter({
 
       return {
         lineup: transformLineup(updatedLineup),
-        previousPlayer: currentPlayer.toObject
-          ? currentPlayer.toObject()
-          : currentPlayer,
-        newPlayer: newPlayer.toObject(),
+        previousPlayer: currentPlayer,
+        newPlayer,
       };
     }),
 
@@ -644,7 +576,7 @@ export const lineupRouter = createTRPCRouter({
           ...obj,
           id: obj._id?.toString(),
           user: obj.userId,
-          thread: obj.thread?.map((t: any) => ({
+          thread: obj.thread?.map((t) => ({
             ...t,
             id: t._id?.toString(),
           })),
@@ -718,7 +650,7 @@ export const lineupRouter = createTRPCRouter({
         userId: ctx.session.user.id,
         votes: [],
         totalVotes: 0,
-      } as any);
+      });
 
       await comment.save();
 
@@ -737,7 +669,7 @@ export const lineupRouter = createTRPCRouter({
         ...obj,
         id: obj._id?.toString(),
         user: obj.userId,
-        thread: obj.thread?.map((t: any) => ({
+        thread: obj.thread?.map((t) => ({
           ...t,
           id: t._id?.toString(),
         })),
@@ -792,7 +724,7 @@ export const lineupRouter = createTRPCRouter({
           userId: ctx.session.user.id,
           upvote: input.type === "upvote",
           downvote: input.type === "downvote",
-        } as any);
+        });
       }
 
       // Recalculate total votes
@@ -865,7 +797,7 @@ export const lineupRouter = createTRPCRouter({
           userId: ctx.session.user.id,
           upvote: input.type === "upvote",
           downvote: input.type === "downvote",
-        } as any);
+        });
       }
 
       // Recalculate total votes for thread
