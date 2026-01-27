@@ -1,20 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { type Player, getId } from "~/lib/types";
+import { type PlayerType, getId } from "~/lib/types";
 import { PlayerCard } from "./PlayerCard";
 
 interface PlayersByValue {
-  value1Players: Player[];
-  value2Players: Player[];
-  value3Players: Player[];
-  value4Players: Player[];
-  value5Players: Player[];
+  value1Players: PlayerType[];
+  value2Players: PlayerType[];
+  value3Players: PlayerType[];
+  value4Players: PlayerType[];
+  value5Players: PlayerType[];
 }
 
 interface PlayerSelectorProps {
   playersByValue: PlayersByValue;
-  onSubmit: (selectedPlayers: Player[]) => void;
+  onSubmit: (selectedPlayers: PlayerType[]) => void;
   isSubmitting?: boolean;
 }
 
@@ -26,19 +26,19 @@ export function PlayerSelector({
   onSubmit,
   isSubmitting = false,
 }: PlayerSelectorProps) {
-  const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<PlayerType[]>([]);
 
   const currentBudget = selectedPlayers.reduce((sum, p) => sum + p.value, 0);
   const remainingBudget = BUDGET_LIMIT - currentBudget;
   const canSubmit = selectedPlayers.length === 5;
 
-  const isPlayerSelected = (player: Player) =>
+  const isPlayerSelected = (player: PlayerType) =>
     selectedPlayers.some((p) => getId(p) === getId(player));
 
-  const canAffordPlayer = (player: Player) =>
+  const canAffordPlayer = (player: PlayerType) =>
     player.value <= remainingBudget || isPlayerSelected(player);
 
-  const handlePlayerClick = (player: Player) => {
+  const handlePlayerClick = (player: PlayerType) => {
     if (isPlayerSelected(player)) {
       // Deselect player
       setSelectedPlayers(
@@ -60,7 +60,7 @@ export function PlayerSelector({
     setSelectedPlayers([]);
   };
 
-  const removePlayer = (player: Player) => {
+  const removePlayer = (player: PlayerType) => {
     setSelectedPlayers(
       selectedPlayers.filter((p) => getId(p) !== getId(player)),
     );

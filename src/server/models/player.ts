@@ -29,5 +29,7 @@ PlayerSchema.virtual("id").get(function (this: IPlayer) {
 PlayerSchema.set("toJSON", { virtuals: true });
 PlayerSchema.set("toObject", { virtuals: true });
 
+// add index for text and value fields 
+PlayerSchema.index({ firstName: 'text', lastName: 'text', value: 1 })
 export const Player: Model<IPlayer> =
   (mongoose.models.Player as Model<IPlayer> | undefined) ?? mongoose.model<IPlayer>("Player", PlayerSchema);

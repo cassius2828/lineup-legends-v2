@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PlayerSelector } from "~/app/_components/PlayerSelector";
 import { api } from "~/trpc/react";
-import { type Player, getId } from "~/lib/types";
+import { type PlayerType, getId } from "~/lib/types";
 
 export default function CreateLineupPage() {
   const router = useRouter();
@@ -20,7 +20,7 @@ export default function CreateLineupPage() {
     },
   });
 
-  const handleSubmit = (selectedPlayers: Player[]) => {
+  const handleSubmit = (selectedPlayers: PlayerType[]) => {
     if (selectedPlayers.length !== 5) return;
 
     createLineup.mutate({

@@ -23,6 +23,6 @@ export default {
     "subject-empty": [2, "never"],
     "subject-full-stop": [0], // Disabled
     "header-max-length": [0], // Disabled
+    "body-max-line-length": [0], // Disabled
   },
 };
-

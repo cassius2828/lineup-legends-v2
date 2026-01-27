@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LineupCard } from "~/app/_components/LineupCard";
+import {
+  LineupCard,
+  type LineupWithRelations,
+} from "~/app/_components/LineupCard";
 import { api } from "~/trpc/react";
+import { getId } from "~/lib/types";
 
 type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
 
@@ -12,7 +16,9 @@ export default function ExploreLineupsPage() {
   const utils = api.useUtils();
 
   const { data: lineups, isLoading } = api.lineup.getAll.useQuery({ sort });
-  const { data: session } = api.profile.getMe.useQuery(undefined, { retry: false });
+  const { data: session } = api.profile.getMe.useQuery(undefined, {
+    retry: false,
+  });
 
   const voteMutation = api.lineup.vote.useMutation({
     onSuccess: () => {
@@ -82,7 +88,7 @@ export default function ExploreLineupsPage() {
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <div className="text-center">
-              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500 mx-auto" />
+              <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500" />
               <p className="text-white/60">Loading lineups...</p>
             </div>
           </div>
@@ -90,13 +96,14 @@ export default function ExploreLineupsPage() {
           <div className="grid gap-6 md:grid-cols-2">
             {lineups.map((lineup) => (
               <LineupCard
-                key={lineup.id}
-                lineup={lineup}
+                key={getId(lineup)}
+                // improve type safety later
+                lineup={lineup as LineupWithRelations}
                 showOwner={true}
                 isOwner={false}
-                currentUserId={session?.id}
+                currentUserId={getId(session)}
                 onVote={handleVote}
-                userVote={userVotes.get(lineup.id)}
+                userVote={userVotes.get(getId(lineup))}
               />
             ))}
           </div>

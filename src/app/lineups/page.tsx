@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LineupCard } from "~/app/_components/LineupCard";
+import {
+  LineupCard,
+  type LineupWithRelations,
+} from "~/app/_components/LineupCard";
 import { api } from "~/trpc/react";
+import { getId } from "~/lib/types";
 
 type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
 
@@ -11,8 +15,12 @@ export default function MyLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const utils = api.useUtils();
 
-  const { data: lineups, isLoading } = api.lineup.getByCurrentUser.useQuery({ sort });
-  const { data: session } = api.profile.getMe.useQuery(undefined, { retry: false });
+  const { data: lineups, isLoading } = api.lineup.getByCurrentUser.useQuery({
+    sort,
+  });
+  const { data: session } = api.profile.getMe.useQuery(undefined, {
+    retry: false,
+  });
 
   const deleteLineup = api.lineup.delete.useMutation({
     onSuccess: () => {
@@ -97,7 +105,7 @@ export default function MyLineupsPage() {
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <div className="text-center">
-              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500 mx-auto" />
+              <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500" />
               <p className="text-white/60">Loading lineups...</p>
             </div>
           </div>
@@ -105,11 +113,11 @@ export default function MyLineupsPage() {
           <div className="grid gap-6 md:grid-cols-2">
             {lineups.map((lineup) => (
               <LineupCard
-                key={lineup.id}
-                lineup={lineup}
+                key={getId(lineup)}
+                lineup={lineup as LineupWithRelations}
                 showOwner={false}
                 isOwner={true}
-                currentUserId={session?.id}
+                currentUserId={getId(session)}
                 onDelete={handleDelete}
                 onToggleFeatured={handleToggleFeatured}
               />
