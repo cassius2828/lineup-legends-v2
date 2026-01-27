@@ -39,7 +39,8 @@ export const profileRouter = createTRPCRouter({
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
       const user = await User.findById(input.userId)
-        .select("name username image bio profileImg bannerImg")
+        .select("name username image bio profileImg bannerImg socialMedia friends")
+        .populate("friends", "username name profileImg")
         .lean();
 
       if (!user) return null;
@@ -86,7 +87,8 @@ export const profileRouter = createTRPCRouter({
   // Get current user's profile
   getMe: protectedProcedure.query(async ({ ctx }) => {
     const user = await User.findById(ctx.session.user.id)
-      .select("name username email image bio profileImg bannerImg")
+      .select("name username email image bio profileImg bannerImg socialMedia friends")
+      .populate("friends", "username name profileImg")
       .lean();
 
     if (!user) return null;
@@ -105,6 +107,13 @@ export const profileRouter = createTRPCRouter({
         bio: z.string().max(250).optional(),
         profileImg: z.string().url().optional().nullable(),
         bannerImg: z.string().url().optional().nullable(),
+        socialMedia: z
+          .object({
+            twitter: z.string().optional().nullable(),
+            instagram: z.string().optional().nullable(),
+            facebook: z.string().optional().nullable(),
+          })
+          .optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -122,6 +131,7 @@ export const profileRouter = createTRPCRouter({
       if (input.bio !== undefined) updateData.bio = input.bio;
       if (input.profileImg !== undefined) updateData.profileImg = input.profileImg;
       if (input.bannerImg !== undefined) updateData.bannerImg = input.bannerImg;
+      if (input.socialMedia !== undefined) updateData.socialMedia = input.socialMedia;
 
       const updatedUser = await User.findByIdAndUpdate(
         ctx.session.user.id,

@@ -5,7 +5,7 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { Lineup, Player, Vote, Rating } from "~/server/models";
+import { Lineup, Player, Vote, Rating, Comment } from "~/server/models";
 
 const BUDGET_LIMIT = 15;
 
@@ -575,5 +575,260 @@ export const lineupRouter = createTRPCRouter({
         previousPlayer: currentPlayer.toObject ? currentPlayer.toObject() : currentPlayer,
         newPlayer: newPlayer.toObject(),
       };
+    }),
+
+  // ============================================
+  // COMMENT SYSTEM
+  // ============================================
+
+  // Get comments for a lineup
+  getComments: publicProcedure
+    .input(z.object({ lineupId: z.string() }))
+    .query(async ({ input }) => {
+      const comments = await Comment.find({ lineupId: input.lineupId })
+        .sort({ createdAt: -1 })
+        .populate("userId", "username name profileImg");
+
+      return comments.map((comment) => {
+        const obj = comment.toObject();
+        return {
+          ...obj,
+          id: obj._id?.toString(),
+          user: obj.userId,
+          thread: obj.thread?.map((t: any) => ({
+            ...t,
+            id: t._id?.toString(),
+          })),
+        };
+      });
+    }),
+
+  // Add a comment to a lineup
+  addComment: protectedProcedure
+    .input(
+      z.object({
+        lineupId: z.string(),
+        text: z.string().min(1).max(1000),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const lineup = await Lineup.findById(input.lineupId);
+
+      if (!lineup) {
+        throw new Error("Lineup not found.");
+      }
+
+      const comment = await Comment.create({
+        text: input.text,
+        userId: ctx.session.user.id,
+        lineupId: input.lineupId,
+        votes: [],
+        totalVotes: 0,
+        thread: [],
+      });
+
+      // Populate and return
+      const populatedComment = await Comment.findById(comment._id).populate(
+        "userId",
+        "username name profileImg"
+      );
+
+      if (!populatedComment) {
+        throw new Error("Failed to create comment.");
+      }
+
+      const obj = populatedComment.toObject();
+      return {
+        ...obj,
+        id: obj._id?.toString(),
+        user: obj.userId,
+      };
+    }),
+
+  // Add a thread reply to a comment
+  addThreadReply: protectedProcedure
+    .input(
+      z.object({
+        lineupId: z.string(),
+        commentId: z.string(),
+        text: z.string().min(1).max(1000),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const comment = await Comment.findOne({
+        _id: input.commentId,
+        lineupId: input.lineupId,
+      });
+
+      if (!comment) {
+        throw new Error("Comment not found.");
+      }
+
+      comment.thread.push({
+        text: input.text,
+        userId: ctx.session.user.id,
+        votes: [],
+        totalVotes: 0,
+      } as any);
+
+      await comment.save();
+
+      // Populate and return
+      const populatedComment = await Comment.findById(comment._id).populate(
+        "userId",
+        "username name profileImg"
+      );
+
+      if (!populatedComment) {
+        throw new Error("Failed to add reply.");
+      }
+
+      const obj = populatedComment.toObject();
+      return {
+        ...obj,
+        id: obj._id?.toString(),
+        user: obj.userId,
+        thread: obj.thread?.map((t: any) => ({
+          ...t,
+          id: t._id?.toString(),
+        })),
+      };
+    }),
+
+  // Vote on a comment (upvote or downvote)
+  voteComment: protectedProcedure
+    .input(
+      z.object({
+        lineupId: z.string(),
+        commentId: z.string(),
+        type: z.enum(["upvote", "downvote"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const comment = await Comment.findOne({
+        _id: input.commentId,
+        lineupId: input.lineupId,
+      });
+
+      if (!comment) {
+        throw new Error("Comment not found.");
+      }
+
+      // Can't vote on your own comment
+      if (comment.userId.toString() === ctx.session.user.id) {
+        throw new Error("You cannot vote on your own comment.");
+      }
+
+      // Find existing vote
+      const existingVoteIndex = comment.votes.findIndex(
+        (v) => v.userId.toString() === ctx.session.user.id
+      );
+
+      if (existingVoteIndex !== -1) {
+        const existingVote = comment.votes[existingVoteIndex]!;
+        const isUpvote = input.type === "upvote";
+        const wasUpvote = existingVote.upvote;
+
+        if ((isUpvote && wasUpvote) || (!isUpvote && existingVote.downvote)) {
+          // Same vote type - remove the vote
+          comment.votes.splice(existingVoteIndex, 1);
+        } else {
+          // Different vote type - toggle
+          existingVote.upvote = isUpvote;
+          existingVote.downvote = !isUpvote;
+        }
+      } else {
+        // No existing vote - create new
+        comment.votes.push({
+          userId: ctx.session.user.id,
+          upvote: input.type === "upvote",
+          downvote: input.type === "downvote",
+        } as any);
+      }
+
+      // Recalculate total votes
+      let total = 0;
+      for (const vote of comment.votes) {
+        if (vote.upvote) total += 1;
+        if (vote.downvote) total -= 1;
+      }
+      comment.totalVotes = total;
+
+      await comment.save();
+
+      return { totalVotes: total };
+    }),
+
+  // Vote on a thread reply
+  voteThread: protectedProcedure
+    .input(
+      z.object({
+        lineupId: z.string(),
+        commentId: z.string(),
+        threadId: z.string(),
+        type: z.enum(["upvote", "downvote"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const comment = await Comment.findOne({
+        _id: input.commentId,
+        lineupId: input.lineupId,
+      });
+
+      if (!comment) {
+        throw new Error("Comment not found.");
+      }
+
+      const thread = comment.thread.find(
+        (t) => t._id.toString() === input.threadId
+      );
+
+      if (!thread) {
+        throw new Error("Thread reply not found.");
+      }
+
+      // Can't vote on your own thread
+      if (thread.userId.toString() === ctx.session.user.id) {
+        throw new Error("You cannot vote on your own reply.");
+      }
+
+      // Find existing vote
+      const existingVoteIndex = thread.votes.findIndex(
+        (v) => v.userId.toString() === ctx.session.user.id
+      );
+
+      if (existingVoteIndex !== -1) {
+        const existingVote = thread.votes[existingVoteIndex]!;
+        const isUpvote = input.type === "upvote";
+        const wasUpvote = existingVote.upvote;
+
+        if ((isUpvote && wasUpvote) || (!isUpvote && existingVote.downvote)) {
+          // Same vote type - remove the vote
+          thread.votes.splice(existingVoteIndex, 1);
+        } else {
+          // Different vote type - toggle
+          existingVote.upvote = isUpvote;
+          existingVote.downvote = !isUpvote;
+        }
+      } else {
+        // No existing vote - create new
+        thread.votes.push({
+          userId: ctx.session.user.id,
+          upvote: input.type === "upvote",
+          downvote: input.type === "downvote",
+        } as any);
+      }
+
+      // Recalculate total votes for thread
+      let total = 0;
+      for (const vote of thread.votes) {
+        if (vote.upvote) total += 1;
+        if (vote.downvote) total -= 1;
+      }
+      thread.totalVotes = total;
+
+      await comment.save();
+
+      return { totalVotes: total };
     }),
 });

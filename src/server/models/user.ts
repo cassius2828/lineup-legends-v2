@@ -1,4 +1,10 @@
-import mongoose, { Schema, type Document, type Model } from "mongoose";
+import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
+
+export interface ISocialMedia {
+  twitter?: string | null;
+  instagram?: string | null;
+  facebook?: string | null;
+}
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
@@ -11,7 +17,20 @@ export interface IUser extends Document {
   bio?: string | null;
   profileImg?: string | null;
   bannerImg?: string | null;
+  friends: Types.ObjectId[];
+  socialMedia?: ISocialMedia;
+  newEmail?: string | null;
+  emailConfirmationToken?: string | null;
 }
+
+const SocialMediaSchema = new Schema<ISocialMedia>(
+  {
+    twitter: { type: String, default: null },
+    instagram: { type: String, default: null },
+    facebook: { type: String, default: null },
+  },
+  { _id: false }
+);
 
 const UserSchema = new Schema<IUser>(
   {
@@ -24,6 +43,10 @@ const UserSchema = new Schema<IUser>(
     bio: { type: String, default: null, maxlength: 250 },
     profileImg: { type: String, default: null },
     bannerImg: { type: String, default: null },
+    friends: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    socialMedia: { type: SocialMediaSchema, default: null },
+    newEmail: { type: String, default: null },
+    emailConfirmationToken: { type: String, default: null },
   },
   {
     timestamps: false,
