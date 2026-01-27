@@ -1,11 +1,12 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import { type DefaultSession, type NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { env } from "~/env";
 import { ensureEnvs } from "~/lib/ensureEnvs";
-import { db } from "~/server/db";
+import { getMongoClient, connectDB } from "~/server/db";
+import { User } from "~/server/models";
 
 /**
  * Module augmentation for `next-auth` types.
@@ -37,14 +38,16 @@ function isEmail(identifier: string): boolean {
 }
 
 /**
- * Finds a user by email or username.
+ * Finds a user by email or username using Mongoose.
  */
 async function findUserByIdentifier(identifier: string) {
-  return db.user.findFirst({
-    where: isEmail(identifier)
-      ? { email: identifier }
-      : { username: identifier },
-  });
+  await connectDB();
+  
+  const query = isEmail(identifier)
+    ? { email: identifier }
+    : { username: identifier.toLowerCase() };
+  
+  return User.findOne(query).lean();
 }
 
 /**
@@ -61,6 +64,9 @@ async function verifyPassword(
 }
 
 ensureEnvs();
+
+// Get the MongoDB client promise for the adapter
+const clientPromise = getMongoClient();
 
 export const authConfig = {
   providers: [
@@ -87,7 +93,7 @@ export const authConfig = {
 
         const user = await findUserByIdentifier(identifier);
         if (!user) {
-          throw new Error("Invalid credentials");
+          throw new Error("Invalid credentials1");
         }
 
         const isValidPassword = await verifyPassword(
@@ -95,14 +101,20 @@ export const authConfig = {
           user.password as string | null,
         );
         if (!isValidPassword) {
-          throw new Error("Invalid credentials");
+          throw new Error("Invalid credentials2");
         }
 
-        return user;
+        // Return user object with id as string
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          image: user.image,
+        };
       },
     }),
   ],
-  adapter: PrismaAdapter(db),
+  adapter: MongoDBAdapter(clientPromise),
   callbacks: {
     session: ({ session, user }) => ({
       ...session,

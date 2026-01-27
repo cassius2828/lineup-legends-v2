@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
-import type { Player } from "../../../../../generated/prisma";
+import { type Player, getId } from "~/lib/types";
 
 const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
 const POSITION_LABELS = {
@@ -33,11 +33,11 @@ export default function EditLineupPage() {
   useEffect(() => {
     if (lineup) {
       setPositions({
-        pg: lineup.pg,
-        sg: lineup.sg,
-        sf: lineup.sf,
-        pf: lineup.pf,
-        c: lineup.c,
+        pg: lineup.pg as Player,
+        sg: lineup.sg as Player,
+        sf: lineup.sf as Player,
+        pf: lineup.pf as Player,
+        c: lineup.c as Player,
       });
     }
   }, [lineup]);
@@ -66,11 +66,11 @@ export default function EditLineupPage() {
 
     reorderMutation.mutate({
       lineupId,
-      pgId: positions.pg.id,
-      sgId: positions.sg.id,
-      sfId: positions.sf.id,
-      pfId: positions.pf.id,
-      cId: positions.c.id,
+      pgId: getId(positions.pg),
+      sgId: getId(positions.sg),
+      sfId: getId(positions.sf),
+      pfId: getId(positions.pf),
+      cId: getId(positions.c),
     });
   };
 

@@ -1,11 +1,80 @@
-export type ServerUser = {
-    id: string;
-    name: string;
-    email: string;
-    emailVerified: Date;
-    image: string;
-    username: string;
-    bio: string;
-    profileImg: string;
-    bannerImg: string;
+// Shared types for the application
+// These types match the Mongoose models and are used across the frontend
+// Note: id and _id are both optional because Mongoose returns _id but we transform to id
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ObjectIdLike = string | { toString(): string } | any;
+
+export interface Player {
+  id?: string;
+  _id?: ObjectIdLike;
+  firstName: string;
+  lastName: string;
+  imgUrl: string;
+  value: number; // 1-5 representing player cost
+}
+
+export interface User {
+  id?: string;
+  _id?: ObjectIdLike;
+  name: string;
+  username: string;
+  email?: string | null;
+  emailVerified?: Date | null;
+  image?: string | null;
+  bio?: string | null;
+  profileImg?: string | null;
+  bannerImg?: string | null;
+}
+
+export interface Lineup {
+  id?: string;
+  _id?: ObjectIdLike;
+  createdAt: Date;
+  updatedAt: Date;
+  featured: boolean;
+  pgId: ObjectIdLike;
+  pg: Player;
+  sgId: ObjectIdLike;
+  sg: Player;
+  sfId: ObjectIdLike;
+  sf: Player;
+  pfId: ObjectIdLike;
+  pf: Player;
+  cId: ObjectIdLike;
+  c: Player;
+  ownerId: ObjectIdLike;
+  owner: User;
+  totalVotes: number;
+  avgRating: number;
+  timesGambled: number;
+}
+
+export interface Vote {
+  id?: string;
+  _id?: ObjectIdLike;
+  type: "upvote" | "downvote";
+  userId: ObjectIdLike;
+  lineupId: ObjectIdLike;
+  createdAt: Date;
+}
+
+export interface Rating {
+  id?: string;
+  _id?: ObjectIdLike;
+  value: number; // 1-10
+  userId: ObjectIdLike;
+  lineupId: ObjectIdLike;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Helper function to get a string ID from either id or _id
+export function getId(obj: { id?: string; _id?: ObjectIdLike } | null | undefined): string {
+  if (!obj) return '';
+  if (obj.id) return obj.id;
+  if (obj._id) {
+    return typeof obj._id === 'string' ? obj._id : obj._id.toString();
+  }
+  return '';
 }

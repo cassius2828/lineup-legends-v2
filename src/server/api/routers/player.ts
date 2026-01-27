@@ -4,34 +4,32 @@ import {
   createTRPCRouter,
   publicProcedure,
 } from "~/server/api/trpc";
+import { Player } from "~/server/models";
 
 export const playerRouter = createTRPCRouter({
   // Get all players, optionally filtered by value
   getAll: publicProcedure
     .input(z.object({ value: z.number().min(1).max(5).optional() }).optional())
-    .query(async ({ ctx, input }) => {
-      const where = input?.value ? { value: input.value } : {};
-      return ctx.db.player.findMany({
-        where,
-        orderBy: { value: "desc" },
-      });
+    .query(async ({ input }) => {
+      const filter = input?.value ? { value: input.value } : {};
+      const players = await Player.find(filter).sort({ value: -1 });
+      return players.map(p => p.toObject());
     }),
 
   // Get a single player by ID
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.player.findUnique({
-        where: { id: input.id },
-      });
+    .query(async ({ input }) => {
+      const player = await Player.findById(input.id);
+      return player ? player.toObject() : null;
     }),
 
   // Get random players grouped by value tier (for lineup creation)
   // Returns 5 random players for each value tier (1-5)
-  getRandomByValue: publicProcedure.query(async ({ ctx }) => {
-    // MongoDB doesn't have native random sampling in Prisma, 
-    // so we fetch all and sample in JS
-    const allPlayers = await ctx.db.player.findMany();
+  getRandomByValue: publicProcedure.query(async () => {
+    // MongoDB doesn't have native random sampling easily, 
+    // so we fetch all and sample in JS (same as before)
+    const allPlayers = await Player.find();
     
     const playersByValue: Record<number, typeof allPlayers> = {
       1: [],
@@ -51,7 +49,7 @@ export const playerRouter = createTRPCRouter({
     // Shuffle and take 5 from each tier
     const shuffleAndTake = (arr: typeof allPlayers, count: number) => {
       const shuffled = [...arr].sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, count);
+      return shuffled.slice(0, count).map(p => p.toObject());
     };
 
     return {
@@ -66,24 +64,21 @@ export const playerRouter = createTRPCRouter({
   // Search players by name
   search: publicProcedure
     .input(z.object({ query: z.string() }))
-    .query(async ({ ctx, input }) => {
+    .query(async ({ input }) => {
       if (!input.query.trim()) {
-        return ctx.db.player.findMany({
-          take: 10,
-          orderBy: { value: "desc" },
-        });
+        const players = await Player.find().limit(10).sort({ value: -1 });
+        return players.map(p => p.toObject());
       }
 
-      // Case-insensitive search on firstName or lastName
-      return ctx.db.player.findMany({
-        where: {
-          OR: [
-            { firstName: { contains: input.query, mode: "insensitive" } },
-            { lastName: { contains: input.query, mode: "insensitive" } },
-          ],
-        },
-        orderBy: { value: "desc" },
-      });
+      // Case-insensitive search on firstName or lastName using regex
+      const searchRegex = new RegExp(input.query, "i");
+      const players = await Player.find({
+        $or: [
+          { firstName: { $regex: searchRegex } },
+          { lastName: { $regex: searchRegex } },
+        ],
+      }).sort({ value: -1 });
+
+      return players.map(p => p.toObject());
     }),
 });
-

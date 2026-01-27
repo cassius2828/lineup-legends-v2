@@ -5,14 +5,45 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
+import { Lineup, Player, Vote, Rating } from "~/server/models";
 
 const BUDGET_LIMIT = 15;
 
+// Population fields for lineup queries
+const lineupPopulateFields = [
+  { path: "pgId", model: "Player" },
+  { path: "sgId", model: "Player" },
+  { path: "sfId", model: "Player" },
+  { path: "pfId", model: "Player" },
+  { path: "cId", model: "Player" },
+  { path: "ownerId", model: "User" },
+];
+
+// Helper to transform lineup for API response (rename populated fields)
+function transformLineup(lineup: any) {
+  if (!lineup) return null;
+  const obj = lineup.toObject ? lineup.toObject() : lineup;
+  return {
+    ...obj,
+    id: obj._id?.toString() ?? obj.id,
+    pg: obj.pgId,
+    sg: obj.sgId,
+    sf: obj.sfId,
+    pf: obj.pfId,
+    c: obj.cId,
+    owner: obj.ownerId,
+    pgId: obj.pgId?._id?.toString() ?? obj.pgId,
+    sgId: obj.sgId?._id?.toString() ?? obj.sgId,
+    sfId: obj.sfId?._id?.toString() ?? obj.sfId,
+    pfId: obj.pfId?._id?.toString() ?? obj.pfId,
+    cId: obj.cId?._id?.toString() ?? obj.cId,
+    ownerId: obj.ownerId?._id?.toString() ?? obj.ownerId,
+  };
+}
+
 // Helper to calculate total votes
-async function recalculateTotalVotes(db: any, lineupId: string) {
-  const votes = await db.vote.findMany({
-    where: { lineupId },
-  });
+async function recalculateTotalVotes(lineupId: string) {
+  const votes = await Vote.find({ lineupId });
 
   let total = 0;
   for (const vote of votes) {
@@ -20,35 +51,24 @@ async function recalculateTotalVotes(db: any, lineupId: string) {
     if (vote.type === "downvote") total -= 1;
   }
 
-  await db.lineup.update({
-    where: { id: lineupId },
-    data: { totalVotes: total },
-  });
+  await Lineup.findByIdAndUpdate(lineupId, { totalVotes: total });
 
   return total;
 }
 
 // Helper to calculate average rating
-async function recalculateAvgRating(db: any, lineupId: string) {
-  const ratings = await db.rating.findMany({
-    where: { lineupId },
-  });
+async function recalculateAvgRating(lineupId: string) {
+  const ratings = await Rating.find({ lineupId });
 
   if (ratings.length === 0) {
-    await db.lineup.update({
-      where: { id: lineupId },
-      data: { avgRating: 0 },
-    });
+    await Lineup.findByIdAndUpdate(lineupId, { avgRating: 0 });
     return 0;
   }
 
-  const sum = ratings.reduce((acc: number, r: { value: number }) => acc + r.value, 0);
+  const sum = ratings.reduce((acc: number, r) => acc + r.value, 0);
   const avg = sum / ratings.length;
 
-  await db.lineup.update({
-    where: { id: lineupId },
-    data: { avgRating: avg },
-  });
+  await Lineup.findByIdAndUpdate(lineupId, { avgRating: avg });
 
   return avg;
 }
@@ -76,9 +96,7 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Fetch all selected players and validate budget
-      const players = await ctx.db.player.findMany({
-        where: { id: { in: playerIds } },
-      });
+      const players = await Player.find({ _id: { $in: playerIds } });
 
       if (players.length !== 5) {
         throw new Error("One or more selected players not found.");
@@ -92,25 +110,21 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Create the lineup
-      return ctx.db.lineup.create({
-        data: {
-          pgId,
-          sgId,
-          sfId,
-          pfId,
-          cId,
-          ownerId: ctx.session.user.id,
-          featured: false,
-        },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
+      const lineup = await Lineup.create({
+        pgId,
+        sgId,
+        sfId,
+        pfId,
+        cId,
+        ownerId: ctx.session.user.id,
+        featured: false,
       });
+
+      // Populate and return
+      const populatedLineup = await Lineup.findById(lineup._id)
+        .populate(lineupPopulateFields);
+
+      return transformLineup(populatedLineup);
     }),
 
   // Get current user's lineups (protected)
@@ -121,56 +135,59 @@ export const lineupRouter = createTRPCRouter({
       }).optional()
     )
     .query(async ({ ctx, input }) => {
-      let orderBy: any = { createdAt: "desc" };
+      let sortOption: any = { createdAt: -1 };
       
       switch (input?.sort) {
         case "oldest":
-          orderBy = { createdAt: "asc" };
+          sortOption = { createdAt: 1 };
           break;
         case "highest-rated":
-          orderBy = { avgRating: "desc" };
+          sortOption = { avgRating: -1 };
           break;
         case "most-votes":
-          orderBy = { totalVotes: "desc" };
+          sortOption = { totalVotes: -1 };
           break;
       }
 
-      return ctx.db.lineup.findMany({
-        where: { ownerId: ctx.session.user.id },
-        orderBy,
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-          votes: {
-            where: { userId: ctx.session.user.id },
-          },
-          ratings: {
-            where: { userId: ctx.session.user.id },
-          },
-        },
+      const lineups = await Lineup.find({ ownerId: ctx.session.user.id })
+        .sort(sortOption)
+        .populate(lineupPopulateFields);
+
+      // Get user's votes and ratings for these lineups
+      const lineupIds = lineups.map(l => l._id);
+      const userVotes = await Vote.find({
+        userId: ctx.session.user.id,
+        lineupId: { $in: lineupIds },
+      });
+      const userRatings = await Rating.find({
+        userId: ctx.session.user.id,
+        lineupId: { $in: lineupIds },
+      });
+
+      // Map votes and ratings to lineups
+      const voteMap = new Map(userVotes.map(v => [v.lineupId.toString(), v]));
+      const ratingMap = new Map(userRatings.map(r => [r.lineupId.toString(), r]));
+
+      return lineups.map(lineup => {
+        const transformed = transformLineup(lineup);
+        const lineupIdStr = lineup._id.toString();
+        return {
+          ...transformed,
+          votes: voteMap.has(lineupIdStr) ? [voteMap.get(lineupIdStr)] : [],
+          ratings: ratingMap.has(lineupIdStr) ? [ratingMap.get(lineupIdStr)] : [],
+        };
       });
     }),
 
   // Get a specific user's lineups (public)
   getByUserId: publicProcedure
     .input(z.object({ userId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.lineup.findMany({
-        where: { ownerId: input.userId },
-        orderBy: { createdAt: "desc" },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
+    .query(async ({ input }) => {
+      const lineups = await Lineup.find({ ownerId: input.userId })
+        .sort({ createdAt: -1 })
+        .populate(lineupPopulateFields);
+
+      return lineups.map(transformLineup);
     }),
 
   // Get all lineups (explore - public)
@@ -180,92 +197,78 @@ export const lineupRouter = createTRPCRouter({
         sort: z.enum(["newest", "oldest", "highest-rated", "most-votes"]).optional().default("newest"),
       }).optional()
     )
-    .query(async ({ ctx, input }) => {
-      let orderBy: any = { createdAt: "desc" };
+    .query(async ({ input }) => {
+      let sortOption: any = { createdAt: -1 };
       
       switch (input?.sort) {
         case "oldest":
-          orderBy = { createdAt: "asc" };
+          sortOption = { createdAt: 1 };
           break;
         case "highest-rated":
-          orderBy = { avgRating: "desc" };
+          sortOption = { avgRating: -1 };
           break;
         case "most-votes":
-          orderBy = { totalVotes: "desc" };
+          sortOption = { totalVotes: -1 };
           break;
       }
 
-      return ctx.db.lineup.findMany({
-        orderBy,
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
+      const lineups = await Lineup.find()
+        .sort(sortOption)
+        .populate(lineupPopulateFields);
+
+      return lineups.map(transformLineup);
     }),
 
   // Get a single lineup by ID
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.lineup.findUnique({
-        where: { id: input.id },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
+    .query(async ({ input }) => {
+      const lineup = await Lineup.findById(input.id)
+        .populate(lineupPopulateFields);
+
+      return transformLineup(lineup);
     }),
 
   // Delete a lineup (protected - only owner can delete)
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.id },
-      });
+      const lineup = await Lineup.findById(input.id);
 
       if (!lineup) {
         throw new Error("Lineup not found.");
       }
 
-      if (lineup.ownerId !== ctx.session.user.id) {
+      if (lineup.ownerId.toString() !== ctx.session.user.id) {
         throw new Error("You do not have permission to delete this lineup.");
       }
 
-      return ctx.db.lineup.delete({
-        where: { id: input.id },
-      });
+      // Delete related votes and ratings
+      await Vote.deleteMany({ lineupId: input.id });
+      await Rating.deleteMany({ lineupId: input.id });
+
+      return Lineup.findByIdAndDelete(input.id);
     }),
 
   // Toggle featured status (protected - only owner)
   toggleFeatured: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.id },
-      });
+      const lineup = await Lineup.findById(input.id);
 
       if (!lineup) {
         throw new Error("Lineup not found.");
       }
 
-      if (lineup.ownerId !== ctx.session.user.id) {
+      if (lineup.ownerId.toString() !== ctx.session.user.id) {
         throw new Error("You do not have permission to modify this lineup.");
       }
 
       // Check if user already has 3 featured lineups
       if (!lineup.featured) {
-        const featuredCount = await ctx.db.lineup.count({
-          where: { ownerId: ctx.session.user.id, featured: true },
+        const featuredCount = await Lineup.countDocuments({
+          ownerId: ctx.session.user.id,
+          featured: true,
         });
 
         if (featuredCount >= 3) {
@@ -275,18 +278,13 @@ export const lineupRouter = createTRPCRouter({
         }
       }
 
-      return ctx.db.lineup.update({
-        where: { id: input.id },
-        data: { featured: !lineup.featured },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
+      const updatedLineup = await Lineup.findByIdAndUpdate(
+        input.id,
+        { featured: !lineup.featured },
+        { new: true }
+      ).populate(lineupPopulateFields);
+
+      return transformLineup(updatedLineup);
     }),
 
   // ============================================
@@ -302,55 +300,42 @@ export const lineupRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.lineupId },
-      });
+      const lineup = await Lineup.findById(input.lineupId);
 
       if (!lineup) {
         throw new Error("Lineup not found.");
       }
 
       // Can't vote on your own lineup
-      if (lineup.ownerId === ctx.session.user.id) {
+      if (lineup.ownerId.toString() === ctx.session.user.id) {
         throw new Error("You cannot vote on your own lineup.");
       }
 
       // Check for existing vote
-      const existingVote = await ctx.db.vote.findUnique({
-        where: {
-          userId_lineupId: {
-            userId: ctx.session.user.id,
-            lineupId: input.lineupId,
-          },
-        },
+      const existingVote = await Vote.findOne({
+        userId: ctx.session.user.id,
+        lineupId: input.lineupId,
       });
 
       if (existingVote) {
         if (existingVote.type === input.type) {
           // Same vote type - remove the vote
-          await ctx.db.vote.delete({
-            where: { id: existingVote.id },
-          });
+          await Vote.findByIdAndDelete(existingVote._id);
         } else {
           // Different vote type - update the vote
-          await ctx.db.vote.update({
-            where: { id: existingVote.id },
-            data: { type: input.type },
-          });
+          await Vote.findByIdAndUpdate(existingVote._id, { type: input.type });
         }
       } else {
         // No existing vote - create new
-        await ctx.db.vote.create({
-          data: {
-            type: input.type,
-            userId: ctx.session.user.id,
-            lineupId: input.lineupId,
-          },
+        await Vote.create({
+          type: input.type,
+          userId: ctx.session.user.id,
+          lineupId: input.lineupId,
         });
       }
 
       // Recalculate total votes
-      const newTotal = await recalculateTotalVotes(ctx.db, input.lineupId);
+      const newTotal = await recalculateTotalVotes(input.lineupId);
 
       return { totalVotes: newTotal };
     }),
@@ -359,13 +344,9 @@ export const lineupRouter = createTRPCRouter({
   getUserVote: protectedProcedure
     .input(z.object({ lineupId: z.string() }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.vote.findUnique({
-        where: {
-          userId_lineupId: {
-            userId: ctx.session.user.id,
-            lineupId: input.lineupId,
-          },
-        },
+      return Vote.findOne({
+        userId: ctx.session.user.id,
+        lineupId: input.lineupId,
       });
     }),
 
@@ -382,39 +363,33 @@ export const lineupRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.lineupId },
-      });
+      const lineup = await Lineup.findById(input.lineupId);
 
       if (!lineup) {
         throw new Error("Lineup not found.");
       }
 
       // Can't rate your own lineup
-      if (lineup.ownerId === ctx.session.user.id) {
+      if (lineup.ownerId.toString() === ctx.session.user.id) {
         throw new Error("You cannot rate your own lineup.");
       }
 
       // Upsert rating
-      await ctx.db.rating.upsert({
-        where: {
-          userId_lineupId: {
-            userId: ctx.session.user.id,
-            lineupId: input.lineupId,
-          },
+      await Rating.findOneAndUpdate(
+        {
+          userId: ctx.session.user.id,
+          lineupId: input.lineupId,
         },
-        create: {
+        {
           value: input.value,
           userId: ctx.session.user.id,
           lineupId: input.lineupId,
         },
-        update: {
-          value: input.value,
-        },
-      });
+        { upsert: true, new: true }
+      );
 
       // Recalculate average rating
-      const newAvg = await recalculateAvgRating(ctx.db, input.lineupId);
+      const newAvg = await recalculateAvgRating(input.lineupId);
 
       return { avgRating: newAvg };
     }),
@@ -423,13 +398,9 @@ export const lineupRouter = createTRPCRouter({
   getUserRating: protectedProcedure
     .input(z.object({ lineupId: z.string() }))
     .query(async ({ ctx, input }) => {
-      return ctx.db.rating.findUnique({
-        where: {
-          userId_lineupId: {
-            userId: ctx.session.user.id,
-            lineupId: input.lineupId,
-          },
-        },
+      return Rating.findOne({
+        userId: ctx.session.user.id,
+        lineupId: input.lineupId,
       });
     }),
 
@@ -450,26 +421,31 @@ export const lineupRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.lineupId },
-        include: { pg: true, sg: true, sf: true, pf: true, c: true },
-      });
+      const lineup = await Lineup.findById(input.lineupId)
+        .populate(lineupPopulateFields);
 
       if (!lineup) {
         throw new Error("Lineup not found.");
       }
 
-      if (lineup.ownerId !== ctx.session.user.id) {
+      if (lineup.ownerId.toString() !== ctx.session.user.id) {
         throw new Error("You do not have permission to edit this lineup.");
       }
 
-      // Validate that all provided IDs are from the original lineup
+      // Get original IDs (handle both populated and non-populated cases)
+      const getIdString = (field: any) => {
+        if (!field) return null;
+        if (typeof field === "string") return field;
+        if (field._id) return field._id.toString();
+        return field.toString();
+      };
+
       const originalIds = new Set([
-        lineup.pgId,
-        lineup.sgId,
-        lineup.sfId,
-        lineup.pfId,
-        lineup.cId,
+        getIdString(lineup.pgId),
+        getIdString(lineup.sgId),
+        getIdString(lineup.sfId),
+        getIdString(lineup.pfId),
+        getIdString(lineup.cId),
       ]);
       const newIds = [input.pgId, input.sgId, input.sfId, input.pfId, input.cId];
 
@@ -486,24 +462,19 @@ export const lineupRouter = createTRPCRouter({
         }
       }
 
-      return ctx.db.lineup.update({
-        where: { id: input.lineupId },
-        data: {
+      const updatedLineup = await Lineup.findByIdAndUpdate(
+        input.lineupId,
+        {
           pgId: input.pgId,
           sgId: input.sgId,
           sfId: input.sfId,
           pfId: input.pfId,
           cId: input.cId,
         },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
+        { new: true }
+      ).populate(lineupPopulateFields);
+
+      return transformLineup(updatedLineup);
     }),
 
   // ============================================
@@ -519,50 +490,64 @@ export const lineupRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.lineupId },
-        include: { pg: true, sg: true, sf: true, pf: true, c: true },
-      });
+      const lineup = await Lineup.findById(input.lineupId)
+        .populate(lineupPopulateFields);
 
       if (!lineup) {
         throw new Error("Lineup not found.");
       }
 
-      if (lineup.ownerId !== ctx.session.user.id) {
+      if (lineup.ownerId.toString() !== ctx.session.user.id) {
         throw new Error("You do not have permission to gamble on this lineup.");
       }
 
-      const currentPlayer = lineup[input.position];
+      // Get the current player at the position
+      const positionFieldMap: Record<string, string> = {
+        pg: "pgId",
+        sg: "sgId",
+        sf: "sfId",
+        pf: "pfId",
+        c: "cId",
+      };
+      const positionField = positionFieldMap[input.position]!;
+      const currentPlayer = (lineup as any)[positionField];
+      
+      if (!currentPlayer || !currentPlayer.value) {
+        throw new Error("Current player not found.");
+      }
+
       const currentValue = currentPlayer.value;
 
       // Determine possible values for the new player
       let possibleValues: number[];
       if (currentValue === 1) {
-        // Value 1 can only get value 1
         possibleValues = [1];
       } else if (currentValue === 5) {
-        // Value 5 can get 4 or 5
         possibleValues = [4, 5];
       } else {
-        // Values 2-4 can get -1, same, or +1
         possibleValues = [currentValue - 1, currentValue, currentValue + 1];
       }
 
       // Get all player IDs currently in the lineup
+      const getIdString = (field: any) => {
+        if (!field) return null;
+        if (typeof field === "string") return field;
+        if (field._id) return field._id.toString();
+        return field.toString();
+      };
+
       const currentLineupPlayerIds = [
-        lineup.pgId,
-        lineup.sgId,
-        lineup.sfId,
-        lineup.pfId,
-        lineup.cId,
-      ];
+        getIdString(lineup.pgId),
+        getIdString(lineup.sgId),
+        getIdString(lineup.sfId),
+        getIdString(lineup.pfId),
+        getIdString(lineup.cId),
+      ].filter(Boolean);
 
       // Find eligible players (matching value, not already in lineup)
-      const eligiblePlayers = await ctx.db.player.findMany({
-        where: {
-          value: { in: possibleValues },
-          id: { notIn: currentLineupPlayerIds },
-        },
+      const eligiblePlayers = await Player.find({
+        value: { $in: possibleValues },
+        _id: { $nin: currentLineupPlayerIds },
       });
 
       if (eligiblePlayers.length === 0) {
@@ -574,27 +559,21 @@ export const lineupRouter = createTRPCRouter({
       const newPlayer = eligiblePlayers[randomIndex]!;
 
       // Update the lineup with the new player
-      const positionField = `${input.position}Id`;
-      const updatedLineup = await ctx.db.lineup.update({
-        where: { id: input.lineupId },
-        data: {
-          [positionField]: newPlayer.id,
-          timesGambled: { increment: 1 },
-        },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
+      const updateData: any = {
+        [positionField]: newPlayer._id,
+        $inc: { timesGambled: 1 },
+      };
+
+      const updatedLineup = await Lineup.findByIdAndUpdate(
+        input.lineupId,
+        updateData,
+        { new: true }
+      ).populate(lineupPopulateFields);
 
       return {
-        lineup: updatedLineup,
-        previousPlayer: currentPlayer,
-        newPlayer: newPlayer,
+        lineup: transformLineup(updatedLineup),
+        previousPlayer: currentPlayer.toObject ? currentPlayer.toObject() : currentPlayer,
+        newPlayer: newPlayer.toObject(),
       };
     }),
 });

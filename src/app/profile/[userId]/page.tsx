@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { LineupCard } from "~/app/_components/LineupCard";
 import { api } from "~/trpc/react";
+import { getId } from "~/lib/types";
 
 export default function ProfilePage() {
   const params = useParams();
@@ -108,21 +109,21 @@ export default function ProfilePage() {
             <div className="grid gap-6 md:grid-cols-2">
               {profile.lineups.map((lineup) => (
                 <LineupCard
-                  key={lineup.id}
+                  key={getId(lineup)}
                   lineup={{
                     ...lineup,
                     owner: {
-                      id: profile.id,
+                      id: getId(profile),
                       name: profile.name,
                       username: profile.username,
                       image: profile.profileImg ?? profile.image,
-                      email: null,
+                      email: undefined,
                       emailVerified: null,
                       bio: profile.bio,
                       profileImg: profile.profileImg,
                       bannerImg: profile.bannerImg,
                     },
-                  }}
+                  } as any}
                   showOwner={false}
                   isOwner={false}
                 />

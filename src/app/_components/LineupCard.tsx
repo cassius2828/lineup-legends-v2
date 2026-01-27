@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { Player, Lineup, User } from "../../../generated/prisma";
+import { type Player, type Lineup, type User, getId } from "~/lib/types";
 import { PlayerCard } from "./PlayerCard";
 import { formatDistanceToNow } from "date-fns";
 
@@ -98,7 +98,7 @@ export function LineupCard({
         {onVote && canVote ? (
           <div className="flex items-center gap-1">
             <button
-              onClick={() => onVote(lineup.id, "upvote")}
+              onClick={() => onVote(getId(lineup), "upvote")}
               className={`rounded p-1 transition-colors ${
                 userVote === "upvote"
                   ? "bg-emerald-500/30 text-emerald-400"
@@ -125,7 +125,7 @@ export function LineupCard({
               {lineup.totalVotes}
             </span>
             <button
-              onClick={() => onVote(lineup.id, "downvote")}
+              onClick={() => onVote(getId(lineup), "downvote")}
               className={`rounded p-1 transition-colors ${
                 userVote === "downvote"
                   ? "bg-red-500/30 text-red-400"
@@ -167,7 +167,7 @@ export function LineupCard({
         {/* Rate Link (for non-owners) */}
         {canVote && (
           <Link
-            href={`/lineups/${lineup.id}/rate`}
+            href={`/lineups/${getId(lineup)}/rate`}
             className="text-xs text-white/50 hover:text-white/80"
           >
             Rate
@@ -201,20 +201,20 @@ export function LineupCard({
       {isOwner && (
         <div className="mt-4 flex flex-wrap justify-end gap-2">
           <Link
-            href={`/lineups/${lineup.id}/edit`}
+            href={`/lineups/${getId(lineup)}/edit`}
             className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/20"
           >
             Reorder
           </Link>
           <Link
-            href={`/lineups/${lineup.id}/gamble`}
+            href={`/lineups/${getId(lineup)}/gamble`}
             className="rounded-lg bg-purple-500/20 px-3 py-1.5 text-sm font-medium text-purple-400 transition-colors hover:bg-purple-500/30"
           >
             Gamble
           </Link>
           {onToggleFeatured && (
             <button
-              onClick={() => onToggleFeatured(lineup.id)}
+              onClick={() => onToggleFeatured(getId(lineup))}
               className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                 lineup.featured
                   ? "bg-gold/20 text-gold hover:bg-gold/30"
@@ -226,7 +226,7 @@ export function LineupCard({
           )}
           {onDelete && (
             <button
-              onClick={() => onDelete(lineup.id)}
+              onClick={() => onDelete(getId(lineup))}
               className="rounded-lg bg-red-500/20 px-3 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30"
             >
               Delete

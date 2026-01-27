@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Player } from "../../../generated/prisma";
+import { type Player, getId } from "~/lib/types";
 import { PlayerCard } from "./PlayerCard";
 
 interface PlayersByValue {
@@ -33,7 +33,7 @@ export function PlayerSelector({
   const canSubmit = selectedPlayers.length === 5;
 
   const isPlayerSelected = (player: Player) =>
-    selectedPlayers.some((p) => p.id === player.id);
+    selectedPlayers.some((p) => getId(p) === getId(player));
 
   const canAffordPlayer = (player: Player) =>
     player.value <= remainingBudget || isPlayerSelected(player);
@@ -41,7 +41,7 @@ export function PlayerSelector({
   const handlePlayerClick = (player: Player) => {
     if (isPlayerSelected(player)) {
       // Deselect player
-      setSelectedPlayers(selectedPlayers.filter((p) => p.id !== player.id));
+      setSelectedPlayers(selectedPlayers.filter((p) => getId(p) !== getId(player)));
     } else if (selectedPlayers.length < 5 && canAffordPlayer(player)) {
       // Select player
       setSelectedPlayers([...selectedPlayers, player]);
@@ -145,7 +145,7 @@ export function PlayerSelector({
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {players.map((player) => (
               <PlayerCard
-                key={player.id}
+                key={getId(player)}
                 player={player}
                 selected={isPlayerSelected(player)}
                 onSelect={handlePlayerClick}

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PlayerSelector } from "~/app/_components/PlayerSelector";
 import { api } from "~/trpc/react";
-import type { Player } from "../../../../generated/prisma";
+import { type Player, getId } from "~/lib/types";
 
 export default function CreateLineupPage() {
   const router = useRouter();
@@ -24,11 +24,11 @@ export default function CreateLineupPage() {
     if (selectedPlayers.length !== 5) return;
 
     createLineup.mutate({
-      pgId: selectedPlayers[0]!.id,
-      sgId: selectedPlayers[1]!.id,
-      sfId: selectedPlayers[2]!.id,
-      pfId: selectedPlayers[3]!.id,
-      cId: selectedPlayers[4]!.id,
+      pgId: getId(selectedPlayers[0]!),
+      sgId: getId(selectedPlayers[1]!),
+      sfId: getId(selectedPlayers[2]!),
+      pfId: getId(selectedPlayers[3]!),
+      cId: getId(selectedPlayers[4]!),
     });
   };
 

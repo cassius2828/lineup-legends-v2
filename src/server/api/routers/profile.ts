@@ -5,59 +5,96 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
+import { User, Lineup } from "~/server/models";
+
+// Population fields for lineup queries
+const lineupPopulateFields = [
+  { path: "pgId", model: "Player" },
+  { path: "sgId", model: "Player" },
+  { path: "sfId", model: "Player" },
+  { path: "pfId", model: "Player" },
+  { path: "cId", model: "Player" },
+  { path: "ownerId", model: "User" },
+];
+
+// Helper to transform lineup for API response
+function transformLineup(lineup: any) {
+  if (!lineup) return null;
+  const obj = lineup.toObject ? lineup.toObject() : lineup;
+  return {
+    ...obj,
+    id: obj._id?.toString() ?? obj.id,
+    pg: obj.pgId,
+    sg: obj.sgId,
+    sf: obj.sfId,
+    pf: obj.pfId,
+    c: obj.cId,
+    owner: obj.ownerId,
+  };
+}
 
 export const profileRouter = createTRPCRouter({
   // Get a user's profile by ID
   getById: publicProcedure
     .input(z.object({ userId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const user = await ctx.db.user.findUnique({
-        where: { id: input.userId },
-        select: {
-          id: true,
-          name: true,
-          username: true,
-          image: true,
-          bio: true,
-          profileImg: true,
-          bannerImg: true,
-          lineups: {
-            orderBy: { createdAt: "desc" },
-            take: 6,
-            include: {
-              pg: true,
-              sg: true,
-              sf: true,
-              pf: true,
-              c: true,
-            },
-          },
-          _count: {
-            select: {
-              lineups: true,
-            },
-          },
-        },
+    .query(async ({ input }) => {
+      const user = await User.findById(input.userId)
+        .select("name username image bio profileImg bannerImg")
+        .lean();
+
+      if (!user) return null;
+
+      // Get user's lineups (limited to 6)
+      const lineups = await Lineup.find({ ownerId: input.userId })
+        .sort({ createdAt: -1 })
+        .limit(6)
+        .populate([
+          { path: "pgId", model: "Player" },
+          { path: "sgId", model: "Player" },
+          { path: "sfId", model: "Player" },
+          { path: "pfId", model: "Player" },
+          { path: "cId", model: "Player" },
+        ]);
+
+      // Get total lineup count
+      const lineupCount = await Lineup.countDocuments({ ownerId: input.userId });
+
+      // Transform lineups
+      const transformedLineups = lineups.map(lineup => {
+        const obj = lineup.toObject();
+        return {
+          ...obj,
+          id: obj._id?.toString(),
+          pg: obj.pgId,
+          sg: obj.sgId,
+          sf: obj.sfId,
+          pf: obj.pfId,
+          c: obj.cId,
+        };
       });
 
-      return user;
+      return {
+        ...user,
+        id: (user as any)._id?.toString(),
+        lineups: transformedLineups,
+        _count: {
+          lineups: lineupCount,
+        },
+      };
     }),
 
   // Get current user's profile
   getMe: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.user.findUnique({
-      where: { id: ctx.session.user.id },
-      select: {
-        id: true,
-        name: true,
-        username: true,
-        email: true,
-        image: true,
-        bio: true,
-        profileImg: true,
-        bannerImg: true,
-      },
-    });
+    const user = await User.findById(ctx.session.user.id)
+      .select("name username email image bio profileImg bannerImg")
+      .lean();
+
+    if (!user) return null;
+
+    return {
+      ...user,
+      id: (user as any)._id?.toString(),
+    };
   }),
 
   // Update current user's profile
@@ -73,45 +110,39 @@ export const profileRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       // Check if username is taken by another user
       if (input.username) {
-        const existingUser = await ctx.db.user.findUnique({
-          where: { username: input.username },
-        });
+        const existingUser = await User.findOne({ username: input.username });
 
-        if (existingUser && existingUser.id !== ctx.session.user.id) {
+        if (existingUser && existingUser._id.toString() !== ctx.session.user.id) {
           throw new Error("Username is already taken.");
         }
       }
 
-      return ctx.db.user.update({
-        where: { id: ctx.session.user.id },
-        data: {
-          username: input.username,
-          bio: input.bio,
-          profileImg: input.profileImg,
-          bannerImg: input.bannerImg,
-        },
-      });
+      const updateData: any = {};
+      if (input.username !== undefined) updateData.username = input.username;
+      if (input.bio !== undefined) updateData.bio = input.bio;
+      if (input.profileImg !== undefined) updateData.profileImg = input.profileImg;
+      if (input.bannerImg !== undefined) updateData.bannerImg = input.bannerImg;
+
+      const updatedUser = await User.findByIdAndUpdate(
+        ctx.session.user.id,
+        updateData,
+        { new: true }
+      );
+
+      return updatedUser ? updatedUser.toObject() : null;
     }),
 
   // Get featured lineups for a user
   getFeaturedLineups: publicProcedure
     .input(z.object({ userId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.lineup.findMany({
-        where: {
-          ownerId: input.userId,
-          featured: true,
-        },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-        take: 3,
-      });
+    .query(async ({ input }) => {
+      const lineups = await Lineup.find({
+        ownerId: input.userId,
+        featured: true,
+      })
+        .limit(3)
+        .populate(lineupPopulateFields);
+
+      return lineups.map(transformLineup);
     }),
 });
-
