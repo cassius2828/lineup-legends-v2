@@ -107,4 +107,42 @@ export const playerRouter = createTRPCRouter({
 
       return updatedPlayer.toObject();
     }),
+
+  // Create a new player (admin only)
+  create: protectedProcedure
+    .input(
+      z.object({
+        firstName: z.string().min(1).max(50),
+        lastName: z.string().min(1).max(50),
+        value: z.number().min(1).max(5),
+        imgUrl: z.string().url(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      // Trim whitespace from names
+      const firstName = input.firstName.trim();
+      const lastName = input.lastName.trim();
+
+      // Check if player with same name already exists (case-insensitive)
+      const existingPlayer = await Player.findOne({
+        firstName: { $regex: new RegExp(`^${firstName}$`, "i") },
+        lastName: { $regex: new RegExp(`^${lastName}$`, "i") },
+      });
+
+      if (existingPlayer) {
+        throw new Error(
+          `Player "${firstName} ${lastName}" already exists in the database.`,
+        );
+      }
+
+      // Create new player
+      const newPlayer = await Player.create({
+        firstName,
+        lastName,
+        value: input.value,
+        imgUrl: input.imgUrl,
+      });
+
+      return newPlayer.toObject();
+    }),
 });
