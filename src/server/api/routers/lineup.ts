@@ -1,9 +1,12 @@
-import { type SortOrder } from "mongoose";
+import { TRPCError } from "@trpc/server";
+import mongoose, { type SortOrder } from "mongoose";
 import { z } from "zod";
 import {
   getIdString,
+  lineupPopulateFields,
+  processCommentVote,
   recalculateAvgRating,
-  recalculateTotalVotes,
+  incrementTotalVotes,
   transformLineup,
 } from "~/lib/utils";
 
@@ -18,21 +21,13 @@ import {
   Player,
   Rating,
   Vote,
+  type IComment,
   type ILineup,
   type IPlayer,
+  type IThread,
 } from "~/server/models";
 
 const BUDGET_LIMIT = 15;
-
-// Population fields for lineup queries
-const lineupPopulateFields = [
-  { path: "pgId", model: "Player" },
-  { path: "sgId", model: "Player" },
-  { path: "sfId", model: "Player" },
-  { path: "pfId", model: "Player" },
-  { path: "cId", model: "Player" },
-  { path: "ownerId", model: "User" },
-];
 
 export const lineupRouter = createTRPCRouter({
   // Create a new lineup (protected - requires auth)
@@ -53,23 +48,29 @@ export const lineupRouter = createTRPCRouter({
       // Check for duplicate players
       const uniqueIds = new Set(playerIds);
       if (uniqueIds.size !== playerIds.length) {
-        throw new Error(
-          "Duplicate players found. Each position must have a unique player.",
-        );
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Duplicate players found. Each position must have a unique player.",
+        });
       }
 
       // Fetch all selected players and validate budget
       const players = await Player.find({ _id: { $in: playerIds } });
 
       if (players.length !== 5) {
-        throw new Error("One or more selected players not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "One or more selected players not found.",
+        });
       }
 
       const totalValue = players.reduce((sum, player) => sum + player.value, 0);
       if (totalValue > BUDGET_LIMIT) {
-        throw new Error(
-          `Lineup exceeds $${BUDGET_LIMIT} budget. Total value: $${totalValue}`,
-        );
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Lineup exceeds $${BUDGET_LIMIT} budget. Total value: $${totalValue}`,
+        });
       }
 
       // Create the lineup
@@ -215,11 +216,17 @@ export const lineupRouter = createTRPCRouter({
       const lineup = await Lineup.findById(input.id);
 
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
       if (lineup.ownerId.toString() !== ctx.session.user.id) {
-        throw new Error("You do not have permission to delete this lineup.");
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to delete this lineup.",
+        });
       }
 
       // Delete related votes and ratings
@@ -236,11 +243,17 @@ export const lineupRouter = createTRPCRouter({
       const lineup = await Lineup.findById(input.id);
 
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
       if (lineup.ownerId.toString() !== ctx.session.user.id) {
-        throw new Error("You do not have permission to modify this lineup.");
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to modify this lineup.",
+        });
       }
 
       // Check if user already has 3 featured lineups
@@ -251,9 +264,11 @@ export const lineupRouter = createTRPCRouter({
         });
 
         if (featuredCount >= 3) {
-          throw new Error(
-            "Maximum 3 featured lineups allowed. Remove one to add another.",
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Maximum 3 featured lineups allowed. Remove one to add another.",
+          });
         }
       }
 
@@ -279,44 +294,63 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId);
+      const userId = new mongoose.Types.ObjectId(ctx.session.user.id);
+      const lineupId = new mongoose.Types.ObjectId(input.lineupId);
+
+      const lineup = await Lineup.findById(input.lineupId)
+        .select("ownerId totalVotes")
+        // * if you are doing reads or only need certain values, always select and lean the mongo doc
+        .lean();
 
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
       // Can't vote on your own lineup
       if (lineup.ownerId.toString() === ctx.session.user.id) {
-        throw new Error("You cannot vote on your own lineup.");
-      }
-
-      // Check for existing vote
-      const existingVote = await Vote.findOne({
-        userId: ctx.session.user.id,
-        lineupId: input.lineupId,
-      });
-
-      if (existingVote) {
-        if (existingVote.type === input.type) {
-          // Same vote type - remove the vote
-          await Vote.findByIdAndDelete(existingVote._id);
-        } else {
-          // Different vote type - update the vote
-          await Vote.findByIdAndUpdate(existingVote._id, { type: input.type });
-        }
-      } else {
-        // No existing vote - create new
-        await Vote.create({
-          type: input.type,
-          userId: ctx.session.user.id,
-          lineupId: input.lineupId,
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You cannot vote on your own lineup.",
         });
       }
 
-      // Recalculate total votes
-      const newTotal = await recalculateTotalVotes(input.lineupId);
+      // Check for existing vote
+      const existingVote = await Vote.findOneAndUpdate(
+        {
+          userId,
+          lineupId,
+        },
 
-      return { totalVotes: newTotal };
+        {
+          $setOnInsert: {
+            userId,
+            lineupId,
+            type: input.type,
+            createdAt: new Date(),
+          },
+        },
+        {
+          upsert: true,
+          new: false,
+        },
+      );
+
+      // Recalculate total votes -- cal increment instead of scanning all votes again
+      const amountToIncrementVotesBy = await incrementTotalVotes(
+        input.type,
+        existingVote,
+      );
+
+      return await Lineup.findByIdAndUpdate(
+        input.lineupId,
+        {
+          $inc: { totalVotes: amountToIncrementVotesBy },
+        },
+        { new: true },
+      );
     }),
 
   // Get current user's vote on a lineup
@@ -345,12 +379,18 @@ export const lineupRouter = createTRPCRouter({
       const lineup = await Lineup.findById(input.lineupId);
 
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
       // Can't rate your own lineup
       if (lineup.ownerId.toString() === ctx.session.user.id) {
-        throw new Error("You cannot rate your own lineup.");
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You cannot rate your own lineup.",
+        });
       }
 
       // Upsert rating
@@ -405,11 +445,17 @@ export const lineupRouter = createTRPCRouter({
       );
 
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
       if (lineup.ownerId.toString() !== ctx.session.user.id) {
-        throw new Error("You do not have permission to edit this lineup.");
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to edit this lineup.",
+        });
       }
 
       const originalIds = new Set([
@@ -430,17 +476,20 @@ export const lineupRouter = createTRPCRouter({
       // Check for duplicates
       const uniqueNewIds = new Set(newIds);
       if (uniqueNewIds.size !== 5) {
-        throw new Error(
-          "Duplicate players found. Each position must have a unique player.",
-        );
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Duplicate players found. Each position must have a unique player.",
+        });
       }
 
       // Check that we're only rearranging existing players
       for (const id of newIds) {
         if (!originalIds.has(id)) {
-          throw new Error(
-            "You can only reorder existing players in the lineup.",
-          );
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "You can only reorder existing players in the lineup.",
+          });
         }
       }
 
@@ -478,11 +527,17 @@ export const lineupRouter = createTRPCRouter({
       );
 
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
       if (lineup.ownerId.toString() !== ctx.session.user.id) {
-        throw new Error("You do not have permission to gamble on this lineup.");
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to gamble on this lineup.",
+        });
       }
 
       // Get the current player at the position
@@ -501,7 +556,10 @@ export const lineupRouter = createTRPCRouter({
       const currentPlayer = lineup[positionField] as IPlayer;
 
       if (!currentPlayer?.value) {
-        throw new Error("Current player not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Current player not found.",
+        });
       }
 
       const currentValue = currentPlayer.value;
@@ -516,13 +574,16 @@ export const lineupRouter = createTRPCRouter({
         possibleValues = [currentValue - 1, currentValue, currentValue + 1];
       }
 
+      // Convert string IDs to ObjectIds for proper MongoDB $nin comparison
       const currentLineupPlayerIds = [
         getIdString(lineup.pgId),
         getIdString(lineup.sgId),
         getIdString(lineup.sfId),
         getIdString(lineup.pfId),
         getIdString(lineup.cId),
-      ].filter(Boolean);
+      ]
+        .filter((id): id is string => Boolean(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
 
       // Find eligible players (matching value, not already in lineup)
       const [newPlayer] = await Player.aggregate<IPlayer>([
@@ -536,7 +597,10 @@ export const lineupRouter = createTRPCRouter({
       ]);
 
       if (!newPlayer) {
-        throw new Error("No eligible players available for gambling.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No eligible players available for gambling.",
+        });
       }
 
       // Update the lineup with the new player
@@ -564,24 +628,82 @@ export const lineupRouter = createTRPCRouter({
 
   // Get comments for a lineup
   getComments: publicProcedure
-    .input(z.object({ lineupId: z.string() }))
+    .input(
+      z.object({
+        lineupId: z.string(),
+        limit: z.number().optional(),
+        cursor: z.string().optional(),
+      }),
+    )
     .query(async ({ input }) => {
-      const comments = await Comment.find({ lineupId: input.lineupId })
-        .sort({ createdAt: -1 })
-        .populate("userId", "username name profileImg");
-
-      return comments.map((comment) => {
-        const obj = comment.toObject();
-        return {
-          ...obj,
-          id: obj._id?.toString(),
-          user: obj.userId,
-          thread: obj.thread?.map((t) => ({
-            ...t,
-            id: t._id?.toString(),
-          })),
-        };
-      });
+      // allows for null value of cursor
+      const matchStage: Record<string, unknown> = {
+        lineupId: new mongoose.Types.ObjectId(input.lineupId),
+      };
+      if (input.cursor) {
+        matchStage._id = { $lt: new mongoose.Types.ObjectId(input.cursor) };
+      }
+      const comments = await Comment.aggregate<IComment>([
+        {
+          $match: matchStage,
+        },
+        {
+          $sort: {
+            createdAt: -1,
+          },
+        },
+        { $limit: (input.limit ?? 10) + 1 },
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user",
+            pipeline: [
+              {
+                $project: {
+                  username: 1,
+                  profileImg: 1,
+                  name: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $unwind: "$user",
+        },
+        {
+          $project: {
+            id: { $toString: "$_id" },
+            text: 1,
+            user: 1,
+            totalVotes: 1,
+            votes: 1,
+            createdAt: 1,
+            thread: {
+              $map: {
+                input: "$thread",
+                as: "t",
+                in: {
+                  id: { $toString: "$$t._id" },
+                  text: "$$t.text",
+                  userId: "$$t.userId",
+                  votes: "$$t.votes",
+                  totalVotes: "$$t.totalVotes",
+                },
+              },
+            },
+          },
+        },
+      ]);
+      const hasMore = comments.length > (input.limit ?? 10);
+      if (hasMore) comments.pop();
+      return {
+        comments,
+        hasMore,
+        cursor: comments[comments.length - 1]?._id?.toString(),
+      };
     }),
 
   // Add a comment to a lineup
@@ -596,7 +718,10 @@ export const lineupRouter = createTRPCRouter({
       const lineup = await Lineup.findById(input.lineupId);
 
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
       const comment = await Comment.create({
@@ -615,7 +740,10 @@ export const lineupRouter = createTRPCRouter({
       );
 
       if (!populatedComment) {
-        throw new Error("Failed to create comment.");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to create comment.",
+        });
       }
 
       const obj = populatedComment.toObject();
@@ -642,15 +770,19 @@ export const lineupRouter = createTRPCRouter({
       });
 
       if (!comment) {
-        throw new Error("Comment not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Comment not found.",
+        });
       }
-
+      const userId = new mongoose.Types.ObjectId(ctx.session.user.id);
       comment.thread.push({
         text: input.text,
-        userId: ctx.session.user.id,
+        userId,
         votes: [],
         totalVotes: 0,
-      });
+        // _id, userId, createdAt, updatedAt are automatically generated by Mongoose
+      } as unknown as IThread);
 
       await comment.save();
 
@@ -661,7 +793,10 @@ export const lineupRouter = createTRPCRouter({
       );
 
       if (!populatedComment) {
-        throw new Error("Failed to add reply.");
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to add reply.",
+        });
       }
 
       const obj = populatedComment.toObject();
@@ -692,52 +827,31 @@ export const lineupRouter = createTRPCRouter({
       });
 
       if (!comment) {
-        throw new Error("Comment not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Comment not found.",
+        });
       }
 
       // Can't vote on your own comment
       if (comment.userId.toString() === ctx.session.user.id) {
-        throw new Error("You cannot vote on your own comment.");
-      }
-
-      // Find existing vote
-      const existingVoteIndex = comment.votes.findIndex(
-        (v) => v.userId.toString() === ctx.session.user.id,
-      );
-
-      if (existingVoteIndex !== -1) {
-        const existingVote = comment.votes[existingVoteIndex]!;
-        const isUpvote = input.type === "upvote";
-        const wasUpvote = existingVote.upvote;
-
-        if ((isUpvote && wasUpvote) || (!isUpvote && existingVote.downvote)) {
-          // Same vote type - remove the vote
-          comment.votes.splice(existingVoteIndex, 1);
-        } else {
-          // Different vote type - toggle
-          existingVote.upvote = isUpvote;
-          existingVote.downvote = !isUpvote;
-        }
-      } else {
-        // No existing vote - create new
-        comment.votes.push({
-          userId: ctx.session.user.id,
-          upvote: input.type === "upvote",
-          downvote: input.type === "downvote",
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You cannot vote on your own comment.",
         });
       }
 
-      // Recalculate total votes
-      let total = 0;
-      for (const vote of comment.votes) {
-        if (vote.upvote) total += 1;
-        if (vote.downvote) total -= 1;
-      }
-      comment.totalVotes = total;
+      // Process vote using shared helper
+      const { totalVotes } = processCommentVote(
+        comment.votes,
+        ctx.session.user.id,
+        input.type,
+      );
+      comment.totalVotes = totalVotes;
 
       await comment.save();
 
-      return { totalVotes: total };
+      return { totalVotes };
     }),
 
   // Vote on a thread reply
@@ -757,7 +871,10 @@ export const lineupRouter = createTRPCRouter({
       });
 
       if (!comment) {
-        throw new Error("Comment not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Comment not found.",
+        });
       }
 
       const thread = comment.thread.find(
@@ -765,51 +882,30 @@ export const lineupRouter = createTRPCRouter({
       );
 
       if (!thread) {
-        throw new Error("Thread reply not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Thread reply not found.",
+        });
       }
 
       // Can't vote on your own thread
       if (thread.userId.toString() === ctx.session.user.id) {
-        throw new Error("You cannot vote on your own reply.");
-      }
-
-      // Find existing vote
-      const existingVoteIndex = thread.votes.findIndex(
-        (v) => v.userId.toString() === ctx.session.user.id,
-      );
-
-      if (existingVoteIndex !== -1) {
-        const existingVote = thread.votes[existingVoteIndex]!;
-        const isUpvote = input.type === "upvote";
-        const wasUpvote = existingVote.upvote;
-
-        if ((isUpvote && wasUpvote) || (!isUpvote && existingVote.downvote)) {
-          // Same vote type - remove the vote
-          thread.votes.splice(existingVoteIndex, 1);
-        } else {
-          // Different vote type - toggle
-          existingVote.upvote = isUpvote;
-          existingVote.downvote = !isUpvote;
-        }
-      } else {
-        // No existing vote - create new
-        thread.votes.push({
-          userId: ctx.session.user.id,
-          upvote: input.type === "upvote",
-          downvote: input.type === "downvote",
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You cannot vote on your own reply.",
         });
       }
 
-      // Recalculate total votes for thread
-      let total = 0;
-      for (const vote of thread.votes) {
-        if (vote.upvote) total += 1;
-        if (vote.downvote) total -= 1;
-      }
-      thread.totalVotes = total;
+      // Process vote using shared helper
+      const { totalVotes } = processCommentVote(
+        thread.votes,
+        ctx.session.user.id,
+        input.type,
+      );
+      thread.totalVotes = totalVotes;
 
       await comment.save();
 
-      return { totalVotes: total };
+      return { totalVotes };
     }),
 });

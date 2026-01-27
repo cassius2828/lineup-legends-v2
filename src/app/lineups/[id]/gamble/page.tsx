@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
-import { type Player } from "~/lib/types";
+import { type PlayerType } from "~/lib/types";
+import Image from "next/image";
 
 const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
 const POSITION_LABELS = {
@@ -17,16 +18,21 @@ const POSITION_LABELS = {
 
 export default function GambleLineupPage() {
   const params = useParams();
-  const router = useRouter();
-  const lineupId = params.id as string;
+  const lineupId = typeof params.id === "string" ? params.id : "";
 
-  const [selectedPosition, setSelectedPosition] = useState<typeof POSITIONS[number] | null>(null);
+  const [selectedPosition, setSelectedPosition] = useState<
+    (typeof POSITIONS)[number] | null
+  >(null);
   const [gambleResult, setGambleResult] = useState<{
-    previousPlayer: Player;
-    newPlayer: Player;
+    previousPlayer: PlayerType;
+    newPlayer: PlayerType;
   } | null>(null);
 
-  const { data: lineup, isLoading, refetch } = api.lineup.getById.useQuery({ id: lineupId });
+  const {
+    data: lineup,
+    isLoading,
+    refetch,
+  } = api.lineup.getById.useQuery({ id: lineupId });
 
   const gambleMutation = api.lineup.gamble.useMutation({
     onSuccess: (data) => {
@@ -66,7 +72,10 @@ export default function GambleLineupPage() {
       <main className="min-h-screen bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900">
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-white">Lineup not found</h1>
-          <Link href="/lineups" className="mt-4 text-purple-400 hover:underline">
+          <Link
+            href="/lineups"
+            className="mt-4 text-purple-400 hover:underline"
+          >
             Back to My Lineups
           </Link>
         </div>
@@ -83,8 +92,18 @@ export default function GambleLineupPage() {
             href="/lineups"
             className="mb-2 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Back to My Lineups
           </Link>
@@ -98,7 +117,9 @@ export default function GambleLineupPage() {
 
         {/* Rules */}
         <div className="mb-6 rounded-xl bg-purple-500/10 p-4 text-sm text-white/70">
-          <h3 className="mb-2 font-semibold text-purple-400">Gambling Rules:</h3>
+          <h3 className="mb-2 font-semibold text-purple-400">
+            Gambling Rules:
+          </h3>
           <ul className="list-inside list-disc space-y-1">
             <li>$1 players can only get other $1 players</li>
             <li>$5 players can get $4 or $5 players</li>
@@ -116,10 +137,12 @@ export default function GambleLineupPage() {
             <div className="flex items-center justify-center gap-8">
               {/* Previous Player */}
               <div className="text-center opacity-50">
-                <img
+                <Image
+                  width={96}
+                  height={96}
                   src={gambleResult.previousPlayer.imgUrl}
                   alt={`${gambleResult.previousPlayer.firstName} ${gambleResult.previousPlayer.lastName}`}
-                  className="mx-auto h-24 w-24 rounded-full object-cover grayscale"
+                  className="mx-auto rounded-full object-cover grayscale"
                 />
                 <p className="mt-2 font-semibold text-white line-through">
                   {gambleResult.previousPlayer.firstName}
@@ -135,26 +158,34 @@ export default function GambleLineupPage() {
               {/* New Player */}
               <div className="text-center">
                 <div className="relative">
-                  <img
+                  <Image
+                    width={96}
+                    height={96}
                     src={gambleResult.newPlayer.imgUrl}
                     alt={`${gambleResult.newPlayer.firstName} ${gambleResult.newPlayer.lastName}`}
-                    className="mx-auto h-24 w-24 rounded-full border-4 border-purple-500 object-cover"
+                    className="mx-auto rounded-full border-4 border-purple-500 object-cover"
                   />
-                  {gambleResult.newPlayer.value > gambleResult.previousPlayer.value && (
-                    <span className="absolute -right-2 -top-2 rounded-full bg-emerald-500 px-2 py-1 text-xs font-bold text-white">
-                      +{gambleResult.newPlayer.value - gambleResult.previousPlayer.value}
+                  {gambleResult.newPlayer.value >
+                    gambleResult.previousPlayer.value && (
+                    <span className="absolute -top-2 -right-2 rounded-full bg-emerald-500 px-2 py-1 text-xs font-bold text-white">
+                      +
+                      {gambleResult.newPlayer.value -
+                        gambleResult.previousPlayer.value}
                     </span>
                   )}
-                  {gambleResult.newPlayer.value < gambleResult.previousPlayer.value && (
-                    <span className="absolute -right-2 -top-2 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
-                      {gambleResult.newPlayer.value - gambleResult.previousPlayer.value}
+                  {gambleResult.newPlayer.value <
+                    gambleResult.previousPlayer.value && (
+                    <span className="absolute -top-2 -right-2 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
+                      {gambleResult.newPlayer.value -
+                        gambleResult.previousPlayer.value}
                     </span>
                   )}
                 </div>
                 <p className="mt-2 font-semibold text-white">
-                  {gambleResult.newPlayer.firstName} {gambleResult.newPlayer.lastName}
+                  {gambleResult.newPlayer.firstName}{" "}
+                  {gambleResult.newPlayer.lastName}
                 </p>
-                <p className="text-sm text-purple-400 font-semibold">
+                <p className="text-sm font-semibold text-purple-400">
                   ${gambleResult.newPlayer.value}
                 </p>
               </div>
@@ -221,7 +252,8 @@ export default function GambleLineupPage() {
                 <p className="text-sm text-white/60">
                   Gambling{" "}
                   <strong className="text-white">
-                    {lineup[selectedPosition].firstName} {lineup[selectedPosition].lastName}
+                    {lineup[selectedPosition].firstName}{" "}
+                    {lineup[selectedPosition].lastName}
                   </strong>{" "}
                   (${lineup[selectedPosition].value})
                 </p>
@@ -256,10 +288,10 @@ export default function GambleLineupPage() {
 
         {/* Times gambled */}
         <p className="mt-6 text-center text-sm text-white/40">
-          This lineup has been gambled {lineup.timesGambled} time{lineup.timesGambled !== 1 ? "s" : ""}
+          This lineup has been gambled {lineup.timesGambled} time
+          {lineup.timesGambled !== 1 ? "s" : ""}
         </p>
       </div>
     </main>
   );
 }
-

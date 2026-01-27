@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PlayerSelector } from "~/app/_components/PlayerSelector";
 import { api } from "~/trpc/react";
-import { type Player, getId } from "~/lib/types";
+import { type PlayerType, getId } from "~/lib/types";
 
 export default function CreateLineupPage() {
   const router = useRouter();
@@ -20,15 +20,15 @@ export default function CreateLineupPage() {
     },
   });
 
-  const handleSubmit = (selectedPlayers: Player[]) => {
+  const handleSubmit = (selectedPlayers: PlayerType[]) => {
     if (selectedPlayers.length !== 5) return;
 
     createLineup.mutate({
-      pgId: getId(selectedPlayers[0]!),
-      sgId: getId(selectedPlayers[1]!),
-      sfId: getId(selectedPlayers[2]!),
-      pfId: getId(selectedPlayers[3]!),
-      cId: getId(selectedPlayers[4]!),
+      pgId: getId(selectedPlayers[0]),
+      sgId: getId(selectedPlayers[1]),
+      sfId: getId(selectedPlayers[2]),
+      pfId: getId(selectedPlayers[3]),
+      cId: getId(selectedPlayers[4]),
     });
   };
 
@@ -68,7 +68,7 @@ export default function CreateLineupPage() {
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <div className="text-center">
-              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500 mx-auto" />
+              <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500" />
               <p className="text-white/60">Loading players...</p>
             </div>
           </div>
@@ -89,4 +89,3 @@ export default function CreateLineupPage() {
     </main>
   );
 }
-
