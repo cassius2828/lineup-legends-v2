@@ -2,10 +2,19 @@
 // These types match the Mongoose models and are used across the frontend
 // Note: id and _id are both optional because Mongoose returns _id but we transform to id
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ObjectIdLike = string | { toString(): string } | any;
+import type { IPlayer } from "~/server/models";
+import type mongoose from "mongoose";
 
-export interface Player {
+type ObjectIdLike = string | { toString(): string };
+
+export type PopulatableField =
+  | mongoose.Types.ObjectId
+  | IPlayer
+  | string
+  | null
+  | undefined;
+
+export interface PlayerType {
   id?: string;
   _id?: ObjectIdLike;
   firstName: string;
@@ -14,7 +23,7 @@ export interface Player {
   value: number; // 1-5 representing player cost
 }
 
-export interface User {
+export interface UserType {
   id?: string;
   _id?: ObjectIdLike;
   name: string;
@@ -27,30 +36,30 @@ export interface User {
   bannerImg?: string | null;
 }
 
-export interface Lineup {
+export interface LineupType {
   id?: string;
   _id?: ObjectIdLike;
   createdAt: Date;
   updatedAt: Date;
   featured: boolean;
-  pgId: ObjectIdLike;
-  pg: Player;
-  sgId: ObjectIdLike;
-  sg: Player;
-  sfId: ObjectIdLike;
-  sf: Player;
-  pfId: ObjectIdLike;
-  pf: Player;
-  cId: ObjectIdLike;
-  c: Player;
-  ownerId: ObjectIdLike;
-  owner: User;
+  pgId: string;
+  pg: PlayerType;
+  sgId: string;
+  sg: PlayerType;
+  sfId: string;
+  sf: PlayerType;
+  pfId: string;
+  pf: PlayerType;
+  cId: string;
+  c: PlayerType;
+  ownerId: string;
+  owner: UserType;
   totalVotes: number;
   avgRating: number;
   timesGambled: number;
 }
 
-export interface Vote {
+export interface VoteType {
   id?: string;
   _id?: ObjectIdLike;
   type: "upvote" | "downvote";
@@ -59,7 +68,7 @@ export interface Vote {
   createdAt: Date;
 }
 
-export interface Rating {
+export interface RatingType {
   id?: string;
   _id?: ObjectIdLike;
   value: number; // 1-10
@@ -70,11 +79,13 @@ export interface Rating {
 }
 
 // Helper function to get a string ID from either id or _id
-export function getId(obj: { id?: string; _id?: ObjectIdLike } | null | undefined): string {
-  if (!obj) return '';
+export function getId(
+  obj: { id?: string; _id?: ObjectIdLike } | null | undefined,
+): string {
+  if (!obj) return "";
   if (obj.id) return obj.id;
   if (obj._id) {
-    return typeof obj._id === 'string' ? obj._id : obj._id.toString();
+    return typeof obj._id === "string" ? obj._id : obj._id.toString();
   }
-  return '';
+  return "";
 }

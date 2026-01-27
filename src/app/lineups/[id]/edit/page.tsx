@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
-import { type Player, getId } from "~/lib/types";
+import { type PlayerType, getId } from "~/lib/types";
 
 const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
 const POSITION_LABELS = {
@@ -20,9 +20,13 @@ export default function EditLineupPage() {
   const router = useRouter();
   const lineupId = params.id as string;
 
-  const { data: lineup, isLoading } = api.lineup.getById.useQuery({ id: lineupId });
+  const { data: lineup, isLoading } = api.lineup.getById.useQuery({
+    id: lineupId,
+  });
 
-  const [positions, setPositions] = useState<Record<typeof POSITIONS[number], Player | null>>({
+  const [positions, setPositions] = useState<
+    Record<(typeof POSITIONS)[number], PlayerType | null>
+  >({
     pg: null,
     sg: null,
     sf: null,
@@ -33,11 +37,11 @@ export default function EditLineupPage() {
   useEffect(() => {
     if (lineup) {
       setPositions({
-        pg: lineup.pg as Player,
-        sg: lineup.sg as Player,
-        sf: lineup.sf as Player,
-        pf: lineup.pf as Player,
-        c: lineup.c as Player,
+        pg: lineup.pg,
+        sg: lineup.sg,
+        sf: lineup.sf,
+        pf: lineup.pf,
+        c: lineup.c,
       });
     }
   }, [lineup]);
@@ -51,7 +55,10 @@ export default function EditLineupPage() {
     },
   });
 
-  const handleSwap = (pos1: typeof POSITIONS[number], pos2: typeof POSITIONS[number]) => {
+  const handleSwap = (
+    pos1: (typeof POSITIONS)[number],
+    pos2: (typeof POSITIONS)[number],
+  ) => {
     setPositions((prev) => ({
       ...prev,
       [pos1]: prev[pos2],
@@ -60,7 +67,13 @@ export default function EditLineupPage() {
   };
 
   const handleSubmit = () => {
-    if (!positions.pg || !positions.sg || !positions.sf || !positions.pf || !positions.c) {
+    if (
+      !positions.pg ||
+      !positions.sg ||
+      !positions.sf ||
+      !positions.pf ||
+      !positions.c
+    ) {
       return;
     }
 
@@ -89,7 +102,10 @@ export default function EditLineupPage() {
       <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-white">Lineup not found</h1>
-          <Link href="/lineups" className="mt-4 text-emerald-400 hover:underline">
+          <Link
+            href="/lineups"
+            className="mt-4 text-emerald-400 hover:underline"
+          >
             Back to My Lineups
           </Link>
         </div>
@@ -106,8 +122,18 @@ export default function EditLineupPage() {
             href="/lineups"
             className="mb-2 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Back to My Lineups
           </Link>
@@ -132,7 +158,7 @@ export default function EditLineupPage() {
                   {index + 1}
                 </span>
                 <div className="flex-1">
-                  <span className="text-xs font-bold uppercase text-white/50">
+                  <span className="text-xs font-bold text-white/50 uppercase">
                     {POSITION_LABELS[pos]}
                   </span>
                   <div className="mt-1 flex items-center gap-3">
@@ -157,8 +183,18 @@ export default function EditLineupPage() {
                       onClick={() => handleSwap(pos, POSITIONS[index - 1]!)}
                       className="rounded-lg bg-white/10 p-2 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
                     >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 15l7-7 7 7"
+                        />
                       </svg>
                     </button>
                   )}
@@ -167,8 +203,18 @@ export default function EditLineupPage() {
                       onClick={() => handleSwap(pos, POSITIONS[index + 1]!)}
                       className="rounded-lg bg-white/10 p-2 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
                     >
-                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </button>
                   )}
@@ -198,4 +244,3 @@ export default function EditLineupPage() {
     </main>
   );
 }
-

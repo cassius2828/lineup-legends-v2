@@ -18,7 +18,7 @@ const lineupPopulateFields = [
 ];
 
 // Helper to transform lineup for API response
-function transformLineup(lineup: any) {
+function transformLineup(lineup) {
   if (!lineup) return null;
   const obj = lineup.toObject ? lineup.toObject() : lineup;
   return {
@@ -39,7 +39,9 @@ export const profileRouter = createTRPCRouter({
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
       const user = await User.findById(input.userId)
-        .select("name username image bio profileImg bannerImg socialMedia friends")
+        .select(
+          "name username image bio profileImg bannerImg socialMedia friends",
+        )
         .populate("friends", "username name profileImg")
         .lean();
 
@@ -58,10 +60,12 @@ export const profileRouter = createTRPCRouter({
         ]);
 
       // Get total lineup count
-      const lineupCount = await Lineup.countDocuments({ ownerId: input.userId });
+      const lineupCount = await Lineup.countDocuments({
+        ownerId: input.userId,
+      });
 
       // Transform lineups
-      const transformedLineups = lineups.map(lineup => {
+      const transformedLineups = lineups.map((lineup) => {
         const obj = lineup.toObject();
         return {
           ...obj,
@@ -76,7 +80,7 @@ export const profileRouter = createTRPCRouter({
 
       return {
         ...user,
-        id: (user as any)._id?.toString(),
+        id: user._id?.toString(),
         lineups: transformedLineups,
         _count: {
           lineups: lineupCount,
@@ -87,7 +91,9 @@ export const profileRouter = createTRPCRouter({
   // Get current user's profile
   getMe: protectedProcedure.query(async ({ ctx }) => {
     const user = await User.findById(ctx.session.user.id)
-      .select("name username email image bio profileImg bannerImg socialMedia friends")
+      .select(
+        "name username email image bio profileImg bannerImg socialMedia friends",
+      )
       .populate("friends", "username name profileImg")
       .lean();
 
@@ -95,7 +101,7 @@ export const profileRouter = createTRPCRouter({
 
     return {
       ...user,
-      id: (user as any)._id?.toString(),
+      id: user._id?.toString(),
     };
   }),
 
@@ -114,29 +120,34 @@ export const profileRouter = createTRPCRouter({
             facebook: z.string().optional().nullable(),
           })
           .optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       // Check if username is taken by another user
       if (input.username) {
         const existingUser = await User.findOne({ username: input.username });
 
-        if (existingUser && existingUser._id.toString() !== ctx.session.user.id) {
+        if (
+          existingUser &&
+          existingUser._id.toString() !== ctx.session.user.id
+        ) {
           throw new Error("Username is already taken.");
         }
       }
 
-      const updateData: any = {};
+      const updateData = {};
       if (input.username !== undefined) updateData.username = input.username;
       if (input.bio !== undefined) updateData.bio = input.bio;
-      if (input.profileImg !== undefined) updateData.profileImg = input.profileImg;
+      if (input.profileImg !== undefined)
+        updateData.profileImg = input.profileImg;
       if (input.bannerImg !== undefined) updateData.bannerImg = input.bannerImg;
-      if (input.socialMedia !== undefined) updateData.socialMedia = input.socialMedia;
+      if (input.socialMedia !== undefined)
+        updateData.socialMedia = input.socialMedia;
 
       const updatedUser = await User.findByIdAndUpdate(
         ctx.session.user.id,
         updateData,
-        { new: true }
+        { new: true },
       );
 
       return updatedUser ? updatedUser.toObject() : null;

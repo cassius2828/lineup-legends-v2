@@ -1,11 +1,12 @@
 "use client";
 
-import type { Player } from "~/lib/types";
+import Image from "next/image";
+import type { PlayerType } from "~/lib/types";
 
 interface PlayerCardProps {
-  player: Player;
+  player: PlayerType;
   selected?: boolean;
-  onSelect?: (player: Player) => void;
+  onSelect?: (player: PlayerType) => void;
   disabled?: boolean;
   compact?: boolean;
 }
@@ -34,12 +35,14 @@ export function PlayerCard({
   if (compact) {
     return (
       <div className="flex items-center gap-2 rounded-lg bg-white/5 p-2">
-        <img
+        <Image
+          width={40}
+          height={40}
           src={player.imgUrl}
           alt={`${player.firstName} ${player.lastName}`}
-          className="h-10 w-10 rounded-full object-cover"
+          className="rounded-full object-cover"
         />
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-white">
             {player.firstName} {player.lastName}
           </p>
@@ -66,7 +69,7 @@ export function PlayerCard({
     >
       {/* Value Badge */}
       <span
-        className={`absolute -right-2 -top-2 ${valueColors[player.value]} rounded-full px-2.5 py-1 text-sm font-bold text-white shadow-lg`}
+        className={`absolute -top-2 -right-2 ${valueColors[player.value]} rounded-full px-2.5 py-1 text-sm font-bold text-white shadow-lg`}
       >
         ${player.value}
       </span>
@@ -105,4 +108,3 @@ export function PlayerCard({
     </button>
   );
 }
-
