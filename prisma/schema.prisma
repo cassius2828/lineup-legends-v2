@@ -8,16 +8,16 @@ generator client {
 
 datasource db {
     provider = "mongodb"
-    url      = env("DATABASE_URL")
+    url      = env("MONGODB_URI")
 }
 
 // Basketball player with value 1-5
 model Player {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    id        String @id @default(auto()) @map("_id") @db.ObjectId
     firstName String
     lastName  String
     imgUrl    String
-    value     Int      // 1-5 representing player cost
+    value     Int // 1-5 representing player cost
 
     // Lineup position references
     lineupsAsPg Lineup[] @relation("PgPlayer")
@@ -35,29 +35,29 @@ model Lineup {
     featured  Boolean  @default(false)
 
     // Position references
-    pgId String  @db.ObjectId
-    pg   Player  @relation("PgPlayer", fields: [pgId], references: [id])
+    pgId String @db.ObjectId
+    pg   Player @relation("PgPlayer", fields: [pgId], references: [id])
 
-    sgId String  @db.ObjectId
-    sg   Player  @relation("SgPlayer", fields: [sgId], references: [id])
+    sgId String @db.ObjectId
+    sg   Player @relation("SgPlayer", fields: [sgId], references: [id])
 
-    sfId String  @db.ObjectId
-    sf   Player  @relation("SfPlayer", fields: [sfId], references: [id])
+    sfId String @db.ObjectId
+    sf   Player @relation("SfPlayer", fields: [sfId], references: [id])
 
-    pfId String  @db.ObjectId
-    pf   Player  @relation("PfPlayer", fields: [pfId], references: [id])
+    pfId String @db.ObjectId
+    pf   Player @relation("PfPlayer", fields: [pfId], references: [id])
 
-    cId String  @db.ObjectId
-    c   Player  @relation("CPlayer", fields: [cId], references: [id])
+    cId String @db.ObjectId
+    c   Player @relation("CPlayer", fields: [cId], references: [id])
 
     // Owner reference
     ownerId String @db.ObjectId
     owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
     // Voting and rating aggregates
-    totalVotes   Int     @default(0)
-    avgRating    Float   @default(0)
-    timesGambled Int     @default(0)
+    totalVotes   Int   @default(0)
+    avgRating    Float @default(0)
+    timesGambled Int   @default(0)
 
     // Relations
     votes   Vote[]
@@ -66,14 +66,14 @@ model Lineup {
 
 // Vote on a lineup (upvote or downvote)
 model Vote {
-    id       String   @id @default(auto()) @map("_id") @db.ObjectId
-    type     String   // "upvote" or "downvote"
-    
-    userId   String   @db.ObjectId
-    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    
-    lineupId String   @db.ObjectId
-    lineup   Lineup   @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+    id   String @id @default(auto()) @map("_id") @db.ObjectId
+    type String // "upvote" or "downvote"
+
+    userId String @db.ObjectId
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    lineupId String @db.ObjectId
+    lineup   Lineup @relation(fields: [lineupId], references: [id], onDelete: Cascade)
 
     createdAt DateTime @default(now())
 
@@ -82,14 +82,14 @@ model Vote {
 
 // Rating on a lineup (1-10)
 model Rating {
-    id       String   @id @default(auto()) @map("_id") @db.ObjectId
-    value    Int      // 1-10
-    
-    userId   String   @db.ObjectId
-    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    
-    lineupId String   @db.ObjectId
-    lineup   Lineup   @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+    id    String @id @default(auto()) @map("_id") @db.ObjectId
+    value Int // 1-10
+
+    userId String @db.ObjectId
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    lineupId String @db.ObjectId
+    lineup   Lineup @relation(fields: [lineupId], references: [id], onDelete: Cascade)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -127,22 +127,23 @@ model Session {
 
 model User {
     id            String    @id @default(auto()) @map("_id") @db.ObjectId
-    name          String?
-    username      String?   @unique
-    email         String?   @unique
+    name          String
+    password      String
+    username      String    @unique
+    email         String   @unique
     emailVerified DateTime?
     image         String?
-    
+
     // Profile fields
-    bio           String?   // Max 250 chars
-    profileImg    String?   // Custom profile image URL
-    bannerImg     String?   // Profile banner image URL
-    
-    accounts      Account[]
-    sessions      Session[]
-    lineups       Lineup[]
-    votes         Vote[]
-    ratings       Rating[]
+    bio        String? // Max 250 chars
+    profileImg String? // Custom profile image URL
+    bannerImg  String? // Profile banner image URL
+
+    accounts Account[]
+    sessions Session[]
+    lineups  Lineup[]
+    votes    Vote[]
+    ratings  Rating[]
 }
 
 model VerificationToken {

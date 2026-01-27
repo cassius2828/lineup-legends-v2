@@ -154,7 +154,7 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
               <motion.div variants={buttonVariants}>
                 <Link
                   href="/api/auth/signin"
-                  className="inline-block rounded-none border-2 border-gold bg-gold px-10 py-4 font-stencil text-lg uppercase tracking-wide text-black transition-all duration-300 hover:bg-gold-light hover:glow-gold"
+                  className="inline-block rounded-none border-2 border-gold bg-gold px-10 py-4 font-stencil text-lg uppercase tracking-wide text-black transition-all duration-300 hover:bg-white hover:glow-gold"
                 >
                   Sign In
                 </Link>
