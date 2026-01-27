@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import {
   createTRPCRouter,
+  protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
 import { Player } from "~/server/models";
@@ -13,7 +14,7 @@ export const playerRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const filter = input?.value ? { value: input.value } : {};
       const players = await Player.find(filter).sort({ value: -1 });
-      return players.map(p => p.toObject());
+      return players.map((p) => p.toObject());
     }),
 
   // Get a single player by ID
@@ -27,10 +28,10 @@ export const playerRouter = createTRPCRouter({
   // Get random players grouped by value tier (for lineup creation)
   // Returns 5 random players for each value tier (1-5)
   getRandomByValue: publicProcedure.query(async () => {
-    // MongoDB doesn't have native random sampling easily, 
+    // MongoDB doesn't have native random sampling easily,
     // so we fetch all and sample in JS (same as before)
     const allPlayers = await Player.find();
-    
+
     const playersByValue: Record<number, typeof allPlayers> = {
       1: [],
       2: [],
@@ -49,7 +50,7 @@ export const playerRouter = createTRPCRouter({
     // Shuffle and take 5 from each tier
     const shuffleAndTake = (arr: typeof allPlayers, count: number) => {
       const shuffled = [...arr].sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, count).map(p => p.toObject());
+      return shuffled.slice(0, count).map((p) => p.toObject());
     };
 
     return {
@@ -67,7 +68,7 @@ export const playerRouter = createTRPCRouter({
     .query(async ({ input }) => {
       if (!input.query.trim()) {
         const players = await Player.find().limit(10).sort({ value: -1 });
-        return players.map(p => p.toObject());
+        return players.map((p) => p.toObject());
       }
 
       // Case-insensitive search on firstName or lastName using regex
@@ -79,6 +80,31 @@ export const playerRouter = createTRPCRouter({
         ],
       }).sort({ value: -1 });
 
-      return players.map(p => p.toObject());
+      return players.map((p) => p.toObject());
+    }),
+
+  // Update a player (admin only - should add proper auth check)
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        firstName: z.string().min(1).max(50),
+        lastName: z.string().min(1).max(50),
+        value: z.number().min(1).max(5),
+        imgUrl: z.string().url(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const { id, ...updateData } = input;
+
+      const updatedPlayer = await Player.findByIdAndUpdate(id, updateData, {
+        new: true,
+      });
+
+      if (!updatedPlayer) {
+        throw new Error("Player not found");
+      }
+
+      return updatedPlayer.toObject();
     }),
 });
