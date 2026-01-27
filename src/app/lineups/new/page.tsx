@@ -24,51 +24,43 @@ export default function CreateLineupPage() {
     if (selectedPlayers.length !== 5) return;
 
     createLineup.mutate({
-      pgId: getId(selectedPlayers[0]!),
-      sgId: getId(selectedPlayers[1]!),
-      sfId: getId(selectedPlayers[2]!),
-      pfId: getId(selectedPlayers[3]!),
-      cId: getId(selectedPlayers[4]!),
+      pgId: getId(selectedPlayers[0]),
+      sgId: getId(selectedPlayers[1]),
+      sfId: getId(selectedPlayers[2]),
+      pfId: getId(selectedPlayers[3]),
+      cId: getId(selectedPlayers[4]),
     });
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <main className="min-h-screen bg-[#0a0a1a]">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <Link
-              href="/lineups"
-              className="mb-2 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-              Back to My Lineups
-            </Link>
-            <h1 className="text-3xl font-bold text-white">Create New Lineup</h1>
-            <p className="mt-1 text-white/60">
-              Select 5 players within your $15 budget
-            </p>
-          </div>
-        </div>
+        {/* Back Link */}
+        <Link
+          href="/lineups"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
+        >
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          Back to My Lineups
+        </Link>
 
         {/* Player Selector */}
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <div className="text-center">
-              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500 mx-auto" />
+              <div className="border-t-gold mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20" />
               <p className="text-white/60">Loading players...</p>
             </div>
           </div>
@@ -89,4 +81,3 @@ export default function CreateLineupPage() {
     </main>
   );
 }
-
