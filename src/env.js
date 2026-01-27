@@ -16,7 +16,7 @@ export const env = createEnv({
     AUTH_GOOGLE_CLIENT_SECRET: z.string(),
 
     // Database (sensitive)
-    DATABASE_URL: z.string().url(),
+    MONGODB_URI: z.string().url(),
 
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -50,7 +50,7 @@ export const env = createEnv({
     AUTH_GOOGLE_CLIENT_SECRET: process.env.AUTH_GOOGLE_CLIENT_SECRET,
 
     // Database (server-only)
-    DATABASE_URL: process.env.DATABASE_URL,
+    MONGODB_URI: process.env.MONGODB_URI,
     NODE_ENV: process.env.NODE_ENV,
 
     // AWS S3 (server-only - credentials never exposed to client)

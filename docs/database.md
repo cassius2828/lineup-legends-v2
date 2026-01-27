@@ -6,20 +6,57 @@ Lineup Legends v2 uses **Prisma ORM** with **MongoDB** as the database. This doc
 
 The database stores:
 
-- **Players**: Basketball players with value tiers
-- **Lineups**: User-created fantasy lineups
-- **Users**: Authenticated user accounts
+- **Players**: Basketball players with value tiers (1-5)
+- **Lineups**: User-created fantasy lineups with 5 positions
+- **Users**: Authenticated user accounts with profile customization
+- **Votes**: Upvotes/downvotes on lineups
+- **Ratings**: 1-10 ratings on lineups
 - **Auth data**: Sessions, accounts, verification tokens (managed by NextAuth)
 
 ## Environment Variables
 
 ```env
-# MongoDB connection string
+# MongoDB connection string (used by Prisma)
 DATABASE_URL="mongodb://localhost:27017/lineup-legends"
+
+# MongoDB connection string (validated by app at runtime)
+MONGODB_URI="mongodb://localhost:27017/lineup-legends"
 
 # For MongoDB Atlas (cloud)
 DATABASE_URL="mongodb+srv://user:password@cluster.mongodb.net/lineup-legends?retryWrites=true&w=majority"
+MONGODB_URI="mongodb+srv://user:password@cluster.mongodb.net/lineup-legends?retryWrites=true&w=majority"
 ```
+
+### Type-Safe Environment Validation
+
+Environment variables are validated using `@t3-oss/env-nextjs` in `src/env.js`:
+
+```javascript
+import { createEnv } from "@t3-oss/env-nextjs";
+import { z } from "zod";
+
+export const env = createEnv({
+  server: {
+    MONGODB_URI: z.string().url(),
+    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    // ... other variables
+  },
+  // ...
+});
+```
+
+Additionally, `src/lib/ensureEnvs.ts` provides runtime validation:
+
+```typescript
+export function ensureEnvs() {
+  if (!env.MONGODB_URI) {
+    throw new Error("MONGODB_URI is not set");
+  }
+  // ... other checks
+}
+```
+
+This ensures the app fails fast if required database configuration is missing.
 
 ## Schema Location
 
@@ -72,7 +109,7 @@ model Player {
 
 ### Lineup
 
-Fantasy lineups with 5 players:
+Fantasy lineups with 5 players and engagement tracking:
 
 ```prisma
 model Lineup {
@@ -100,6 +137,15 @@ model Lineup {
     // Owner reference
     ownerId String @db.ObjectId
     owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+    // Voting and rating aggregates
+    totalVotes   Int     @default(0)
+    avgRating    Float   @default(0)
+    timesGambled Int     @default(0)
+
+    // Relations
+    votes   Vote[]
+    ratings Rating[]
 }
 ```
 
@@ -108,24 +154,94 @@ model Lineup {
 - Each position has its own relation for type safety
 - `onDelete: Cascade` removes lineups when user is deleted
 - `@updatedAt` automatically tracks modification time
+- Voting/rating aggregates are denormalized for query performance
+
+### Vote
+
+User votes on lineups (upvote/downvote):
+
+```prisma
+model Vote {
+    id       String   @id @default(auto()) @map("_id") @db.ObjectId
+    type     String   // "upvote" or "downvote"
+    
+    userId   String   @db.ObjectId
+    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    
+    lineupId String   @db.ObjectId
+    lineup   Lineup   @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+
+    @@unique([userId, lineupId])
+}
+```
+
+**Notes:**
+
+- Compound unique constraint prevents duplicate votes
+- `type` is either "upvote" or "downvote"
+- Cascade delete removes votes when user or lineup is deleted
+
+### Rating
+
+User ratings on lineups (1-10 scale):
+
+```prisma
+model Rating {
+    id       String   @id @default(auto()) @map("_id") @db.ObjectId
+    value    Int      // 1-10
+    
+    userId   String   @db.ObjectId
+    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    
+    lineupId String   @db.ObjectId
+    lineup   Lineup   @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@unique([userId, lineupId])
+}
+```
+
+**Notes:**
+
+- Compound unique constraint ensures one rating per user per lineup
+- `value` is constrained to 1-10 range (validated at application level)
+- `@updatedAt` tracks when rating was last changed
 
 ### User
 
-User accounts (managed by NextAuth):
+User accounts with profile customization (managed by NextAuth):
 
 ```prisma
 model User {
     id            String    @id @default(auto()) @map("_id") @db.ObjectId
     name          String?
-    username      String?
+    username      String?   @unique
     email         String?   @unique
     emailVerified DateTime?
     image         String?
+    
+    // Profile fields
+    bio           String?   // Max 250 chars
+    profileImg    String?   // Custom profile image URL
+    bannerImg     String?   // Profile banner image URL
+    
     accounts      Account[]
     sessions      Session[]
     lineups       Lineup[]
+    votes         Vote[]
+    ratings       Rating[]
 }
 ```
+
+**Notes:**
+
+- `username` is unique for user profiles
+- Profile fields (`bio`, `profileImg`, `bannerImg`) allow user customization
+- Relations to `Vote` and `Rating` track user engagement
 
 ### Account
 
@@ -186,14 +302,13 @@ model VerificationToken {
 The Prisma client is instantiated in `src/server/db.ts`:
 
 ```typescript
-import { PrismaClient } from "~/generated/prisma";
+import { env } from "~/env";
+import { PrismaClient } from "../../generated/prisma";
 
 const createPrismaClient = () =>
   new PrismaClient({
     log:
-      process.env.NODE_ENV === "development"
-        ? ["query", "error", "warn"]
-        : ["error"],
+      env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
 
 const globalForPrisma = globalThis as unknown as {
@@ -202,13 +317,15 @@ const globalForPrisma = globalThis as unknown as {
 
 export const db = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+if (env.NODE_ENV !== "production") globalForPrisma.prisma = db;
 ```
 
 **Notes:**
 
-- Singleton pattern prevents multiple clients in development
-- Query logging enabled in development mode
+- Uses type-safe `env` from `~/env` instead of `process.env` for environment variable access
+- Singleton pattern prevents multiple clients in development (stored in `globalThis`)
+- Query logging (`query`, `error`, `warn`) enabled in development mode
+- Only error logging in production for performance
 
 ## Common Operations
 

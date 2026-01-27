@@ -6,10 +6,11 @@ Lineup Legends v2 uses **NextAuth.js v5** (Auth.js) for secure OAuth-based authe
 
 The authentication system provides:
 
-- OAuth provider support (Discord configured by default)
+- OAuth provider support (Google configured by default)
 - Session management with database persistence
 - Protected API routes via tRPC middleware
 - Server-side session access in React Server Components
+- Runtime environment validation via `ensureEnvs()`
 
 ## Configuration
 
@@ -19,11 +20,19 @@ The authentication configuration uses the Prisma adapter to persist sessions and
 
 ```typescript
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import DiscordProvider from "next-auth/providers/discord";
+import GoogleProvider from "next-auth/providers/google";
+import { env } from "~/env";
+import { ensureEnvs } from "~/lib/ensureEnvs";
 import { db } from "~/server/db";
 
+ensureEnvs();
 export const authConfig = {
-  providers: [DiscordProvider],
+  providers: [
+    GoogleProvider({
+      clientId: env.AUTH_GOOGLE_CLIENT_ID,
+      clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET,
+    }),
+  ],
   adapter: PrismaAdapter(db),
   callbacks: {
     session: ({ session, user }) => ({
@@ -36,6 +45,28 @@ export const authConfig = {
   },
 } satisfies NextAuthConfig;
 ```
+
+### Auth Module (`src/server/auth/index.ts`)
+
+The auth module exports cached session helpers and handlers:
+
+```typescript
+import NextAuth from "next-auth";
+import { cache } from "react";
+import { authConfig } from "./config";
+
+const { auth: uncachedAuth, handlers, signIn, signOut } = NextAuth(authConfig);
+
+const auth = cache(uncachedAuth);
+
+export { auth, handlers, signIn, signOut };
+```
+
+**Exports:**
+- `auth`: Cached function for server-side session access
+- `handlers`: GET/POST handlers for the NextAuth API route
+- `signIn`: Function to initiate sign in
+- `signOut`: Function to sign out
 
 ### Session Callback
 
@@ -53,12 +84,15 @@ session.user.image; // Avatar URL from OAuth provider
 Required environment variables for authentication:
 
 ```env
-# Secret for encrypting session tokens
+# Secret for encrypting session tokens (required in production)
 AUTH_SECRET="your-generated-secret"
 
-# Discord OAuth credentials
-AUTH_GOOGLE_CLIENT_ID="your-discord-client-id"
-AUTH_GOOGLE_CLIENT_SECRET="your-discord-client-secret"
+# Google OAuth credentials
+AUTH_GOOGLE_CLIENT_ID="your-google-client-id"
+AUTH_GOOGLE_CLIENT_SECRET="your-google-client-secret"
+
+# MongoDB connection string (validated by ensureEnvs)
+MONGODB_URI="mongodb://localhost:27017/lineup-legends"
 ```
 
 Generate a secret with:
@@ -67,13 +101,37 @@ Generate a secret with:
 npx auth secret
 ```
 
-### Setting Up Discord OAuth
+### Setting Up Google OAuth
 
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create a new application
-3. Navigate to OAuth2 → General
-4. Add redirect URI: `http://localhost:3000/api/auth/callback/discord`
-5. Copy the Client ID and Client Secret to your `.env` file
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Navigate to **APIs & Services → Credentials**
+4. Click **Create Credentials → OAuth client ID**
+5. Select **Web application** as the application type
+6. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+7. Copy the Client ID and Client Secret to your `.env` file
+
+### Environment Validation (`src/lib/ensureEnvs.ts`)
+
+The `ensureEnvs()` function validates required environment variables at runtime:
+
+```typescript
+import { env } from "~/env";
+
+export function ensureEnvs() {
+  if (!env.AUTH_GOOGLE_CLIENT_ID) {
+    throw new Error("AUTH_GOOGLE_CLIENT_ID is not set");
+  }
+  if (!env.AUTH_GOOGLE_CLIENT_SECRET) {
+    throw new Error("AUTH_GOOGLE_CLIENT_SECRET is not set");
+  }
+  if (!env.MONGODB_URI) {
+    throw new Error("MONGODB_URI is not set");
+  }
+}
+```
+
+This function is called in `src/server/auth/config.ts` before the auth configuration is created, ensuring the app fails fast if required variables are missing.
 
 ## Usage
 
@@ -144,15 +202,25 @@ Authentication requires these models (managed by NextAuth):
 model User {
     id            String    @id @default(auto()) @map("_id") @db.ObjectId
     name          String?
-    username      String?
+    username      String?   @unique
     email         String?   @unique
     emailVerified DateTime?
     image         String?
+    
+    // Profile fields
+    bio           String?   // Max 250 chars
+    profileImg    String?   // Custom profile image URL
+    bannerImg     String?   // Profile banner image URL
+    
     accounts      Account[]
     sessions      Session[]
     lineups       Lineup[]
+    votes         Vote[]
+    ratings       Rating[]
 }
 ```
+
+See [Database Documentation](./database.md) for full schema details including Vote and Rating models.
 
 ### Account
 
@@ -191,14 +259,20 @@ model Session {
 
 ## Auth Routes
 
-NextAuth provides built-in routes:
+NextAuth provides built-in routes, configured in `src/app/api/auth/[...nextauth]/route.ts`:
 
-| Route                    | Purpose                     |
-| ------------------------ | --------------------------- |
-| `/api/auth/signin`       | Sign in page                |
-| `/api/auth/signout`      | Sign out page               |
-| `/api/auth/callback/:id` | OAuth callback (e.g., Discord) |
-| `/api/auth/session`      | Get current session (JSON)  |
+```typescript
+import { handlers } from "~/server/auth";
+
+export const { GET, POST } = handlers;
+```
+
+| Route                      | Purpose                       |
+| -------------------------- | ----------------------------- |
+| `/api/auth/signin`         | Sign in page                  |
+| `/api/auth/signout`        | Sign out page                 |
+| `/api/auth/callback/google`| Google OAuth callback         |
+| `/api/auth/session`        | Get current session (JSON)    |
 
 ## Adding More Providers
 
@@ -208,20 +282,30 @@ To add additional OAuth providers:
 2. Add to `authConfig.providers`:
 
 ```typescript
+import DiscordProvider from "next-auth/providers/discord";
 import GitHubProvider from "next-auth/providers/github";
-import GoogleProvider from "next-auth/providers/google";
 
 export const authConfig = {
   providers: [
-    DiscordProvider,
-    GitHubProvider,
-    GoogleProvider,
+    GoogleProvider({
+      clientId: env.AUTH_GOOGLE_CLIENT_ID,
+      clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET,
+    }),
+    GitHubProvider({
+      clientId: env.AUTH_GITHUB_CLIENT_ID,
+      clientSecret: env.AUTH_GITHUB_CLIENT_SECRET,
+    }),
+    DiscordProvider({
+      clientId: env.AUTH_DISCORD_CLIENT_ID,
+      clientSecret: env.AUTH_DISCORD_CLIENT_SECRET,
+    }),
   ],
   // ...
 };
 ```
 
 3. Add the required environment variables for each provider
+4. Update `ensureEnvs()` to validate the new environment variables
 
 ## Type Safety
 

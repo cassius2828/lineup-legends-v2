@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
+import Image from "next/image";
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -35,10 +36,10 @@ export default function EditProfilePage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateProfile.mutate({
-      username: username || undefined,
-      bio: bio || undefined,
-      profileImg: profileImg || null,
-      bannerImg: bannerImg || null,
+      username: username ?? undefined,
+      bio: bio ?? undefined,
+      profileImg: profileImg ?? null,
+      bannerImg: bannerImg ?? null,
     });
   };
 
@@ -112,14 +113,16 @@ export default function EditProfilePage() {
             />
             <div className="relative -mt-12 px-6 pb-6">
               <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-slate-800 bg-slate-700">
-                <img
-                  src={profileImg || profile.image || "/default-avatar.png"}
+                <Image
+                  width={96}
+                  height={96}
+                  src={profileImg ?? profile.image ?? "/default-avatar.png"}
                   alt="Preview"
-                  className="h-full w-full object-cover"
+                  className="object-cover"
                 />
               </div>
               <p className="mt-2 font-semibold text-white">
-                {username || profile.name || "Your Name"}
+                {username ?? profile.name ?? "Your Name"}
               </p>
               {bio && <p className="text-sm text-white/60">{bio}</p>}
             </div>

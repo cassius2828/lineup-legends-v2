@@ -7,7 +7,7 @@ export function ensureEnvs() {
     if (!env.AUTH_GOOGLE_CLIENT_SECRET) {
         throw new Error("AUTH_GOOGLE_CLIENT_SECRET is not set");
     }
-    if (!env.DATABASE_URL) {
-        throw new Error("DATABASE_URL is not set");
+    if (!env.MONGODB_URI) {
+        throw new Error("MONGODB_URI is not set");
     }
 }
