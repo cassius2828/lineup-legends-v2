@@ -2,10 +2,9 @@
 // These types match the Mongoose models and are used across the frontend
 // Note: id and _id are both optional because Mongoose returns _id but we transform to id
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ObjectIdLike = string | { toString(): string } | any;
+type ObjectIdLike = string | { toString(): string };
 
-export interface Player {
+export interface PlayerType {
   id?: string;
   _id?: ObjectIdLike;
   firstName: string;
@@ -14,7 +13,7 @@ export interface Player {
   value: number; // 1-5 representing player cost
 }
 
-export interface User {
+export interface UserType {
   id?: string;
   _id?: ObjectIdLike;
   name: string;
@@ -27,30 +26,30 @@ export interface User {
   bannerImg?: string | null;
 }
 
-export interface Lineup {
+export interface LineupType {
   id?: string;
   _id?: ObjectIdLike;
   createdAt: Date;
   updatedAt: Date;
   featured: boolean;
   pgId: ObjectIdLike;
-  pg: Player;
+  pg: PlayerType;
   sgId: ObjectIdLike;
-  sg: Player;
+  sg: PlayerType;
   sfId: ObjectIdLike;
-  sf: Player;
+  sf: PlayerType;
   pfId: ObjectIdLike;
-  pf: Player;
+  pf: PlayerType;
   cId: ObjectIdLike;
-  c: Player;
+  c: PlayerType;
   ownerId: ObjectIdLike;
-  owner: User;
+  owner: UserType;
   totalVotes: number;
   avgRating: number;
   timesGambled: number;
 }
 
-export interface Vote {
+export interface VoteType {
   id?: string;
   _id?: ObjectIdLike;
   type: "upvote" | "downvote";
@@ -59,7 +58,7 @@ export interface Vote {
   createdAt: Date;
 }
 
-export interface Rating {
+export interface RatingType {
   id?: string;
   _id?: ObjectIdLike;
   value: number; // 1-10

@@ -94,5 +94,8 @@ LineupSchema.virtual("owner", {
 LineupSchema.set("toJSON", { virtuals: true });
 LineupSchema.set("toObject", { virtuals: true });
 
+// add index on owner, avgRating, totalVotes
+LineupSchema.index({ ownerId: 1, avgRating: 1, totalVotes: 1 })
+
 export const Lineup: Model<ILineup> =
   (mongoose.models.Lineup as Model<ILineup> | undefined) ?? mongoose.model<ILineup>("Lineup", LineupSchema);
