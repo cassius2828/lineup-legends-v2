@@ -37,6 +37,7 @@ export interface UserType {
 }
 
 export interface LineupType {
+  _doc: {
   id?: string;
   _id?: ObjectIdLike;
   createdAt: Date;
@@ -55,8 +56,9 @@ export interface LineupType {
   ownerId: string;
   owner: UserType;
   totalVotes: number;
-  avgRating: number;
-  timesGambled: number;
+    avgRating: number;
+    timesGambled: number;
+  }
 }
 
 export interface VoteType {

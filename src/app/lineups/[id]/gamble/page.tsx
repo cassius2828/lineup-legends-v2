@@ -59,9 +59,9 @@ export default function GambleLineupPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900">
+      <main className="min-h-screen bg-gradient-to-b from-slate-900 via-green-900/20 to-slate-900">
         <div className="flex h-64 items-center justify-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-purple-500" />
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-green-500" />
         </div>
       </main>
     );
@@ -69,12 +69,12 @@ export default function GambleLineupPage() {
 
   if (!lineup) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900">
+      <main className="min-h-screen bg-gradient-to-b from-slate-900 via-green-900/20 to-slate-900">
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-white">Lineup not found</h1>
           <Link
             href="/lineups"
-            className="mt-4 text-purple-400 hover:underline"
+            className="mt-4 text-green-400 hover:underline"
           >
             Back to My Lineups
           </Link>
@@ -84,7 +84,7 @@ export default function GambleLineupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-purple-900/20 to-slate-900">
+    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-green-900/20 to-slate-900">
       <div className="container mx-auto max-w-2xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -108,7 +108,7 @@ export default function GambleLineupPage() {
             Back to My Lineups
           </Link>
           <h1 className="text-3xl font-bold text-white">
-            <span className="text-purple-400">Gamble</span> a Player
+            <span className="text-green-400">Gamble</span> a Player
           </h1>
           <p className="mt-1 text-white/60">
             Trade a player for a random player of similar value
@@ -116,8 +116,8 @@ export default function GambleLineupPage() {
         </div>
 
         {/* Rules */}
-        <div className="mb-6 rounded-xl bg-purple-500/10 p-4 text-sm text-white/70">
-          <h3 className="mb-2 font-semibold text-purple-400">
+        <div className="mb-6 rounded-xl bg-green-500/10 p-4 text-sm text-white/70">
+          <h3 className="mb-2 font-semibold text-green-400">
             Gambling Rules:
           </h3>
           <ul className="list-inside list-disc space-y-1">
@@ -153,7 +153,7 @@ export default function GambleLineupPage() {
               </div>
 
               {/* Arrow */}
-              <div className="text-4xl text-purple-400">→</div>
+              <div className="text-4xl text-green-400">→</div>
 
               {/* New Player */}
               <div className="text-center">
@@ -163,7 +163,7 @@ export default function GambleLineupPage() {
                     height={96}
                     src={gambleResult.newPlayer.imgUrl}
                     alt={`${gambleResult.newPlayer.firstName} ${gambleResult.newPlayer.lastName}`}
-                    className="mx-auto rounded-full border-4 border-purple-500 object-cover"
+                    className="mx-auto rounded-full border-4 border-green-500 object-cover"
                   />
                   {gambleResult.newPlayer.value >
                     gambleResult.previousPlayer.value && (
@@ -185,7 +185,7 @@ export default function GambleLineupPage() {
                   {gambleResult.newPlayer.firstName}{" "}
                   {gambleResult.newPlayer.lastName}
                 </p>
-                <p className="text-sm font-semibold text-purple-400">
+                <p className="text-sm font-semibold text-green-400">
                   ${gambleResult.newPlayer.value}
                 </p>
               </div>
@@ -194,7 +194,7 @@ export default function GambleLineupPage() {
             <div className="mt-6 flex gap-3">
               <button
                 onClick={handleReset}
-                className="flex-1 rounded-lg bg-purple-500 py-3 font-semibold text-white transition-colors hover:bg-purple-400"
+                className="flex-1 rounded-lg bg-green-500 py-3 font-semibold text-white transition-colors hover:bg-green-400"
               >
                 Gamble Again
               </button>
@@ -224,7 +224,7 @@ export default function GambleLineupPage() {
                       onClick={() => setSelectedPosition(pos)}
                       className={`rounded-xl p-3 transition-all ${
                         isSelected
-                          ? "bg-purple-500/30 ring-2 ring-purple-500"
+                          ? "bg-green-500/30 ring-2 ring-green-500"
                           : "bg-slate-800/80 hover:bg-slate-800"
                       }`}
                     >
@@ -239,7 +239,7 @@ export default function GambleLineupPage() {
                       <p className="mt-2 truncate text-sm font-medium text-white">
                         {player.firstName}
                       </p>
-                      <p className="text-xs text-purple-400">${player.value}</p>
+                      <p className="text-xs text-green-400">${player.value}</p>
                     </button>
                   );
                 })}
@@ -278,7 +278,7 @@ export default function GambleLineupPage() {
               <button
                 onClick={handleGamble}
                 disabled={!selectedPosition || gambleMutation.isPending}
-                className="flex-1 rounded-lg bg-purple-500 py-3 font-semibold text-white transition-colors hover:bg-purple-400 disabled:opacity-50"
+                className="flex-1 rounded-lg bg-green-500 py-3 font-semibold text-white transition-colors hover:bg-green-400 disabled:opacity-50"
               >
                 {gambleMutation.isPending ? "Gambling..." : "🎲 Gamble!"}
               </button>

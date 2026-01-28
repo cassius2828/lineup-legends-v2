@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import type { PlayerType } from "~/lib/types";
 
 interface PlayerCardProps {
@@ -41,27 +40,21 @@ export function PlayerCard({
       onSelect(player);
     }
   };
-
+  console.log(player, " <-- player");
   if (compact) {
     return (
-      <div className="flex items-center gap-2 rounded-lg bg-white/5 p-2">
-        <Image
-          width={40}
-          height={40}
-          src={player.imgUrl}
-          alt={`${player.firstName} ${player.lastName}`}
-          className="rounded-full object-cover"
+      <div className="flex flex-col items-center gap-2 p-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={player?.imgUrl}
+          alt={`${player?.firstName} ${player?.lastName}`}
+          className={`h-24 w-24 rounded-full object-cover ${valueShadows[player?.value]}`}
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-white">
-            {player.firstName} {player.lastName}
+            {player?.firstName} {player?.lastName}
           </p>
         </div>
-        <span
-          className={`${valueColors[player.value]} rounded-full px-2 py-0.5 text-xs font-bold text-white`}
-        >
-          ${player.value}
-        </span>
       </div>
     );
   }
@@ -81,6 +74,7 @@ export function PlayerCard({
           selected ? "ring-2 ring-emerald-400" : ""
         } ${disabled && !selected ? "cursor-not-allowed opacity-50 grayscale" : "cursor-pointer hover:scale-105"}`}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={player.imgUrl}
           alt={`${player.firstName} ${player.lastName}`}
