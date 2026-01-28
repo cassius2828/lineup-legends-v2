@@ -53,8 +53,7 @@ export const playerRouter = createTRPCRouter({
     .input(z.object({ query: z.string() }))
     .query(async ({ input }) => {
       if (!input.query.trim()) {
-        const players = await Player.find().limit(10).sort({ value: -1 });
-        return players.map((p) => p.toObject());
+        return await Player.find().limit(10).sort({ value: -1 }).lean();
       }
 
       // Case-insensitive search on firstName or lastName using regex
