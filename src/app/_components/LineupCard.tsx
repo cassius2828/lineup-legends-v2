@@ -51,17 +51,17 @@ export function LineupCard({
   userVote,
 }: LineupCardProps) {
   const totalValue =
-    lineup.pg.value +
-    lineup.sg.value +
-    lineup.sf.value +
-    lineup.pf.value +
-    lineup.c.value;
+    lineup._doc.pgId?.value +
+    lineup._doc.sgId?.value +
+    lineup._doc.sfId?.value +
+    lineup._doc.pfId?.value +
+    lineup._doc.cId?.value;
 
-  const relativeTime = formatDistanceToNow(new Date(lineup.createdAt), {
+  const relativeTime = formatDistanceToNow(new Date(lineup._doc.createdAt), {
     addSuffix: true,
   });
 
-  const canVote = currentUserId && currentUserId !== lineup.ownerId;
+  const canVote = currentUserId && currentUserId !== lineup._doc.ownerId;
 
   return (
     <div className="relative rounded-2xl bg-gradient-to-br from-slate-800/90 to-slate-900/90 p-6 shadow-xl backdrop-blur-sm">
@@ -70,24 +70,28 @@ export function LineupCard({
         <div className="flex items-center gap-3">
           {showOwner && lineup.owner && (
             <Link
-              href={`/profile/${lineup.ownerId}`}
+              href={`/profile/${lineup._doc.ownerId}`}
               className="flex items-center gap-2 transition-opacity hover:opacity-80"
             >
               {lineup.owner.image && (
                 <Image
                   width={32}
                   height={32}
-                  src={lineup.owner.image}
-                  alt={lineup.owner.name ?? "User"}
+                  src={
+                    lineup._doc.ownerId?.image ??
+                    lineup._doc.ownerId.profileImg ??
+                    ""
+                  }
+                  alt={lineup._doc.ownerId?.name ?? "User"}
                   className="rounded-full"
                 />
               )}
               <span className="font-medium text-white/90 hover:text-white">
-                {lineup.owner.name ?? lineup.owner.username ?? "Anonymous"}
+                {lineup._doc.ownerId?.name ?? lineup._doc.ownerId?.username ?? "Anonymous"}
               </span>
             </Link>
           )}
-          {lineup.featured && (
+          {lineup._doc.featured && (
             <span className="bg-gold/20 text-gold rounded-full px-2 py-0.5 text-xs font-semibold">
               Featured
             </span>
@@ -107,7 +111,9 @@ export function LineupCard({
         {onVote && canVote ? (
           <div className="flex items-center gap-1">
             <button
-              onClick={() => onVote(getId(lineup), "upvote")}
+              onClick={() =>
+                onVote(lineup._doc._id?.toString() ?? "", "upvote")
+              }
               className={`rounded p-1 transition-colors ${
                 userVote === "upvote"
                   ? "bg-emerald-500/30 text-emerald-400"
@@ -124,17 +130,19 @@ export function LineupCard({
             </button>
             <span
               className={`min-w-[2rem] text-center font-semibold ${
-                lineup.totalVotes > 0
+                lineup._doc.totalVotes > 0
                   ? "text-emerald-400"
-                  : lineup.totalVotes < 0
+                  : lineup._doc.totalVotes < 0
                     ? "text-red-400"
                     : "text-white/60"
               }`}
             >
-              {lineup.totalVotes}
+              {lineup._doc.totalVotes}
             </span>
             <button
-              onClick={() => onVote(getId(lineup), "downvote")}
+              onClick={() =>
+                onVote(lineup._doc._id?.toString() ?? "", "downvote")
+              }
               className={`rounded p-1 transition-colors ${
                 userVote === "downvote"
                   ? "bg-red-500/30 text-red-400"
@@ -159,7 +167,7 @@ export function LineupCard({
                 clipRule="evenodd"
               />
             </svg>
-            <span className="font-medium">{lineup.totalVotes}</span>
+            <span className="font-medium">{lineup._doc.totalVotes}</span>
           </div>
         )}
 
@@ -173,14 +181,14 @@ export function LineupCard({
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
           </svg>
           <span className="font-medium">
-            {lineup.avgRating > 0 ? lineup.avgRating.toFixed(1) : "-"}
+            {lineup._doc.avgRating > 0 ? lineup._doc.avgRating.toFixed(1) : "-"}
           </span>
         </div>
 
         {/* Rate Link (for non-owners) */}
         {canVote && (
           <Link
-            href={`/lineups/${getId(lineup)}/rate`}
+            href={`/lineups/${lineup._doc._id?.toString() ?? ""}/rate`}
             className="text-xs text-white/50 hover:text-white/80"
           >
             Rate
@@ -188,7 +196,7 @@ export function LineupCard({
         )}
 
         {/* Gambled count */}
-        {lineup.timesGambled > 0 && (
+        {lineup._doc.timesGambled > 0 && (
           <div className="flex items-center gap-1 text-white/40">
             <svg
               className="h-4 w-4"
@@ -203,19 +211,19 @@ export function LineupCard({
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
               />
             </svg>
-            <span className="text-xs">{lineup.timesGambled}x</span>
+            <span className="text-xs">{lineup._doc.timesGambled}x</span>
           </div>
         )}
       </div>
 
       {/* Players Grid */}
       <div className="grid grid-cols-5 gap-2">
-        {(["pg", "sg", "sf", "pf", "c"] as const).map((position) => (
+        {(["pgId", "sgId", "sfId", "pfId", "cId"] as const).map((position) => (
           <div key={position} className="flex flex-col items-center">
             <span className="mb-1 text-xs font-bold text-white/50 uppercase">
               {positionLabels[position]}
             </span>
-            <PlayerCard player={lineup[position]} compact />
+            <PlayerCard player={lineup._doc[position]} compact />
           </div>
         ))}
       </div>
@@ -224,32 +232,30 @@ export function LineupCard({
       {isOwner && (
         <div className="mt-4 flex flex-wrap justify-end gap-2">
           <Link
-            href={`/lineups/${getId(lineup)}/edit`}
+            href={`/lineups/${lineup._doc._id?.toString() ?? ""}/edit`}
             className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/20"
           >
             Reorder
           </Link>
           <Link
-            href={`/lineups/${getId(lineup)}/gamble`}
-            className="rounded-lg bg-purple-500/20 px-3 py-1.5 text-sm font-medium text-purple-400 transition-colors hover:bg-purple-500/30"
+            href={`/lineups/${lineup._doc._id?.toString() ?? ""}/gamble`}
+            className="rounded-lg bg-green-500/20 px-3 py-1.5 text-sm font-medium text-green-400 transition-colors hover:bg-green-500/30"
           >
             Gamble
           </Link>
           {onToggleFeatured && (
             <button
-              onClick={() => onToggleFeatured(getId(lineup))}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                lineup.featured
-                  ? "bg-gold/20 text-gold hover:bg-gold/30"
-                  : "bg-white/10 text-white/70 hover:bg-white/20"
-              }`}
+              onClick={() =>
+                onToggleFeatured(lineup._doc._id?.toString() ?? "")
+              }
+              className="rounded-lg bg-gold/20 px-3 py-1.5 text-sm font-medium text-gold transition-colors hover:bg-gold/30"
             >
-              {lineup.featured ? "Unfeature" : "Feature"}
+              {lineup._doc.featured ? "Unfeature" : "Feature"}
             </button>
           )}
           {onDelete && (
             <button
-              onClick={() => onDelete(getId(lineup))}
+              onClick={() => onDelete(lineup._doc._id?.toString() ?? "")}
               className="rounded-lg bg-red-500/20 px-3 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30"
             >
               Delete

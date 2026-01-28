@@ -122,7 +122,7 @@ export const lineupRouter = createTRPCRouter({
       const lineups = await Lineup.find({ ownerId: ctx.session.user.id })
         .sort(sortOption)
         .populate(lineupPopulateFields);
-
+console.log(lineups, ' <-- lineups')
       // Get user's votes and ratings for these lineups
       const lineupIds = lineups.map((l) => l._id);
       const userVotes = await Vote.find({
@@ -141,10 +141,10 @@ export const lineupRouter = createTRPCRouter({
       );
 
       return lineups.map((lineup) => {
-        const transformed = transformLineup(lineup);
+        // const transformed = transformLineup(lineup);
         const lineupIdStr = lineup._id.toString();
         return {
-          ...transformed,
+          ...lineup,
           votes: voteMap.has(lineupIdStr) ? [voteMap.get(lineupIdStr)] : [],
           ratings: ratingMap.has(lineupIdStr)
             ? [ratingMap.get(lineupIdStr)]

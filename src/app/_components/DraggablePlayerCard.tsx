@@ -1,13 +1,15 @@
 "use client";
 
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import type { PlayerType } from "~/lib/types";
+import { getId } from "~/lib/types";
 
-interface PlayerCardProps {
+interface DraggablePlayerCardProps {
   player: PlayerType;
   selected?: boolean;
-  onSelect?: (player: PlayerType) => void;
   disabled?: boolean;
-  compact?: boolean;
+  onSelect?: (player: PlayerType) => void;
 }
 
 // Value-based box-shadow glow colors matching original design
@@ -19,69 +21,65 @@ const valueShadows: Record<number, string> = {
   1: "shadow-[0px_0px_10px_3px_#804a14]", // Bronze
 };
 
-// Keep valueColors for compact mode badge
-const valueColors: Record<number, string> = {
-  1: "bg-amber-700",
-  2: "bg-gray-400",
-  3: "bg-yellow-500",
-  4: "bg-purple-600",
-  5: "bg-cyan-400",
-};
-
-export function PlayerCard({
+export function DraggablePlayerCard({
   player,
   selected = false,
-  onSelect,
   disabled = false,
-  compact = false,
-}: PlayerCardProps) {
+  onSelect,
+}: DraggablePlayerCardProps) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: getId(player),
+      data: { player },
+      disabled: disabled && !selected,
+    });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+  };
+
   const handleClick = () => {
     if (!disabled && onSelect) {
       onSelect(player);
+    } else if (selected && onSelect) {
+      // Allow deselecting even when disabled
+      onSelect(player);
     }
   };
-  console.log(player, " <-- player");
-  if (compact) {
-    return (
-      <div className="flex flex-col items-center gap-2 p-2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={player?.imgUrl}
-          alt={`${player?.firstName} ${player?.lastName}`}
-          className={`h-24 w-24 rounded-full object-cover ${valueShadows[player?.value]}`}
-        />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-white">
-            {player?.firstName} {player?.lastName}
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <button
+      ref={setNodeRef}
       type="button"
       onClick={handleClick}
-      disabled={disabled}
-      className="group relative flex w-[4.5rem] flex-col items-center"
+      style={style}
+      {...listeners}
+      {...attributes}
+      disabled={disabled && !selected}
+      className={`group relative flex w-[4.5rem] touch-none flex-col items-center ${
+        isDragging ? "z-50" : ""
+      }`}
     >
       {/* Player Cell - Square with off-white background and value-based glow */}
       <div
         className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden bg-[#f2f2f2] transition-all duration-200 ${
           valueShadows[player.value]
-        } ${
-          selected ? "ring-2 ring-emerald-400" : ""
-        } ${disabled && !selected ? "cursor-not-allowed opacity-50 grayscale" : "cursor-pointer hover:scale-105"}`}
+        } ${selected ? "ring-2 ring-emerald-400" : ""} ${
+          isDragging
+            ? "scale-105 opacity-50 shadow-2xl"
+            : disabled && !selected
+              ? "cursor-not-allowed opacity-50 grayscale"
+              : "cursor-grab hover:scale-105 active:cursor-grabbing"
+        }`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={player.imgUrl}
           alt={`${player.firstName} ${player.lastName}`}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+          draggable={false}
         />
         {/* Selected Indicator Overlay */}
-        {selected && (
+        {selected && !isDragging && (
           <div className="absolute inset-0 flex items-center justify-center bg-emerald-600/30">
             <svg
               className="h-6 w-6 text-emerald-400"
