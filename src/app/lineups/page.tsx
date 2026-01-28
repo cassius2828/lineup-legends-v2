@@ -15,7 +15,7 @@ export default function MyLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const utils = api.useUtils();
 
-  const { data: lineups, isLoading } = api.lineup.getByCurrentUser.useQuery({
+  const { data: usersLineups, isLoading } = api.lineup.getByCurrentUser.useQuery({
     sort,
   });
   const { data: session } = api.profile.getMe.useQuery(undefined, {
@@ -49,7 +49,7 @@ export default function MyLineupsPage() {
   const handleToggleFeatured = (id: string) => {
     toggleFeatured.mutate({ id });
   };
-
+console.log(usersLineups, ' <-- lineups')
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-4 py-8">
@@ -109,12 +109,12 @@ export default function MyLineupsPage() {
               <p className="text-white/60">Loading lineups...</p>
             </div>
           </div>
-        ) : lineups && lineups.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            {lineups.map((lineup) => (
+        ) : usersLineups && usersLineups.length > 0 ? (
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+            {usersLineups.map((lineup) => (
               <LineupCard
                 key={getId(lineup)}
-                lineup={lineup as LineupWithRelations}
+                lineup={lineup}
                 showOwner={false}
                 isOwner={true}
                 currentUserId={getId(session)}

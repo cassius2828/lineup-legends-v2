@@ -35,7 +35,7 @@ export function transformLineup(lineup: ILineup | null) {
   if (!lineup) return null;
 
   const obj = lineup.toObject() as LineupType;
-
+// this is stringifying everything. Is that what i want to do?
   return {
     ...obj,
     id: obj._id?.toString(),
