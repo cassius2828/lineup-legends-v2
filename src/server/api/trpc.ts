@@ -29,7 +29,7 @@ import { connectDB } from "~/server/db";
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   // Ensure MongoDB connection is established
   await connectDB();
-  
+
   const session = await auth();
 
   return {
@@ -112,6 +112,19 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
 
+export const adminProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(({ ctx, next }) => {
+    if (!ctx.session?.user?.admin) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    return next({
+      ctx: {
+        // infers the `session` and `user.admin` as non-nullable
+        session: { ...ctx.session, user: ctx.session.user },
+      },
+    });
+  });
 /**
  * Protected (authenticated) procedure
  *

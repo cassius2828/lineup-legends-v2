@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import mongoose from "mongoose";
 
 import {
+  adminProcedure,
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
@@ -105,7 +106,7 @@ export const requestedPlayerRouter = createTRPCRouter({
     }),
 
   // Delete a requested player entirely
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       const requestedPlayer = await RequestedPlayer.findById(input.id);

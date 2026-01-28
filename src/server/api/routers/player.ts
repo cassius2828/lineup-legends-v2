@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 import {
+  adminProcedure,
   createTRPCRouter,
-  protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
 import { Player } from "~/server/models";
@@ -84,7 +84,7 @@ export const playerRouter = createTRPCRouter({
     }),
 
   // Update a player (admin only - should add proper auth check)
-  update: protectedProcedure
+  update: adminProcedure
     .input(
       z.object({
         id: z.string(),
@@ -109,7 +109,7 @@ export const playerRouter = createTRPCRouter({
     }),
 
   // Create a new player (admin only)
-  create: protectedProcedure
+  create: adminProcedure
     .input(
       z.object({
         firstName: z.string().min(1).max(50),

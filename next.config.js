@@ -6,6 +6,16 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        port: "",
+        pathname: "/**", // Use a wildcard for any path under /account123/
+      },
+    ],
+  },
   eslint: {
     // ESLint errors are handled separately via `npm run lint`
     // This allows the build to succeed during Prisma to Mongoose migration
