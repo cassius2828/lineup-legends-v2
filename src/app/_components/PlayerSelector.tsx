@@ -60,106 +60,125 @@ export function PlayerSelector({
     setSelectedPlayers([]);
   };
 
+  const removePlayer = (player: PlayerType) => {
+    setSelectedPlayers(
+      selectedPlayers.filter((p) => getId(p) !== getId(player)),
+    );
+  };
+
   const allPlayers = [
-    { label: "$5 Players", players: playersByValue.value5Players },
-    { label: "$4 Players", players: playersByValue.value4Players },
-    { label: "$3 Players", players: playersByValue.value3Players },
-    { label: "$2 Players", players: playersByValue.value2Players },
-    { label: "$1 Players", players: playersByValue.value1Players },
+    { label: "$5", value: 5, players: playersByValue.value5Players },
+    { label: "$4", value: 4, players: playersByValue.value4Players },
+    { label: "$3", value: 3, players: playersByValue.value3Players },
+    { label: "$2", value: 2, players: playersByValue.value2Players },
+    { label: "$1", value: 1, players: playersByValue.value1Players },
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Budget Display */}
-      <div className="sticky top-0 z-10 rounded-2xl bg-slate-900/95 p-4 backdrop-blur-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <div>
-              <p className="text-sm text-white/60">Budget Remaining</p>
-              <p
-                className={`text-3xl font-bold ${
-                  remainingBudget < 3
-                    ? "text-red-400"
-                    : remainingBudget < 6
-                      ? "text-gold"
-                      : "text-emerald-400"
-                }`}
-              >
-                ${remainingBudget}
-              </p>
-            </div>
-            <div className="h-12 w-px bg-white/20" />
-            <div>
-              <p className="text-sm text-white/60">Players Selected</p>
-              <p className="text-3xl font-bold text-white">
-                {selectedPlayers.length}/5
-              </p>
-            </div>
-          </div>
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-center">
+      {/* Left Container - Player Grid */}
+      <div className="flex-shrink-0">
+        {/* Header with Title and Budget */}
+        <header className="mb-4 flex flex-col items-center justify-center">
+          <h1 className="text-2xl font-bold tracking-wide text-white uppercase">
+            Build Your Starting 5
+          </h1>
+          <span
+            className={`mt-1 text-3xl font-bold ${
+              remainingBudget < 3
+                ? "text-red-400"
+                : remainingBudget < 6
+                  ? "text-gold"
+                  : "text-white"
+            }`}
+          >
+            ${remainingBudget}
+          </span>
+        </header>
 
-          {/* Selected Players Preview */}
-          <div className="flex items-center gap-2">
-            {POSITIONS.map((pos, idx) => (
-              <div
-                key={pos}
-                className={`flex h-12 w-12 flex-col items-center justify-center rounded-lg ${
-                  selectedPlayers[idx]
-                    ? "bg-emerald-600/50"
-                    : "border-2 border-dashed border-white/30 bg-white/5"
-                }`}
-              >
-                {selectedPlayers[idx] ? (
-                  <img
-                    src={selectedPlayers[idx].imgUrl}
-                    alt={selectedPlayers[idx].firstName}
-                    className="h-10 w-10 rounded-lg object-cover"
+        {/* Player Grid - Rows by Value */}
+        <div className="flex flex-col gap-2">
+          {allPlayers.map(({ label, players }) => (
+            <div key={label} className="flex items-start gap-3">
+              {/* Price Label */}
+              <h2 className="w-8 pt-6 text-right text-xl font-bold text-white">
+                {label}
+              </h2>
+
+              {/* Players Row - Fixed 5 columns */}
+              <div className="grid grid-cols-5 gap-2">
+                {players.map((player) => (
+                  <PlayerCard
+                    key={getId(player)}
+                    player={player}
+                    selected={isPlayerSelected(player)}
+                    onSelect={handlePlayerClick}
+                    disabled={
+                      !canAffordPlayer(player) ||
+                      (selectedPlayers.length >= 5 && !isPlayerSelected(player))
+                    }
                   />
-                ) : (
-                  <span className="text-xs text-white/50">{pos}</span>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={clearSelection}
-              disabled={selectedPlayers.length === 0}
-              className="rounded-lg bg-white/10 px-4 py-2 font-medium text-white transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Clear
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={!canSubmit || isSubmitting}
-              className="rounded-lg bg-emerald-600 px-6 py-2 font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSubmitting ? "Creating..." : "Create Lineup"}
-            </button>
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Player Tiers */}
-      {allPlayers.map(({ label, players }) => (
-        <div key={label}>
-          <h3 className="mb-4 text-lg font-semibold text-white/80">{label}</h3>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {players.map((player) => (
-              <PlayerCard
-                key={getId(player)}
-                player={player}
-                selected={isPlayerSelected(player)}
-                onSelect={handlePlayerClick}
-                disabled={
-                  !canAffordPlayer(player) ||
-                  (selectedPlayers.length >= 5 && !isPlayerSelected(player))
-                }
-              />
-            ))}
-          </div>
+      {/* Right Container - Selected Players & Buttons */}
+      <div className="flex flex-col items-center lg:ml-8">
+        {/* Selected Players with Position Labels - Horizontal */}
+        <div className="mb-4 flex justify-center gap-2">
+          {POSITIONS.map((position, idx) => {
+            const player = selectedPlayers[idx];
+            return (
+              <div key={position} className="flex flex-col items-center gap-1">
+                {/* Position Label */}
+                <span className="text-sm font-bold text-white/70">
+                  {position}
+                </span>
+                {/* Player Slot */}
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-lg border-2 border-dashed border-white/30 bg-white/5">
+                  {player ? (
+                    <>
+                      <img
+                        src={player.imgUrl}
+                        alt={player.firstName}
+                        className="h-full w-full rounded-lg object-cover"
+                      />
+                      {/* Remove Button */}
+                      <button
+                        onClick={() => removePlayer(player)}
+                        className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white hover:bg-red-500"
+                      >
+                        ×
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      ))}
+
+        {/* Confirm Buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={handleSubmit}
+            disabled={!canSubmit || isSubmitting}
+            className="bg-gold hover:bg-gold-light rounded-md px-6 py-2 text-sm font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isSubmitting ? "Creating..." : "Confirm Lineup"}
+          </button>
+          <button
+            onClick={clearSelection}
+            disabled={selectedPlayers.length === 0}
+            className="bg-gold hover:bg-gold-light rounded-md px-6 py-2 text-sm font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Clear Selection
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

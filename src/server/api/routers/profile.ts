@@ -5,7 +5,8 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { User, Lineup } from "~/server/models";
+import { User, Lineup, type ILineup } from "~/server/models";
+import type { Document, Types } from "mongoose";
 
 // Population fields for lineup queries
 const lineupPopulateFields = [
@@ -17,10 +18,28 @@ const lineupPopulateFields = [
   { path: "ownerId", model: "User" },
 ];
 
+// Type for lineup plain object after toObject()
+interface LineupObject {
+  _id?: Types.ObjectId;
+  id?: string;
+  pgId: unknown;
+  sgId: unknown;
+  sfId: unknown;
+  pfId: unknown;
+  cId: unknown;
+  ownerId: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+  featured: boolean;
+  totalVotes: number;
+  avgRating: number;
+  timesGambled: number;
+}
+
 // Helper to transform lineup for API response
-function transformLineup(lineup) {
+function transformLineup(lineup: (Document & ILineup) | null) {
   if (!lineup) return null;
-  const obj = lineup.toObject ? lineup.toObject() : lineup;
+  const obj = lineup.toObject() as LineupObject;
   return {
     ...obj,
     id: obj._id?.toString() ?? obj.id,
@@ -135,7 +154,17 @@ export const profileRouter = createTRPCRouter({
         }
       }
 
-      const updateData = {};
+      const updateData: {
+        username?: string;
+        bio?: string;
+        profileImg?: string | null;
+        bannerImg?: string | null;
+        socialMedia?: {
+          twitter?: string | null;
+          instagram?: string | null;
+          facebook?: string | null;
+        };
+      } = {};
       if (input.username !== undefined) updateData.username = input.username;
       if (input.bio !== undefined) updateData.bio = input.bio;
       if (input.profileImg !== undefined)
