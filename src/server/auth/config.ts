@@ -16,6 +16,7 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
+      admin?: boolean;
     } & DefaultSession["user"];
   }
 }
@@ -42,11 +43,11 @@ function isEmail(identifier: string): boolean {
  */
 async function findUserByIdentifier(identifier: string) {
   await connectDB();
-  
+
   const query = isEmail(identifier)
     ? { email: identifier }
     : { username: identifier.toLowerCase() };
-  
+
   return User.findOne(query).lean();
 }
 
@@ -69,6 +70,11 @@ ensureEnvs();
 const clientPromise = getMongoClient();
 
 export const authConfig = {
+  // Use JWT strategy - required for Credentials provider to work with sessions
+  // Database strategy doesn't work with Credentials because it doesn't persist sessions
+  session: {
+    strategy: "jwt",
+  },
   providers: [
     GoogleProvider({
       clientId: env.AUTH_GOOGLE_CLIENT_ID,
@@ -98,7 +104,7 @@ export const authConfig = {
 
         const isValidPassword = await verifyPassword(
           password,
-          user.password as string | null,
+          user.password ?? null,
         );
         if (!isValidPassword) {
           throw new Error("Invalid credentials2");
@@ -116,12 +122,32 @@ export const authConfig = {
   ],
   adapter: MongoDBAdapter(clientPromise),
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    async jwt({ token, user }) {
+      // On initial sign-in, user object is available
+      // Store the user id in the token
+      if (user) {
+        token.id = user.id;
+        // Fetch admin status from database
+        await connectDB();
+        const dbUser = await User.findById(user.id).lean();
+        token.admin = dbUser?.admin ?? false;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Get the user id from the token and add it to the session
+      // token.sub is the user id when using an adapter, but we also store it in token.id
+      const userId = token.id ?? token.sub;
+      if (typeof userId === "string") {
+        session.user.id = userId;
+        // Fetch fresh admin status from database (in case it changed)
+        await connectDB();
+        const dbUser = await User.findById(userId).lean();
+        session.user.admin = dbUser?.admin ?? false;
+      } else {
+        throw new Error("User ID is not a string");
+      }
+      return session;
+    },
   },
 } satisfies NextAuthConfig;

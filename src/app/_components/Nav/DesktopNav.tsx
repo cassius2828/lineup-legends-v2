@@ -1,7 +1,8 @@
 import type { Session } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
-
+import { IoIosLogOut } from "react-icons/io";
+import { signOut } from "~/server/auth";
 const DesktopNav = ({ session }: { session: Session | null }) => {
   return (
     <div className="hidden items-center gap-6 md:flex">
@@ -42,12 +43,16 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
               {session.user.name}
             </span>
           </Link>
-          <Link
-            href="/api/auth/signout"
-            className="hover:border-gold/50 hover:bg-gold/10 rounded-none border border-white/20 bg-transparent px-4 py-2 text-sm font-medium text-white/90 capitalize transition-all hover:text-white"
+          <form
+            action={async () => {
+              "use server";
+              await signOut({ redirectTo: "/" });
+            }}
           >
-            Sign Out
-          </Link>
+            <button type="submit" className="cursor-pointer">
+              <IoIosLogOut className="hover:text-gold text-2xl text-white transition-colors duration-100" />
+            </button>
+          </form>
         </>
       ) : (
         <>

@@ -4,6 +4,8 @@ import { type Metadata } from "next";
 import { Geist, Stick_No_Bills } from "next/font/google";
 
 import { TRPCReactProvider } from "~/trpc/react";
+import Nav from "./_components/Nav";
+import { Footer } from "./_components/landing";
 
 export const metadata: Metadata = {
   title: "Lineup Legends",
@@ -18,7 +20,7 @@ const geist = Geist({
 
 const stickNoBills = Stick_No_Bills({
   subsets: ["latin"],
-  weight: [ "700"],
+  weight: ["700"],
   variable: "--font-stencil",
 });
 
@@ -28,7 +30,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} ${stickNoBills.variable}`}>
       <body>
-        <TRPCReactProvider>{children}</TRPCReactProvider>
+        <TRPCReactProvider>
+          <Nav />
+          <div className="mb-24 md:mb-16"></div>
+          {children}
+          <Footer />
+        </TRPCReactProvider>
       </body>
     </html>
   );

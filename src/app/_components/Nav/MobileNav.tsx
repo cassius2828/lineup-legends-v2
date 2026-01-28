@@ -4,6 +4,7 @@ import type { Session } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import Hamburger from "./Hamburger";
 
 const MobileNav = ({ session }: { session: Session | null }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,60 +18,21 @@ const MobileNav = ({ session }: { session: Session | null }) => {
   };
 
   return (
-    <div className="w-full md:hidden">
+    <div className="relative flex w-full justify-end md:hidden">
       {/* Hamburger Button */}
-      <button
-        onClick={toggleMenu}
-        className="flex flex-col gap-1.5 p-2 transition-opacity hover:opacity-80"
-        aria-label="Toggle menu"
-      >
-        <span
-          className={`h-0.5 w-6 bg-white/90 transition-all ${
-            isOpen ? "translate-y-2 rotate-45" : ""
-          }`}
-        />
-        <span
-          className={`h-0.5 w-6 bg-white/90 transition-all ${
-            isOpen ? "opacity-0" : ""
-          }`}
-        />
-        <span
-          className={`h-0.5 w-6 bg-white/90 transition-all ${
-            isOpen ? "-translate-y-2 -rotate-45" : ""
-          }`}
-        />
-      </button>
+      <Hamburger toggleMenu={toggleMenu} isOpen={isOpen} />
 
       {/* Mobile Menu Overlay */}
       {isOpen && (
         <>
           <div className="fixed z-40" onClick={closeMenu} />
-          <div className="border-gold/10 fixed top-0 right-0 z-50 h-full w-full border-l backdrop-blur-xl">
+          <div className="border-gold/10 fixed top-0 right-0 z-40 h-full w-full border-l backdrop-blur-xl">
             <div className="flex flex-col gap-4 bg-black/90 p-6">
               {/* Close button */}
               <div className="flex items-center justify-between">
                 <span className="font-stencil text-xl text-white uppercase">
                   Menu
                 </span>
-                <button
-                  onClick={closeMenu}
-                  className="text-white/60 transition-colors hover:text-white"
-                  aria-label="Close menu"
-                >
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
               </div>
 
               <div className="flex flex-col gap-4 pt-4">

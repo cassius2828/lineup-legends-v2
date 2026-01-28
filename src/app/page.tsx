@@ -1,27 +1,20 @@
-import Link from "next/link";
 import { auth } from "~/server/auth";
 import {
-  HeroSection,
-  WelcomeSection,
-  RatingSection,
   CommentingSection,
+  FeaturedSection,
   FriendsSection,
   GambleSection,
+  HeroSection,
+  RatingSection,
   ShareSection,
-  FeaturedSection,
-  Footer,
+  WelcomeSection,
 } from "./_components/landing";
-import Nav from "./_components/Nav";
 
 export default async function Home() {
   const session = await auth();
 
   return (
     <main className="min-h-screen bg-slate-900">
-      {/* Navigation */}
-      <Nav />
-
-      {/* Landing Page Sections */}
       <HeroSection isAuthenticated={!!session} />
       <WelcomeSection />
       <RatingSection />
@@ -30,7 +23,6 @@ export default async function Home() {
       <GambleSection />
       <ShareSection />
       <FeaturedSection />
-      <Footer />
     </main>
   );
 }
