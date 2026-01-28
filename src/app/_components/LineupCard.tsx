@@ -248,11 +248,7 @@ export function LineupCard({
               onClick={() =>
                 onToggleFeatured(lineup._doc._id?.toString() ?? "")
               }
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                lineup._doc.featured
-                  ? "bg-gold/20 text-gold hover:bg-gold/30"
-                  : "bg-white/10 text-white/70 hover:bg-white/20"
-              }`}
+              className="rounded-lg bg-gold/20 px-3 py-1.5 text-sm font-medium text-gold transition-colors hover:bg-gold/30"
             >
               {lineup._doc.featured ? "Unfeature" : "Feature"}
             </button>
