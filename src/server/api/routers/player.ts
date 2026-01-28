@@ -1,5 +1,5 @@
 import { z } from "zod";
-
+import type { IPlayer } from "~/server/models";
 import {
   adminProcedure,
   createTRPCRouter,
@@ -13,53 +13,39 @@ export const playerRouter = createTRPCRouter({
     .input(z.object({ value: z.number().min(1).max(5).optional() }).optional())
     .query(async ({ input }) => {
       const filter = input?.value ? { value: input.value } : {};
-      const players = await Player.find(filter).sort({ value: -1 });
-      return players.map((p) => p.toObject());
+      return await Player.find(filter).sort({ value: -1 }).lean();
     }),
 
   // Get a single player by ID
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const player = await Player.findById(input.id);
-      return player ? player.toObject() : null;
+      const player = await Player.findById(input.id).lean();
+      return player ?? null;
     }),
 
   // Get random players grouped by value tier (for lineup creation)
   // Returns 5 random players for each value tier (1-5)
   getRandomByValue: publicProcedure.query(async () => {
-    // MongoDB doesn't have native random sampling easily,
-    // so we fetch all and sample in JS (same as before)
-    const allPlayers = await Player.find();
+    const twentyFiveRandomPlayers: {
+      value1Players: IPlayer[];
+      value2Players: IPlayer[];
+      value3Players: IPlayer[];
+      value4Players: IPlayer[];
+      value5Players: IPlayer[];
+    }[] = await Player.aggregate([
+      {
+        $facet: {
+          value1Players: [{ $match: { value: 1 } }, { $sample: { size: 5 } }],
+          value2Players: [{ $match: { value: 2 } }, { $sample: { size: 5 } }],
+          value3Players: [{ $match: { value: 3 } }, { $sample: { size: 5 } }],
+          value4Players: [{ $match: { value: 4 } }, { $sample: { size: 5 } }],
+          value5Players: [{ $match: { value: 5 } }, { $sample: { size: 5 } }],
+        },
+      },
+    ]);
 
-    const playersByValue: Record<number, typeof allPlayers> = {
-      1: [],
-      2: [],
-      3: [],
-      4: [],
-      5: [],
-    };
-
-    // Group players by value
-    for (const player of allPlayers) {
-      if (player.value >= 1 && player.value <= 5) {
-        playersByValue[player.value]!.push(player);
-      }
-    }
-
-    // Shuffle and take 5 from each tier
-    const shuffleAndTake = (arr: typeof allPlayers, count: number) => {
-      const shuffled = [...arr].sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, count).map((p) => p.toObject());
-    };
-
-    return {
-      value1Players: shuffleAndTake(playersByValue[1]!, 5),
-      value2Players: shuffleAndTake(playersByValue[2]!, 5),
-      value3Players: shuffleAndTake(playersByValue[3]!, 5),
-      value4Players: shuffleAndTake(playersByValue[4]!, 5),
-      value5Players: shuffleAndTake(playersByValue[5]!, 5),
-    };
+    return twentyFiveRandomPlayers[0];
   }),
 
   // Search players by name
