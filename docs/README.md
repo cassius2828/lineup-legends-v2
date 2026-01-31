@@ -4,14 +4,15 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 
 ## Table of Contents
 
-| Document                              | Description                                        |
-| ------------------------------------- | -------------------------------------------------- |
-| [Authentication](./authentication.md) | OAuth authentication with NextAuth.js              |
-| [Lineups](./lineups.md)               | Creating, managing, and exploring fantasy lineups  |
-| [Players](./players.md)               | Player data structure, values, and retrieval       |
-| [tRPC API](./trpc-api.md)             | End-to-end type-safe API architecture              |
-| [Database](./database.md)             | Prisma schema and MongoDB integration              |
-| [Components](./components.md)         | Reusable React components and their usage          |
+| Document                                                      | Description                                       |
+| ------------------------------------------------------------- | ------------------------------------------------- |
+| [Authentication](./authentication.md)                         | OAuth authentication with NextAuth.js             |
+| [Lineups](./lineups.md)                                       | Creating, managing, and exploring fantasy lineups |
+| [Players](./players.md)                                       | Player data structure, values, and retrieval      |
+| [tRPC API](./trpc-api.md)                                     | End-to-end type-safe API architecture             |
+| [Database](./database.md)                                     | Prisma schema and MongoDB integration             |
+| [Components](./components.md)                                 | Reusable React components and their usage         |
+| [Architecture & Scale Review](./architecture-scale-review.md) | Scalability analysis and migration plans          |
 
 ## Quick Start
 
@@ -55,18 +56,16 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 
 ## Key Technologies
 
-| Technology   | Purpose                          | Documentation                                        |
-| ------------ | -------------------------------- | ---------------------------------------------------- |
-| Next.js 15   | React framework with App Router  | [nextjs.org](https://nextjs.org/docs)                |
-| NextAuth v5  | OAuth authentication             | [authjs.dev](https://authjs.dev)                     |
-| tRPC         | Type-safe API layer              | [trpc.io](https://trpc.io/docs)                      |
-| Prisma       | Database ORM                     | [prisma.io](https://www.prisma.io/docs)              |
-| Tailwind CSS | Utility-first styling            | [tailwindcss.com](https://tailwindcss.com/docs)      |
-| React Query  | Server state management          | [tanstack.com](https://tanstack.com/query/latest)    |
-| Zod          | Schema validation                | [zod.dev](https://zod.dev)                           |
+| Technology   | Purpose                         | Documentation                                     |
+| ------------ | ------------------------------- | ------------------------------------------------- |
+| Next.js 15   | React framework with App Router | [nextjs.org](https://nextjs.org/docs)             |
+| NextAuth v5  | OAuth authentication            | [authjs.dev](https://authjs.dev)                  |
+| tRPC         | Type-safe API layer             | [trpc.io](https://trpc.io/docs)                   |
+| Prisma       | Database ORM                    | [prisma.io](https://www.prisma.io/docs)           |
+| Tailwind CSS | Utility-first styling           | [tailwindcss.com](https://tailwindcss.com/docs)   |
+| React Query  | Server state management         | [tanstack.com](https://tanstack.com/query/latest) |
+| Zod          | Schema validation               | [zod.dev](https://zod.dev)                        |
 
 ## Contributing
 
 When adding new features, please update the relevant documentation files to keep them current.
-
-
