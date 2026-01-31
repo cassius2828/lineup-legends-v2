@@ -10,12 +10,12 @@ import mongoose from "mongoose";
 
 // Population fields for lineup queries
 export const lineupPopulateFields = [
-  { path: "pgId", model: "Player" },
-  { path: "sgId", model: "Player" },
-  { path: "sfId", model: "Player" },
-  { path: "pfId", model: "Player" },
-  { path: "cId", model: "Player" },
-  { path: "ownerId", model: "User" },
+  { path: "pg", model: "Player" },
+  { path: "sg", model: "Player" },
+  { path: "sf", model: "Player" },
+  { path: "pf", model: "Player" },
+  { path: "c", model: "Player" },
+  { path: "owner", model: "User" },
 ];
 
 export const getIdString = (field: PopulatableField) => {
@@ -31,38 +31,56 @@ export const getIdString = (field: PopulatableField) => {
 };
 
 // Helper to transform lineup for API response (rename populated fields)
+// * we may not need this
 export function transformLineup(lineup: ILineup | null) {
   if (!lineup) return null;
 
-  const obj = lineup.toObject() as LineupType;
-// this is stringifying everything. Is that what i want to do?
-  return {
-    ...obj,
-    id: obj._id?.toString(),
-    pgId: obj.pgId?.toString(),
-    sgId: obj.sgId?.toString(),
-    sfId: obj.sfId?.toString(),
-    pfId: obj.pfId?.toString(),
-    cId: obj.cId?.toString(),
-    ownerId: obj.ownerId?.toString(),
-    // pg, sg, sf, pf, c, owner are already correct from virtuals
-  };
+  // const obj = lineup.toObject() as LineupType;
+  // this is stringifying everything. Is that what i want to do?
+  // return {
+  //   ...obj,
+  //   id: obj._id?.toString(),
+  //   pg: obj.pg?.toString(),
+  //   sg: obj.sg?.toString(),
+  //   sf: obj.sf?.toString(),
+  //   pf: obj.pf?.toString(),
+  //   c: obj.c?.toString(),
+  //   owner: obj.owner?.toString(),
+  //   // pg, sg, sf, pf, c, owner are already correct from virtuals
+  // };
+  return lineup;
 }
 
-// Helper to calculate total votes
-export async function incrementTotalVotes(
+/**
+ * Shared vote delta calculator - O(1) operation
+ * Used by both lineup votes and comment votes
+ *
+ * @param newType - The vote type being cast
+ * @param existingType - The user's current vote type (null if no existing vote)
+ * @returns Delta to apply: +1/-1 for new votes, +2/-2 for switches, +1/-1 for removals
+ */
+export function getVoteDelta(
+  newType: "upvote" | "downvote",
+  existingType: "upvote" | "downvote" | null,
+): number {
+  if (!existingType) {
+    // New vote
+    return newType === "upvote" ? 1 : -1;
+  }
+  if (existingType === newType) {
+    // Same vote type - removing vote (toggle off)
+    return newType === "upvote" ? -1 : 1;
+  }
+  // Switching vote type (upvote -> downvote = -2, downvote -> upvote = +2)
+  return newType === "upvote" ? 2 : -2;
+}
+
+// Helper to calculate total votes for lineup votes (uses IVote with type field)
+export function incrementTotalVotes(
   type: "upvote" | "downvote",
   existingVote?: IVote | null,
-) {
-  let voteDelta = 0;
-  if (!existingVote) {
-    voteDelta = type === "upvote" ? 1 : -1;
-  } else if (existingVote.type === type) {
-    voteDelta = type === "upvote" ? -1 : 1;
-  } else {
-    voteDelta = type === "upvote" ? 2 : -2;
-  }
-  return voteDelta;
+): number {
+  return getVoteDelta(type, existingVote?.type ?? null);
 }
 
 // Helper to calculate average rating
@@ -91,45 +109,45 @@ export async function recalculateAvgRating(lineupId: string) {
 
 /**
  * Helper to process comment/thread votes
- * Handles voting logic: adding new votes, toggling existing votes, and recalculating totals
+ * Uses O(1) delta calculation instead of O(n) recalculation
+ *
+ * @param votes - The votes array to modify
+ * @param userId - The user casting the vote
+ * @param type - The vote type being cast
+ * @param currentTotalVotes - Current total votes (avoids recalculating)
+ * @returns Updated votes array and new total votes
  */
 export function processCommentVote(
   votes: ICommentVote[],
   userId: string,
   type: "upvote" | "downvote",
+  currentTotalVotes: number,
 ): { votes: ICommentVote[]; totalVotes: number } {
   const existingVoteIndex = votes.findIndex(
     (v) => v.userId.toString() === userId,
   );
+  const existingVote =
+    existingVoteIndex !== -1 ? votes[existingVoteIndex] : undefined;
 
-  if (existingVoteIndex !== -1) {
-    const existingVote = votes[existingVoteIndex]!;
-    const isUpvote = type === "upvote";
-    const wasUpvote = existingVote.upvote;
+  // Calculate delta using shared O(1) helper
+  const voteDelta = getVoteDelta(type, existingVote?.type ?? null);
 
-    if ((isUpvote && wasUpvote) || (!isUpvote && existingVote.downvote)) {
-      // Same vote type - remove the vote
+  // Update votes array
+  if (existingVoteIndex !== -1 && existingVote) {
+    if (existingVote.type === type) {
+      // Same vote type - remove the vote (toggle off)
       votes.splice(existingVoteIndex, 1);
     } else {
-      // Different vote type - toggle
-      existingVote.upvote = isUpvote;
-      existingVote.downvote = !isUpvote;
+      // Different vote type - switch
+      existingVote.type = type;
     }
   } else {
     // No existing vote - create new
     votes.push({
       userId: new mongoose.Types.ObjectId(userId),
-      upvote: type === "upvote",
-      downvote: type === "downvote",
+      type,
     } as unknown as ICommentVote);
   }
 
-  // Recalculate total votes
-  let totalVotes = 0;
-  for (const vote of votes) {
-    if (vote.upvote) totalVotes += 1;
-    if (vote.downvote) totalVotes -= 1;
-  }
-
-  return { votes, totalVotes };
+  return { votes, totalVotes: currentTotalVotes + voteDelta };
 }

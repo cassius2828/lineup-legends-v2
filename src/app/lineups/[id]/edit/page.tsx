@@ -20,7 +20,7 @@ export default function EditLineupPage() {
   const router = useRouter();
   const lineupId = params.id as string;
 
-  const { data: lineup, isLoading } = api.lineup.getById.useQuery({
+  const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery({
     id: lineupId,
   });
 

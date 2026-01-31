@@ -6,15 +6,13 @@ import type { ILineup } from "./lineup";
 export interface ICommentVote {
   _id: mongoose.Types.ObjectId;
   userId: Types.ObjectId;
-  upvote: boolean;
-  downvote: boolean;
+  type: "upvote" | "downvote";
 }
 
 const CommentVoteSchema = new Schema<ICommentVote>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    upvote: { type: Boolean, default: false },
-    downvote: { type: Boolean, default: false },
+    type: { type: String, enum: ["upvote", "downvote"], required: true },
   },
   { _id: true }
 );
