@@ -1,14 +1,23 @@
 import mongoose, { Schema, type Document, type Model } from "mongoose";
 
-export interface IPlayer extends Document {
-  _id: mongoose.Types.ObjectId;
+// API Type - for responses and client-side usage
+export interface Player {
+  id: string;
   firstName: string;
   lastName: string;
   imgUrl: string;
   value: number; // 1-5 representing player cost
 }
 
-const PlayerSchema = new Schema<IPlayer>(
+// DB Type - for database operations
+export interface PlayerDoc extends Document {
+  firstName: string;
+  lastName: string;
+  imgUrl: string;
+  value: number; // 1-5 representing player cost
+}
+
+const PlayerSchema = new Schema<PlayerDoc>(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
@@ -17,11 +26,11 @@ const PlayerSchema = new Schema<IPlayer>(
   },
   {
     timestamps: false,
-  }
+  },
 );
 
 // Virtual for id (to match Prisma's id field)
-PlayerSchema.virtual("id").get(function (this: IPlayer) {
+PlayerSchema.virtual("id").get(function (this: PlayerDoc) {
   return this._id.toHexString();
 });
 
@@ -29,7 +38,8 @@ PlayerSchema.virtual("id").get(function (this: IPlayer) {
 PlayerSchema.set("toJSON", { virtuals: true });
 PlayerSchema.set("toObject", { virtuals: true });
 
-// add index for text and value fields 
-PlayerSchema.index({ firstName: 'text', lastName: 'text', value: 1 })
-export const Player: Model<IPlayer> =
-  (mongoose.models.Player as Model<IPlayer> | undefined) ?? mongoose.model<IPlayer>("Player", PlayerSchema);
+// add index for text and value fields
+PlayerSchema.index({ firstName: "text", lastName: "text", value: 1 });
+export const PlayerModel: Model<PlayerDoc> =
+  (mongoose.models.Player as Model<PlayerDoc> | undefined) ??
+  mongoose.model<PlayerDoc>("Player", PlayerSchema);

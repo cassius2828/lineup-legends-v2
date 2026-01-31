@@ -4,37 +4,52 @@ import mongoose, {
   type Model,
   type Types,
 } from "mongoose";
-import type { IUser } from "./user";
+import type { User } from "./user";
 
-// Value description subdocument
-export interface IValueDescription {
-  _id: mongoose.Types.ObjectId;
-  userId: Types.ObjectId;
-  user?: IUser;
+// API Type - Value description subdocument for responses (after population)
+export interface ValueDescription {
+  id: string;
+  user: User;
   suggestedValue: number; // 1-5
   createdAt: Date;
 }
 
-const ValueDescriptionSchema = new Schema<IValueDescription>(
+// DB Type - Value description subdocument for database
+export interface ValueDescriptionDoc {
+  user: Types.ObjectId;
+  suggestedValue: number; // 1-5
+  createdAt: Date;
+}
+
+const ValueDescriptionSchema = new Schema<ValueDescriptionDoc>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     suggestedValue: { type: Number, required: true, min: 1, max: 5 },
     createdAt: { type: Date, default: Date.now },
   },
-  { _id: true },
+  { timestamps: true },
 );
 
-// Main RequestedPlayer document
-export interface IRequestedPlayer extends Document {
-  _id: mongoose.Types.ObjectId;
+// API Type - for responses and client-side usage
+export interface RequestedPlayer {
+  id: string;
   firstName: string;
   lastName: string;
-  descriptions: IValueDescription[];
+  descriptions: ValueDescription[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-const RequestedPlayerSchema = new Schema<IRequestedPlayer>(
+// DB Type - for database operations
+export interface RequestedPlayerDoc extends Document {
+  firstName: string;
+  lastName: string;
+  descriptions: ValueDescriptionDoc[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const RequestedPlayerSchema = new Schema<RequestedPlayerDoc>(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
@@ -55,7 +70,7 @@ RequestedPlayerSchema.index(
 );
 
 // Virtual for id
-RequestedPlayerSchema.virtual("id").get(function (this: IRequestedPlayer) {
+RequestedPlayerSchema.virtual("id").get(function (this: RequestedPlayerDoc) {
   return this._id.toHexString();
 });
 
@@ -63,6 +78,6 @@ RequestedPlayerSchema.virtual("id").get(function (this: IRequestedPlayer) {
 RequestedPlayerSchema.set("toJSON", { virtuals: true });
 RequestedPlayerSchema.set("toObject", { virtuals: true });
 
-export const RequestedPlayer: Model<IRequestedPlayer> =
-  (mongoose.models.RequestedPlayer as Model<IRequestedPlayer> | undefined) ??
-  mongoose.model<IRequestedPlayer>("RequestedPlayer", RequestedPlayerSchema);
+export const RequestedPlayerModel: Model<RequestedPlayerDoc> =
+  (mongoose.models.RequestedPlayer as Model<RequestedPlayerDoc> | undefined) ??
+  mongoose.model<RequestedPlayerDoc>("RequestedPlayer", RequestedPlayerSchema);

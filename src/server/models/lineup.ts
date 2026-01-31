@@ -1,88 +1,80 @@
-import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
-import type { IPlayer } from "./player";
-import type { IUser } from "./user";
+import mongoose, {
+  Schema,
+  type Document,
+  type Model,
+  type Types,
+} from "mongoose";
+import type { Player } from "./player";
+import type { User } from "./user";
 
-export interface ILineup extends Document {
-  _id: mongoose.Types.ObjectId;
+// API Type - Players subdocument for responses (after population)
+export interface LineupPlayers {
+  pg: Player;
+  sg: Player;
+  sf: Player;
+  pf: Player;
+  c: Player;
+}
+
+// DB Type - Players subdocument for database
+export interface LineupPlayersDoc {
+  pg: Types.ObjectId;
+  sg: Types.ObjectId;
+  sf: Types.ObjectId;
+  pf: Types.ObjectId;
+  c: Types.ObjectId;
+}
+
+// API Type - for responses and client-side usage (after population)
+export interface Lineup {
+  id: string;
   createdAt: Date;
   updatedAt: Date;
   featured: boolean;
-  pg: IPlayer;
-  sg: IPlayer;
-  sf: IPlayer;
-  pf: IPlayer;
-  c: IPlayer;
-  ownerId: Types.ObjectId;
-  owner?: IUser;
+  players: LineupPlayers;
+  owner: User;
   totalVotes: number;
   avgRating: number;
   timesGambled: number;
 }
 
-const LineupSchema = new Schema<ILineup>(
+// DB Type - for database operations
+export interface LineupDoc extends Document {
+  createdAt: Date;
+  updatedAt: Date;
+  featured: boolean;
+  players: LineupPlayersDoc;
+  owner: Types.ObjectId;
+  totalVotes: number;
+  avgRating: number;
+  ratingCount: number;
+  ratingSum: number;
+  timesGambled: number;
+}
+
+const LineupSchema = new Schema<LineupDoc>(
   {
     featured: { type: Boolean, default: false },
-    pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    c: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    players: {
+      pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      c: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    },
+    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
     totalVotes: { type: Number, default: 0 },
     avgRating: { type: Number, default: 0 },
     timesGambled: { type: Number, default: 0 },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Virtual for id
-LineupSchema.virtual("id").get(function (this: ILineup) {
+LineupSchema.virtual("id").get(function (this: LineupDoc) {
   return this._id.toHexString();
-});
-
-// Virtual populations for positions
-LineupSchema.virtual("pg", {
-  ref: "Player",
-  localField: "pgId",
-  foreignField: "_id",
-  justOne: true,
-});
-
-LineupSchema.virtual("sg", {
-  ref: "Player",
-  localField: "sgId",
-  foreignField: "_id",
-  justOne: true,
-});
-
-LineupSchema.virtual("sf", {
-  ref: "Player",
-  localField: "sfId",
-  foreignField: "_id",
-  justOne: true,
-});
-
-LineupSchema.virtual("pf", {
-  ref: "Player",
-  localField: "pfId",
-  foreignField: "_id",
-  justOne: true,
-});
-
-LineupSchema.virtual("c", {
-  ref: "Player",
-  localField: "cId",
-  foreignField: "_id",
-  justOne: true,
-});
-
-LineupSchema.virtual("owner", {
-  ref: "User",
-  localField: "ownerId",
-  foreignField: "_id",
-  justOne: true,
 });
 
 // Ensure virtuals are included in JSON output
@@ -90,7 +82,13 @@ LineupSchema.set("toJSON", { virtuals: true });
 LineupSchema.set("toObject", { virtuals: true });
 
 // add index on owner, avgRating, totalVotes
-LineupSchema.index({ ownerId: 1, avgRating: 1, totalVotes: 1 })
+LineupSchema.index({ owner: 1, createdAt: -1 }); // lineups created by a user
+LineupSchema.index({ owner: 1, updatedAt: -1 }); // lineups updated by a user
+LineupSchema.index({ featured: 1, createdAt: -1 }); // featured lineups
+LineupSchema.index({ avgRating: -1 }); // lineups with the highest average rating
+LineupSchema.index({ totalVotes: -1 }); // lineups with the most votes
+LineupSchema.index({ createdAt: -1 }); // lineups created in the last 24 hours
 
-export const Lineup: Model<ILineup> =
-  (mongoose.models.Lineup as Model<ILineup> | undefined) ?? mongoose.model<ILineup>("Lineup", LineupSchema);
+export const LineupModel: Model<LineupDoc> =
+  (mongoose.models.Lineup as Model<LineupDoc> | undefined) ??
+  mongoose.model<LineupDoc>("Lineup", LineupSchema);
