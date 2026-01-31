@@ -36,6 +36,10 @@ FollowSchema.index({ follower: 1, following: 1 }, { unique: true });
 FollowSchema.index({ following: 1 }); // users followed by a user
 FollowSchema.index({ follower: 1 }); // users following a user
 
+// Add: For "recent follows" feed queries
+FollowSchema.index({ follower: 1, createdAt: -1 });
+FollowSchema.index({ following: 1, createdAt: -1 });
+
 // Virtual for id
 FollowSchema.virtual("id").get(function (this: FollowDoc) {
   return this._id.toHexString();

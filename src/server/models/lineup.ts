@@ -47,6 +47,8 @@ export interface LineupDoc extends Document {
   owner: Types.ObjectId;
   totalVotes: number;
   avgRating: number;
+  ratingCount: number;
+  ratingSum: number;
   timesGambled: number;
 }
 
@@ -74,13 +76,21 @@ const LineupSchema = new Schema<LineupDoc>(
 LineupSchema.virtual("id").get(function (this: LineupDoc) {
   return this._id.toHexString();
 });
+LineupSchema.virtual("avgRating").get(function (this: LineupDoc) {
+  return this.ratingCount === 0 ? 0 : this.ratingSum / this.ratingCount;
+});
 
 // Ensure virtuals are included in JSON output
 LineupSchema.set("toJSON", { virtuals: true });
 LineupSchema.set("toObject", { virtuals: true });
 
 // add index on owner, avgRating, totalVotes
-LineupSchema.index({ owner: 1, avgRating: 1, totalVotes: 1 });
+LineupSchema.index({owner:1, createdAt:-1}) // lineups created by a user
+LineupSchema.index({owner:1, updatedAt:-1}) // lineups updated by a user
+LineupSchema.index({featured:1, createdAt:-1}) // featured lineups
+LineupSchema.index({avgRating:-1}) // lineups with the highest average rating
+LineupSchema.index({totalVotes:-1}) // lineups with the most votes
+LineupSchema.index({createdAt:-1}) // lineups created in the last 24 hours
 
 export const LineupModel: Model<LineupDoc> =
   (mongoose.models.Lineup as Model<LineupDoc> | undefined) ??

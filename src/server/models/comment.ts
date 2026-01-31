@@ -7,38 +7,13 @@ import mongoose, {
 import type { User } from "./user";
 import type { Lineup } from "./lineup";
 
-// API Type - Thread subdocument for responses (after population)
-export interface Thread {
-  id: string;
-  text: string;
-  user: User;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// DB Type - Thread subdocument for database
-export interface ThreadDoc {
-  text: string;
-  user: Types.ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-const ThreadSchema = new Schema<ThreadDoc>(
-  {
-    text: { type: String, required: true },
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  },
-  { timestamps: true },
-);
-
 // API Type - for responses and client-side usage (after population)
 export interface Comment {
   id: string;
   text: string;
   user: User;
   lineup: Lineup;
-  thread: Thread[];
+  totalVotes: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,7 +23,7 @@ export interface CommentDoc extends Document {
   text: string;
   user: Types.ObjectId;
   lineup: Types.ObjectId;
-  thread: ThreadDoc[];
+  totalVotes: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -58,7 +33,7 @@ const CommentSchema = new Schema<CommentDoc>(
     text: { type: String, required: true },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
-    thread: [ThreadSchema],
+    totalVotes: { type: Number, default: 0 },
   },
   {
     timestamps: true,
@@ -67,6 +42,7 @@ const CommentSchema = new Schema<CommentDoc>(
 
 // Index for efficient lookups
 CommentSchema.index({ lineup: 1, createdAt: -1 });
+CommentSchema.index({ user: 1, createdAt: -1 });
 
 // Virtual for id
 CommentSchema.virtual("id").get(function (this: CommentDoc) {

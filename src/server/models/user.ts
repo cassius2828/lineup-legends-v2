@@ -24,6 +24,8 @@ export interface User {
   profileImg?: string | null;
   bannerImg?: string | null;
   socialMedia?: SocialMedia;
+  followerCount: number;
+  followingCount: number;
   newEmail?: string | null;
   emailConfirmationToken?: string | null;
   admin?: boolean;
@@ -42,6 +44,8 @@ export interface UserDoc extends Document {
   profileImg?: string | null;
   bannerImg?: string | null;
   socialMedia?: SocialMedia;
+  followerCount: number;
+  followingCount: number;
   newEmail?: string | null;
   emailConfirmationToken?: string | null;
   admin?: boolean;
@@ -68,6 +72,8 @@ const UserSchema = new Schema<UserDoc>(
     profileImg: { type: String, default: null },
     bannerImg: { type: String, default: null },
     socialMedia: { type: SocialMediaSchema, default: null },
+    followerCount: { type: Number, default: 0 },
+    followingCount: { type: Number, default: 0 },
     newEmail: { type: String, default: null },
     emailConfirmationToken: { type: String, default: null },
     admin: { type: Boolean, default: false },
