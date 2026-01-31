@@ -1,12 +1,12 @@
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
-import { type DefaultSession, type NextAuthConfig } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { type DefaultSession, type NextAuthConfig } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { env } from "~/env";
 import { ensureEnvs } from "~/lib/ensureEnvs";
-import { getMongoClient, connectDB } from "~/server/db";
-import { User } from "~/server/models";
+import { connectDB, getMongoClient } from "~/server/db";
+import { UserModel } from "../models";
 
 /**
  * Module augmentation for `next-auth` types.
@@ -48,7 +48,7 @@ async function findUserByIdentifier(identifier: string) {
     ? { email: identifier }
     : { username: identifier.toLowerCase() };
 
-  return User.findOne(query).lean();
+  return UserModel.findOne(query).lean();
 }
 
 /**
@@ -129,7 +129,7 @@ export const authConfig = {
         token.id = user.id;
         // Fetch admin status from database
         await connectDB();
-        const dbUser = await User.findById(user.id).lean();
+        const dbUser = await UserModel.findById(user.id).lean();
         token.admin = dbUser?.admin ?? false;
       }
       return token;
@@ -142,7 +142,7 @@ export const authConfig = {
         session.user.id = userId;
         // Fetch fresh admin status from database (in case it changed)
         await connectDB();
-        const dbUser = await User.findById(userId).lean();
+        const dbUser = await UserModel.findById(userId).lean();
         session.user.admin = dbUser?.admin ?? false;
       } else {
         throw new Error("User ID is not a string");
