@@ -26,7 +26,13 @@ import {
   type IPlayer,
   type IThread,
 } from "~/server/models";
-
+const playerSchema = z.object({
+  _id: z.string(),
+  firstName: z.string(),
+  lastName: z.string(),
+  imgUrl: z.string(),
+  value: z.number(),
+});
 const BUDGET_LIMIT = 15;
 
 export const lineupRouter = createTRPCRouter({
@@ -34,16 +40,16 @@ export const lineupRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        pgId: z.string(),
-        sgId: z.string(),
-        sfId: z.string(),
-        pfId: z.string(),
-        cId: z.string(),
+        pg: playerSchema,
+        sg: playerSchema,
+        sf: playerSchema,
+        pf: playerSchema,
+        c: playerSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { pgId, sgId, sfId, pfId, cId } = input;
-      const playerIds = [pgId, sgId, sfId, pfId, cId];
+      const { pg, sg, sf, pf, c } = input;
+      const playerIds = [pg._id, sg._id, sf._id, pf._id, c._id];
 
       // Check for duplicate players
       const uniqueIds = new Set(playerIds);
@@ -56,16 +62,19 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Fetch all selected players and validate budget
-      const players = await Player.find({ _id: { $in: playerIds } });
+      const selectedPlayers = await Player.find({ _id: { $in: playerIds } });
 
-      if (players.length !== 5) {
+      if (selectedPlayers.length !== 5) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "One or more selected players not found.",
         });
       }
 
-      const totalValue = players.reduce((sum, player) => sum + player.value, 0);
+      const totalValue = selectedPlayers.reduce(
+        (sum, player) => sum + player.value,
+        0,
+      );
       if (totalValue > BUDGET_LIMIT) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -75,11 +84,11 @@ export const lineupRouter = createTRPCRouter({
 
       // Create the lineup
       const lineup = await Lineup.create({
-        pgId,
-        sgId,
-        sfId,
-        pfId,
-        cId,
+        pg: selectedPlayers[0]?._id,
+        sg: selectedPlayers[1]?._id,
+        sf: selectedPlayers[2]?._id,
+        pf: selectedPlayers[3]?._id,
+        c: selectedPlayers[4]?._id,
         ownerId: ctx.session.user.id,
         featured: false,
       });
@@ -93,7 +102,7 @@ export const lineupRouter = createTRPCRouter({
     }),
 
   // Get current user's lineups (protected)
-  getByCurrentUser: protectedProcedure
+  getLineupsByCurrentUser: protectedProcedure
     .input(
       z
         .object({
@@ -121,8 +130,9 @@ export const lineupRouter = createTRPCRouter({
 
       const lineups = await Lineup.find({ ownerId: ctx.session.user.id })
         .sort(sortOption)
-        .populate(lineupPopulateFields);
-console.log(lineups, ' <-- lineups')
+        .populate(lineupPopulateFields)
+        .lean();
+
       // Get user's votes and ratings for these lineups
       const lineupIds = lineups.map((l) => l._id);
       const userVotes = await Vote.find({
@@ -135,13 +145,13 @@ console.log(lineups, ' <-- lineups')
       });
 
       // Map votes and ratings to lineups
+      // if this is reused below, then extract this to a helper function
       const voteMap = new Map(userVotes.map((v) => [v.lineupId.toString(), v]));
       const ratingMap = new Map(
         userRatings.map((r) => [r.lineupId.toString(), r]),
       );
 
       return lineups.map((lineup) => {
-        // const transformed = transformLineup(lineup);
         const lineupIdStr = lineup._id.toString();
         return {
           ...lineup,
@@ -154,18 +164,18 @@ console.log(lineups, ' <-- lineups')
     }),
 
   // Get a specific user's lineups (public)
-  getByUserId: publicProcedure
+  getLineupsByOtherUser: publicProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
-      const lineups = await Lineup.find({ ownerId: input.userId })
+      // may need to check if we need to map votes and ratings here
+      return await Lineup.find({ ownerId: input.userId })
         .sort({ createdAt: -1 })
-        .populate(lineupPopulateFields);
-
-      return lineups.map(transformLineup);
+        .populate(lineupPopulateFields)
+        .lean();
     }),
 
   // Get all lineups (explore - public)
-  getAll: publicProcedure
+  getAllLineups: publicProcedure
     .input(
       z
         .object({
@@ -190,30 +200,25 @@ console.log(lineups, ' <-- lineups')
           sortOption = { totalVotes: -1 };
           break;
       }
-
-      const lineups = await Lineup.find()
+      // may need to check if we need to map votes and ratings here
+      return await Lineup.find()
         .sort(sortOption)
-        .populate(lineupPopulateFields);
-
-      return lineups.map(transformLineup);
+        .populate(lineupPopulateFields)
+        .lean();
     }),
 
   // Get a single lineup by ID
-  getById: publicProcedure
+  getLineupById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const lineup = await Lineup.findById(input.id).populate(
-        lineupPopulateFields,
-      );
-
-      return transformLineup(lineup);
+      return await Lineup.findById(input.id).populate(lineupPopulateFields);
     }),
 
   // Delete a lineup (protected - only owner can delete)
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.id);
+      const lineup = await Lineup.findById(input.id).select("ownerId").lean();
 
       if (!lineup) {
         throw new TRPCError({
@@ -230,17 +235,23 @@ console.log(lineups, ' <-- lineups')
       }
 
       // Delete related votes and ratings
-      await Vote.deleteMany({ lineupId: input.id });
-      await Rating.deleteMany({ lineupId: input.id });
-
-      return Lineup.findByIdAndDelete(input.id);
+      const [deletedLineup, _deletedVotes, _deletedRatings] = await Promise.all(
+        [
+          Lineup.findByIdAndDelete(input.id).lean(),
+          Vote.deleteMany({ lineupId: input.id }),
+          Rating.deleteMany({ lineupId: input.id }),
+        ],
+      );
+      return deletedLineup;
     }),
 
   // Toggle featured status (protected - only owner)
   toggleFeatured: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.id);
+      const lineup = await Lineup.findById(input.id)
+        .select("ownerId featured")
+        .lean();
 
       if (!lineup) {
         throw new TRPCError({
@@ -272,13 +283,13 @@ console.log(lineups, ' <-- lineups')
         }
       }
 
-      const updatedLineup = await Lineup.findByIdAndUpdate(
+      return await Lineup.findByIdAndUpdate(
         input.id,
         { featured: !lineup.featured },
         { new: true },
-      ).populate(lineupPopulateFields);
-
-      return transformLineup(updatedLineup);
+      )
+        .populate(lineupPopulateFields)
+        .lean();
     }),
 
   // ============================================
@@ -299,7 +310,6 @@ console.log(lineups, ' <-- lineups')
 
       const lineup = await Lineup.findById(input.lineupId)
         .select("ownerId totalVotes")
-        // * if you are doing reads or only need certain values, always select and lean the mongo doc
         .lean();
 
       if (!lineup) {
@@ -310,7 +320,7 @@ console.log(lineups, ' <-- lineups')
       }
 
       // Can't vote on your own lineup
-      if (lineup.ownerId.toString() === ctx.session.user.id) {
+      if (lineup.ownerId === userId) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot vote on your own lineup.",
@@ -338,8 +348,8 @@ console.log(lineups, ' <-- lineups')
         },
       );
 
-      // Recalculate total votes -- cal increment instead of scanning all votes again
-      const amountToIncrementVotesBy = await incrementTotalVotes(
+      // Calculate vote delta - O(1) instead of scanning all votes
+      const amountToIncrementVotesBy = incrementTotalVotes(
         input.type,
         existingVote,
       );
@@ -376,7 +386,9 @@ console.log(lineups, ' <-- lineups')
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId);
+      const lineup = await Lineup.findById(input.lineupId)
+        .select("ownerId")
+        .lean();
 
       if (!lineup) {
         throw new TRPCError({
@@ -401,8 +413,6 @@ console.log(lineups, ' <-- lineups')
         },
         {
           value: input.value,
-          userId: ctx.session.user.id,
-          lineupId: input.lineupId,
         },
         { upsert: true, new: true },
       );
@@ -432,17 +442,17 @@ console.log(lineups, ' <-- lineups')
     .input(
       z.object({
         lineupId: z.string(),
-        pgId: z.string(),
-        sgId: z.string(),
-        sfId: z.string(),
-        pfId: z.string(),
-        cId: z.string(),
+        pg: playerSchema,
+        sg: playerSchema,
+        sf: playerSchema,
+        pf: playerSchema,
+        c: playerSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId).populate(
-        lineupPopulateFields,
-      );
+      const lineup = await Lineup.findById(input.lineupId)
+        .populate(lineupPopulateFields)
+        .lean();
 
       if (!lineup) {
         throw new TRPCError({
@@ -459,18 +469,18 @@ console.log(lineups, ' <-- lineups')
       }
 
       const originalIds = new Set([
-        getIdString(lineup.pgId),
-        getIdString(lineup.sgId),
-        getIdString(lineup.sfId),
-        getIdString(lineup.pfId),
-        getIdString(lineup.cId),
+        getIdString(lineup.pg?._id),
+        getIdString(lineup.sg?._id),
+        getIdString(lineup.sf?._id),
+        getIdString(lineup.pf?._id),
+        getIdString(lineup.c?._id),
       ]);
       const newIds = [
-        input.pgId,
-        input.sgId,
-        input.sfId,
-        input.pfId,
-        input.cId,
+        input.pg?._id,
+        input.sg?._id,
+        input.sf?._id,
+        input.pf?._id,
+        input.c?._id,
       ];
 
       // Check for duplicates
@@ -493,19 +503,19 @@ console.log(lineups, ' <-- lineups')
         }
       }
 
-      const updatedLineup = await Lineup.findByIdAndUpdate(
+      return await Lineup.findByIdAndUpdate(
         input.lineupId,
         {
-          pgId: input.pgId,
-          sgId: input.sgId,
-          sfId: input.sfId,
-          pfId: input.pfId,
-          cId: input.cId,
+          pg: input.pg,
+          sg: input.sg,
+          sf: input.sf,
+          pf: input.pf,
+          c: input.c,
         },
         { new: true },
-      ).populate(lineupPopulateFields);
-
-      return transformLineup(updatedLineup);
+      )
+        .populate(lineupPopulateFields)
+        .lean();
     }),
 
   // ============================================
@@ -715,7 +725,9 @@ console.log(lineups, ' <-- lineups')
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId);
+      const lineup = await Lineup.findById(input.lineupId)
+        .select("ownerId")
+        .lean();
 
       if (!lineup) {
         throw new TRPCError({
@@ -734,24 +746,9 @@ console.log(lineups, ' <-- lineups')
       });
 
       // Populate and return
-      const populatedComment = await Comment.findById(comment._id).populate(
-        "userId",
-        "username name profileImg",
-      );
-
-      if (!populatedComment) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create comment.",
-        });
-      }
-
-      const obj = populatedComment.toObject();
-      return {
-        ...obj,
-        id: obj._id?.toString(),
-        user: obj.userId,
-      };
+      return await Comment.findById(comment._id)
+        .populate("userId", "username name profileImg")
+        .lean();
     }),
 
   // Add a thread reply to a comment
@@ -787,28 +784,9 @@ console.log(lineups, ' <-- lineups')
       await comment.save();
 
       // Populate and return
-      const populatedComment = await Comment.findById(comment._id).populate(
-        "userId",
-        "username name profileImg",
-      );
-
-      if (!populatedComment) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to add reply.",
-        });
-      }
-
-      const obj = populatedComment.toObject();
-      return {
-        ...obj,
-        id: obj._id?.toString(),
-        user: obj.userId,
-        thread: obj.thread?.map((t) => ({
-          ...t,
-          id: t._id?.toString(),
-        })),
-      };
+      return await Comment.findById(comment._id)
+        .populate("userId", "username name profileImg")
+        .lean();
     }),
 
   // Vote on a comment (upvote or downvote)
@@ -841,11 +819,12 @@ console.log(lineups, ' <-- lineups')
         });
       }
 
-      // Process vote using shared helper
+      // Process vote using shared helper (O(1) delta calculation)
       const { totalVotes } = processCommentVote(
         comment.votes,
         ctx.session.user.id,
         input.type,
+        comment.totalVotes,
       );
       comment.totalVotes = totalVotes;
 
@@ -896,11 +875,12 @@ console.log(lineups, ' <-- lineups')
         });
       }
 
-      // Process vote using shared helper
+      // Process vote using shared helper (O(1) delta calculation)
       const { totalVotes } = processCommentVote(
         thread.votes,
         ctx.session.user.id,
         input.type,
+        thread.totalVotes,
       );
       thread.totalVotes = totalVotes;
 

@@ -7,16 +7,11 @@ export interface ILineup extends Document {
   createdAt: Date;
   updatedAt: Date;
   featured: boolean;
-  pgId: Types.ObjectId;
-  pg?: IPlayer;
-  sgId: Types.ObjectId;
-  sg?: IPlayer;
-  sfId: Types.ObjectId;
-  sf?: IPlayer;
-  pfId: Types.ObjectId;
-  pf?: IPlayer;
-  cId: Types.ObjectId;
-  c?: IPlayer;
+  pg: IPlayer;
+  sg: IPlayer;
+  sf: IPlayer;
+  pf: IPlayer;
+  c: IPlayer;
   ownerId: Types.ObjectId;
   owner?: IUser;
   totalVotes: number;
@@ -27,11 +22,11 @@ export interface ILineup extends Document {
 const LineupSchema = new Schema<ILineup>(
   {
     featured: { type: Boolean, default: false },
-    pgId: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    sgId: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    sfId: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    pfId: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    cId: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    c: { type: Schema.Types.ObjectId, ref: "Player", required: true },
     ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     totalVotes: { type: Number, default: 0 },
     avgRating: { type: Number, default: 0 },

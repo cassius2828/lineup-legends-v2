@@ -13,10 +13,12 @@ export default function RateLineupPage() {
 
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
 
-  const { data: lineup, isLoading } = api.lineup.getById.useQuery({ id: lineupId });
+  const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery({
+    id: lineupId,
+  });
   const { data: existingRating } = api.lineup.getUserRating.useQuery(
     { lineupId },
-    { enabled: !!lineupId }
+    { enabled: !!lineupId },
   );
 
   const rateMutation = api.lineup.rate.useMutation({
@@ -55,7 +57,10 @@ export default function RateLineupPage() {
       <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-white">Lineup not found</h1>
-          <Link href="/lineups/explore" className="mt-4 text-emerald-400 hover:underline">
+          <Link
+            href="/lineups/explore"
+            className="mt-4 text-emerald-400 hover:underline"
+          >
             Back to Explore
           </Link>
         </div>
@@ -72,8 +77,18 @@ export default function RateLineupPage() {
             href="/lineups/explore"
             className="mb-2 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Back to Explore
           </Link>
@@ -88,7 +103,7 @@ export default function RateLineupPage() {
           <div className="grid grid-cols-5 gap-3">
             {(["pg", "sg", "sf", "pf", "c"] as const).map((pos) => (
               <div key={pos} className="text-center">
-                <span className="mb-1 block text-xs font-bold uppercase text-white/50">
+                <span className="mb-1 block text-xs font-bold text-white/50 uppercase">
                   {pos.toUpperCase()}
                 </span>
                 <PlayerCard player={lineup[pos]} compact />
@@ -122,7 +137,7 @@ export default function RateLineupPage() {
                 onClick={() => setSelectedRating(value)}
                 className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold transition-all ${
                   selectedRating === value
-                    ? "bg-gold text-black scale-110"
+                    ? "bg-gold scale-110 text-black"
                     : existingRating?.value === value
                       ? "bg-gold/30 text-gold"
                       : "bg-white/10 text-white/70 hover:bg-white/20"
@@ -150,7 +165,7 @@ export default function RateLineupPage() {
           <button
             onClick={handleSubmit}
             disabled={selectedRating === null || rateMutation.isPending}
-            className="flex-1 rounded-lg bg-gold py-3 font-semibold text-black transition-colors hover:bg-gold-light disabled:opacity-50"
+            className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:opacity-50"
           >
             {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
           </button>
@@ -159,4 +174,3 @@ export default function RateLineupPage() {
     </main>
   );
 }
-

@@ -37,28 +37,19 @@ export interface UserType {
 }
 
 export interface LineupType {
-  _doc: {
-  id?: string;
   _id?: ObjectIdLike;
   createdAt: Date;
   updatedAt: Date;
   featured: boolean;
-  pgId: string;
   pg: PlayerType;
-  sgId: string;
   sg: PlayerType;
-  sfId: string;
   sf: PlayerType;
-  pfId: string;
   pf: PlayerType;
-  cId: string;
   c: PlayerType;
-  ownerId: string;
   owner: UserType;
   totalVotes: number;
-    avgRating: number;
-    timesGambled: number;
-  }
+  avgRating: number;
+  timesGambled: number;
 }
 
 export interface VoteType {

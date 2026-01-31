@@ -15,14 +15,16 @@ export default function ExploreLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const utils = api.useUtils();
 
-  const { data: lineups, isLoading } = api.lineup.getAll.useQuery({ sort });
+  const { data: lineups, isLoading } = api.lineup.getAllLineups.useQuery({
+    sort,
+  });
   const { data: session } = api.profile.getMe.useQuery(undefined, {
     retry: false,
   });
 
   const voteMutation = api.lineup.vote.useMutation({
     onSuccess: () => {
-      void utils.lineup.getAll.invalidate();
+      void utils.lineup.getAllLineups.invalidate();
     },
   });
 

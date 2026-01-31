@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import {
-  LineupCard,
-  type LineupWithRelations,
-} from "~/app/_components/LineupCard";
-import { api } from "~/trpc/react";
+import { useState } from "react";
+import { LineupCard } from "~/app/_components/LineupCard";
 import { getId } from "~/lib/types";
+import { api } from "~/trpc/react";
 
 type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
 
@@ -15,16 +12,17 @@ export default function MyLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const utils = api.useUtils();
 
-  const { data: usersLineups, isLoading } = api.lineup.getByCurrentUser.useQuery({
-    sort,
-  });
+  const { data: usersLineups, isLoading } =
+    api.lineup.getLineupsByCurrentUser.useQuery({
+      sort,
+    });
   const { data: session } = api.profile.getMe.useQuery(undefined, {
     retry: false,
   });
 
   const deleteLineup = api.lineup.delete.useMutation({
     onSuccess: () => {
-      void utils.lineup.getByCurrentUser.invalidate();
+      void utils.lineup.getLineupsByCurrentUser.invalidate();
     },
     onError: (error) => {
       alert(error.message);
@@ -33,7 +31,7 @@ export default function MyLineupsPage() {
 
   const toggleFeatured = api.lineup.toggleFeatured.useMutation({
     onSuccess: () => {
-      void utils.lineup.getByCurrentUser.invalidate();
+      void utils.lineup.getLineupsByCurrentUser.invalidate();
     },
     onError: (error) => {
       alert(error.message);
@@ -49,7 +47,7 @@ export default function MyLineupsPage() {
   const handleToggleFeatured = (id: string) => {
     toggleFeatured.mutate({ id });
   };
-console.log(usersLineups, ' <-- lineups')
+  console.log(usersLineups, " <-- lineups");
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-4 py-8">
@@ -110,10 +108,10 @@ console.log(usersLineups, ' <-- lineups')
             </div>
           </div>
         ) : usersLineups && usersLineups.length > 0 ? (
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {usersLineups.map((lineup) => (
               <LineupCard
-                key={getId(lineup)}
+                key={lineup._id?.toString() ?? ""}
                 lineup={lineup}
                 showOwner={false}
                 isOwner={true}

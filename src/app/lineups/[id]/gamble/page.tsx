@@ -32,7 +32,7 @@ export default function GambleLineupPage() {
     data: lineup,
     isLoading,
     refetch,
-  } = api.lineup.getById.useQuery({ id: lineupId });
+  } = api.lineup.getLineupById.useQuery({ id: lineupId });
 
   const gambleMutation = api.lineup.gamble.useMutation({
     onSuccess: (data) => {
@@ -72,10 +72,7 @@ export default function GambleLineupPage() {
       <main className="min-h-screen bg-gradient-to-b from-slate-900 via-green-900/20 to-slate-900">
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-white">Lineup not found</h1>
-          <Link
-            href="/lineups"
-            className="mt-4 text-green-400 hover:underline"
-          >
+          <Link href="/lineups" className="mt-4 text-green-400 hover:underline">
             Back to My Lineups
           </Link>
         </div>
@@ -117,9 +114,7 @@ export default function GambleLineupPage() {
 
         {/* Rules */}
         <div className="mb-6 rounded-xl bg-green-500/10 p-4 text-sm text-white/70">
-          <h3 className="mb-2 font-semibold text-green-400">
-            Gambling Rules:
-          </h3>
+          <h3 className="mb-2 font-semibold text-green-400">Gambling Rules:</h3>
           <ul className="list-inside list-disc space-y-1">
             <li>$1 players can only get other $1 players</li>
             <li>$5 players can get $4 or $5 players</li>
@@ -232,14 +227,14 @@ export default function GambleLineupPage() {
                         {POSITION_LABELS[pos]}
                       </span>
                       <img
-                        src={player.imgUrl}
-                        alt={`${player.firstName} ${player.lastName}`}
+                        src={player?.imgUrl ?? ""}
+                        alt={`${player?.firstName} ${player?.lastName}`}
                         className="mx-auto h-16 w-16 rounded-full object-cover"
                       />
                       <p className="mt-2 truncate text-sm font-medium text-white">
-                        {player.firstName}
+                        {player?.firstName}
                       </p>
-                      <p className="text-xs text-green-400">${player.value}</p>
+                      <p className="text-xs text-green-400">${player?.value}</p>
                     </button>
                   );
                 })}
@@ -252,17 +247,17 @@ export default function GambleLineupPage() {
                 <p className="text-sm text-white/60">
                   Gambling{" "}
                   <strong className="text-white">
-                    {lineup[selectedPosition].firstName}{" "}
-                    {lineup[selectedPosition].lastName}
+                    {lineup[selectedPosition]?.firstName}{" "}
+                    {lineup[selectedPosition]?.lastName}
                   </strong>{" "}
-                  (${lineup[selectedPosition].value})
+                  (${lineup[selectedPosition]?.value})
                 </p>
                 <p className="mt-1 text-xs text-white/40">
-                  {lineup[selectedPosition].value === 1
+                  {lineup[selectedPosition]?.value === 1
                     ? "Can only receive $1 players"
-                    : lineup[selectedPosition].value === 5
+                    : lineup[selectedPosition]?.value === 5
                       ? "Can receive $4 or $5 players"
-                      : `Can receive $${lineup[selectedPosition].value - 1}-$${lineup[selectedPosition].value + 1} players`}
+                      : `Can receive $${lineup[selectedPosition]?.value ? lineup[selectedPosition]?.value - 1 : 0}-$${lineup[selectedPosition]?.value ? lineup[selectedPosition]?.value + 1 : 0} players`}
                 </p>
               </div>
             )}
