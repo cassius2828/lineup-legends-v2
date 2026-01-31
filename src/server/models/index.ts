@@ -2,7 +2,7 @@
 export { Player, type IPlayer } from "./player";
 export { User, type IUser, type ISocialMedia } from "./user";
 export { Lineup, type ILineup } from "./lineup";
-export { Vote, type IVote } from "./vote";
+export { LineupVote as Vote, type ILineupVote as IVote } from "./lineupVote";
 export { Rating, type IRating } from "./rating";
 export { Friend, type IFriend, type FriendStatus } from "./friend";
 export {

@@ -1,19 +1,23 @@
-import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
-import type { IPlayer } from "./player";
-import type { IUser } from "./user";
+import mongoose, {
+  Schema,
+  type Document,
+  type Model,
+  type Types,
+} from "mongoose";
 
 export interface ILineup extends Document {
   _id: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
   featured: boolean;
-  pg: IPlayer;
-  sg: IPlayer;
-  sf: IPlayer;
-  pf: IPlayer;
-  c: IPlayer;
-  ownerId: Types.ObjectId;
-  owner?: IUser;
+  players: {
+    pg: Types.ObjectId;
+    sg: Types.ObjectId;
+    sf: Types.ObjectId;
+    pf: Types.ObjectId;
+    c: Types.ObjectId;
+  };
+  owner: Types.ObjectId;
   totalVotes: number;
   avgRating: number;
   timesGambled: number;
@@ -22,19 +26,21 @@ export interface ILineup extends Document {
 const LineupSchema = new Schema<ILineup>(
   {
     featured: { type: Boolean, default: false },
-    pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    c: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    players: {
+      pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      c: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    },
+    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
     totalVotes: { type: Number, default: 0 },
     avgRating: { type: Number, default: 0 },
     timesGambled: { type: Number, default: 0 },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Virtual for id
@@ -45,42 +51,42 @@ LineupSchema.virtual("id").get(function (this: ILineup) {
 // Virtual populations for positions
 LineupSchema.virtual("pg", {
   ref: "Player",
-  localField: "pgId",
+  localField: "players.pg",
   foreignField: "_id",
   justOne: true,
 });
 
 LineupSchema.virtual("sg", {
   ref: "Player",
-  localField: "sgId",
+  localField: "players.sg",
   foreignField: "_id",
   justOne: true,
 });
 
 LineupSchema.virtual("sf", {
   ref: "Player",
-  localField: "sfId",
+  localField: "players.sf",
   foreignField: "_id",
   justOne: true,
 });
 
 LineupSchema.virtual("pf", {
   ref: "Player",
-  localField: "pfId",
+  localField: "players.pf",
   foreignField: "_id",
   justOne: true,
 });
 
 LineupSchema.virtual("c", {
   ref: "Player",
-  localField: "cId",
+  localField: "players.c",
   foreignField: "_id",
   justOne: true,
 });
 
 LineupSchema.virtual("owner", {
   ref: "User",
-  localField: "ownerId",
+  localField: "owner",
   foreignField: "_id",
   justOne: true,
 });
@@ -90,7 +96,8 @@ LineupSchema.set("toJSON", { virtuals: true });
 LineupSchema.set("toObject", { virtuals: true });
 
 // add index on owner, avgRating, totalVotes
-LineupSchema.index({ ownerId: 1, avgRating: 1, totalVotes: 1 })
+LineupSchema.index({ owner: 1, avgRating: 1, totalVotes: 1 });
 
 export const Lineup: Model<ILineup> =
-  (mongoose.models.Lineup as Model<ILineup> | undefined) ?? mongoose.model<ILineup>("Lineup", LineupSchema);
+  (mongoose.models.Lineup as Model<ILineup> | undefined) ??
+  mongoose.model<ILineup>("Lineup", LineupSchema);

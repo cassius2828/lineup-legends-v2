@@ -1,30 +1,22 @@
-import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
-import type { IUser } from "./user";
-import type { ILineup } from "./lineup";
+import mongoose, {
+  Schema,
+  type Document,
+  type Model,
+  type Types,
+} from "mongoose";
 
 // Vote subdocument for comments
 export interface ICommentVote {
-  _id: mongoose.Types.ObjectId;
-  userId: Types.ObjectId;
+  id: mongoose.Types.ObjectId;
+  user: Types.ObjectId;
   type: "upvote" | "downvote";
 }
-
-const CommentVoteSchema = new Schema<ICommentVote>(
-  {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    type: { type: String, enum: ["upvote", "downvote"], required: true },
-  },
-  { _id: true }
-);
 
 // Thread subdocument (replies to comments)
 export interface IThread {
   _id: mongoose.Types.ObjectId;
   text: string;
-  userId: Types.ObjectId;
-  user?: IUser;
-  votes: ICommentVote[];
-  totalVotes: number;
+  user: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,23 +24,17 @@ export interface IThread {
 const ThreadSchema = new Schema<IThread>(
   {
     text: { type: String, required: true },
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    votes: [CommentVoteSchema],
-    totalVotes: { type: Number, default: 0 },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Main Comment document
 export interface IComment extends Document {
   _id: mongoose.Types.ObjectId;
   text: string;
-  userId: Types.ObjectId;
-  user?: IUser;
-  lineupId: Types.ObjectId;
-  lineup?: ILineup;
-  votes: ICommentVote[];
-  totalVotes: number;
+  user: Types.ObjectId;
+  lineup: Types.ObjectId;
   thread: IThread[];
   createdAt: Date;
   updatedAt: Date;
@@ -57,38 +43,21 @@ export interface IComment extends Document {
 const CommentSchema = new Schema<IComment>(
   {
     text: { type: String, required: true },
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    lineupId: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
-    votes: [CommentVoteSchema],
-    totalVotes: { type: Number, default: 0 },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
     thread: [ThreadSchema],
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Index for efficient lookups
-CommentSchema.index({ lineupId: 1, createdAt: -1 });
+CommentSchema.index({ lineup: 1, createdAt: -1 });
 
 // Virtual for id
 CommentSchema.virtual("id").get(function (this: IComment) {
   return this._id.toHexString();
-});
-
-// Virtual populations
-CommentSchema.virtual("user", {
-  ref: "User",
-  localField: "userId",
-  foreignField: "_id",
-  justOne: true,
-});
-
-CommentSchema.virtual("lineup", {
-  ref: "Lineup",
-  localField: "lineupId",
-  foreignField: "_id",
-  justOne: true,
 });
 
 // Ensure virtuals are included in JSON output
@@ -96,4 +65,5 @@ CommentSchema.set("toJSON", { virtuals: true });
 CommentSchema.set("toObject", { virtuals: true });
 
 export const Comment: Model<IComment> =
-  (mongoose.models.Comment as Model<IComment> | undefined) ?? mongoose.model<IComment>("Comment", CommentSchema);
+  (mongoose.models.Comment as Model<IComment> | undefined) ??
+  mongoose.model<IComment>("Comment", CommentSchema);

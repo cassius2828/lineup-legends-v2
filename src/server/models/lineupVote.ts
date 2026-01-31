@@ -1,0 +1,42 @@
+import mongoose, {
+  Schema,
+  type Document,
+  type Model,
+  type Types,
+} from "mongoose";
+
+export interface ILineupVote extends Document {
+  _id: mongoose.Types.ObjectId;
+  type: "upvote" | "downvote";
+  user: Types.ObjectId;
+  lineup: Types.ObjectId;
+  createdAt: Date;
+}
+
+const LineupVoteSchema = new Schema<ILineupVote>(
+  {
+    type: { type: String, enum: ["upvote", "downvote"], required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
+    createdAt: { type: Date, default: Date.now },
+  },
+  {
+    timestamps: false,
+  },
+);
+
+// Compound unique index for one vote per user per lineup
+LineupVoteSchema.index({ user: 1, lineup: 1 }, { unique: true });
+
+// Virtual for id
+LineupVoteSchema.virtual("id").get(function (this: ILineupVote) {
+  return this._id.toHexString();
+});
+
+// Ensure virtuals are included in JSON output
+LineupVoteSchema.set("toJSON", { virtuals: true });
+LineupVoteSchema.set("toObject", { virtuals: true });
+
+export const LineupVote: Model<ILineupVote> =
+  (mongoose.models.LineupVote as Model<ILineupVote> | undefined) ??
+  mongoose.model<ILineupVote>("LineupVote", LineupVoteSchema);
