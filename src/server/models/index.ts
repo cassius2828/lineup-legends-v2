@@ -1,24 +1,52 @@
 // Barrel export for all Mongoose models
-export { Player, type IPlayer } from "./player";
-export { User, type IUser, type ISocialMedia } from "./user";
-export { Lineup, type ILineup } from "./lineup";
-export { LineupVote as Vote, type ILineupVote as IVote } from "./lineupVote";
-export { Rating, type IRating } from "./rating";
-export { Friend, type IFriend, type FriendStatus } from "./friend";
+// Models (for database operations)
+export { PlayerModel, type Player, type PlayerDoc } from "./player";
+export { UserModel, type User, type UserDoc, type SocialMedia } from "./user";
 export {
-  Comment,
-  type IComment,
-  type IThread,
-  type ICommentVote,
+  LineupModel,
+  type Lineup,
+  type LineupDoc,
+  type LineupPlayers,
+  type LineupPlayersDoc,
+} from "./lineup";
+export {
+  LineupVoteModel,
+  LineupVoteModel as VoteModel,
+  type LineupVote,
+  type LineupVote as Vote,
+  type LineupVoteDoc,
+  type LineupVoteDoc as VoteDoc,
+} from "./lineupVote";
+export { RatingModel, type Rating, type RatingDoc } from "./rating";
+export {
+  FriendModel,
+  type Friend,
+  type FriendDoc,
+  type FriendStatus,
+} from "./friend";
+export {
+  CommentModel,
+  type Comment,
+  type CommentDoc,
+  type Thread,
+  type ThreadDoc,
 } from "./comment";
-export { Account, type IAccount } from "./account";
-export { Session, type ISession } from "./session";
 export {
-  VerificationToken,
-  type IVerificationToken,
+  CommentVoteModel,
+  type CommentVote,
+  type CommentVoteDoc,
+} from "./commentVote";
+export { AccountModel, type Account, type AccountDoc } from "./account";
+export { SessionModel, type Session, type SessionDoc } from "./session";
+export {
+  VerificationTokenModel,
+  type VerificationToken,
+  type VerificationTokenDoc,
 } from "./verificationToken";
 export {
-  RequestedPlayer,
-  type IRequestedPlayer,
-  type IValueDescription,
+  RequestedPlayerModel,
+  type RequestedPlayer,
+  type RequestedPlayerDoc,
+  type ValueDescription,
+  type ValueDescriptionDoc,
 } from "./requestedPlayer";

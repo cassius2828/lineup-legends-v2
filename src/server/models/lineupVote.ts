@@ -4,16 +4,27 @@ import mongoose, {
   type Model,
   type Types,
 } from "mongoose";
+import type { User } from "./user";
+import type { Lineup } from "./lineup";
 
-export interface ILineupVote extends Document {
-  _id: mongoose.Types.ObjectId;
+// API Type - for responses and client-side usage (after population)
+export interface LineupVote {
+  id: string;
+  type: "upvote" | "downvote";
+  user: User;
+  lineup: Lineup;
+  createdAt: Date;
+}
+
+// DB Type - for database operations
+export interface LineupVoteDoc extends Document {
   type: "upvote" | "downvote";
   user: Types.ObjectId;
   lineup: Types.ObjectId;
   createdAt: Date;
 }
 
-const LineupVoteSchema = new Schema<ILineupVote>(
+const LineupVoteSchema = new Schema<LineupVoteDoc>(
   {
     type: { type: String, enum: ["upvote", "downvote"], required: true },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -29,7 +40,7 @@ const LineupVoteSchema = new Schema<ILineupVote>(
 LineupVoteSchema.index({ user: 1, lineup: 1 }, { unique: true });
 
 // Virtual for id
-LineupVoteSchema.virtual("id").get(function (this: ILineupVote) {
+LineupVoteSchema.virtual("id").get(function (this: LineupVoteDoc) {
   return this._id.toHexString();
 });
 
@@ -37,6 +48,6 @@ LineupVoteSchema.virtual("id").get(function (this: ILineupVote) {
 LineupVoteSchema.set("toJSON", { virtuals: true });
 LineupVoteSchema.set("toObject", { virtuals: true });
 
-export const LineupVote: Model<ILineupVote> =
-  (mongoose.models.LineupVote as Model<ILineupVote> | undefined) ??
-  mongoose.model<ILineupVote>("LineupVote", LineupVoteSchema);
+export const LineupVoteModel: Model<LineupVoteDoc> =
+  (mongoose.models.LineupVote as Model<LineupVoteDoc> | undefined) ??
+  mongoose.model<LineupVoteDoc>("LineupVote", LineupVoteSchema);

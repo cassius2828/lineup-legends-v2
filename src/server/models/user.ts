@@ -5,13 +5,33 @@ import mongoose, {
   type Types,
 } from "mongoose";
 
-export interface ISocialMedia {
+export interface SocialMedia {
   twitter?: string | null;
   instagram?: string | null;
   facebook?: string | null;
 }
 
-export interface IUser extends Document {
+// API Type - for responses and client-side usage (after population)
+export interface User {
+  id: string;
+  name: string;
+  password?: string | null;
+  username?: string | null;
+  email: string;
+  emailVerified?: Date | null;
+  image?: string | null;
+  bio?: string | null;
+  profileImg?: string | null;
+  bannerImg?: string | null;
+  friends: User[];
+  socialMedia?: SocialMedia;
+  newEmail?: string | null;
+  emailConfirmationToken?: string | null;
+  admin?: boolean;
+}
+
+// DB Type - for database operations
+export interface UserDoc extends Document {
   _id: mongoose.Types.ObjectId;
   name: string;
   password?: string | null;
@@ -23,13 +43,13 @@ export interface IUser extends Document {
   profileImg?: string | null;
   bannerImg?: string | null;
   friends: Types.ObjectId[];
-  socialMedia?: ISocialMedia;
+  socialMedia?: SocialMedia;
   newEmail?: string | null;
   emailConfirmationToken?: string | null;
   admin?: boolean;
 }
 
-const SocialMediaSchema = new Schema<ISocialMedia>(
+const SocialMediaSchema = new Schema<SocialMedia>(
   {
     twitter: { type: String, default: null },
     instagram: { type: String, default: null },
@@ -38,7 +58,7 @@ const SocialMediaSchema = new Schema<ISocialMedia>(
   { _id: false },
 );
 
-const UserSchema = new Schema<IUser>(
+const UserSchema = new Schema<UserDoc>(
   {
     name: { type: String, required: true },
     password: { type: String, required: false, default: null },
@@ -61,7 +81,7 @@ const UserSchema = new Schema<IUser>(
 );
 
 // Virtual for id
-UserSchema.virtual("id").get(function (this: IUser) {
+UserSchema.virtual("id").get(function (this: UserDoc) {
   return this._id.toHexString();
 });
 
@@ -69,6 +89,6 @@ UserSchema.virtual("id").get(function (this: IUser) {
 UserSchema.set("toJSON", { virtuals: true });
 UserSchema.set("toObject", { virtuals: true });
 
-export const User: Model<IUser> =
-  (mongoose.models.User as Model<IUser> | undefined) ??
-  mongoose.model<IUser>("User", UserSchema);
+export const UserModel: Model<UserDoc> =
+  (mongoose.models.User as Model<UserDoc> | undefined) ??
+  mongoose.model<UserDoc>("User", UserSchema);

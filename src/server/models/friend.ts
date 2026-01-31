@@ -1,20 +1,37 @@
-import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
-import type { IUser } from "./user";
+import mongoose, {
+  Schema,
+  type Document,
+  type Model,
+  type Types,
+} from "mongoose";
+import type { User } from "./user";
 
 export type FriendStatus = "requested" | "pending" | "accepted";
 
-export interface IFriend extends Document {
-  _id: mongoose.Types.ObjectId;
-  requesterId: Types.ObjectId;
-  requester?: IUser;
-  recipientId: Types.ObjectId;
-  recipient?: IUser;
+// API Type - for responses and client-side usage (after population)
+export interface Friend {
+  id: string;
+  requesterId: string;
+  requester?: User;
+  recipientId: string;
+  recipient?: User;
   status: FriendStatus;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const FriendSchema = new Schema<IFriend>(
+// DB Type - for database operations
+export interface FriendDoc extends Document {
+  requesterId: Types.ObjectId;
+  requester?: User;
+  recipientId: Types.ObjectId;
+  recipient?: User;
+  status: FriendStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const FriendSchema = new Schema<FriendDoc>(
   {
     requesterId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     recipientId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -26,7 +43,7 @@ const FriendSchema = new Schema<IFriend>(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Compound index for efficient lookups
@@ -35,7 +52,7 @@ FriendSchema.index({ recipientId: 1, status: 1 });
 FriendSchema.index({ requesterId: 1, status: 1 });
 
 // Virtual for id
-FriendSchema.virtual("id").get(function (this: IFriend) {
+FriendSchema.virtual("id").get(function (this: FriendDoc) {
   return this._id.toHexString();
 });
 
@@ -58,5 +75,6 @@ FriendSchema.virtual("recipient", {
 FriendSchema.set("toJSON", { virtuals: true });
 FriendSchema.set("toObject", { virtuals: true });
 
-export const Friend: Model<IFriend> =
-  (mongoose.models.Friend as Model<IFriend> | undefined) ?? mongoose.model<IFriend>("Friend", FriendSchema);
+export const FriendModel: Model<FriendDoc> =
+  (mongoose.models.Friend as Model<FriendDoc> | undefined) ??
+  mongoose.model<FriendDoc>("Friend", FriendSchema);

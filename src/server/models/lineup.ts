@@ -4,26 +4,53 @@ import mongoose, {
   type Model,
   type Types,
 } from "mongoose";
+import type { Player } from "./player";
+import type { User } from "./user";
 
-export interface ILineup extends Document {
-  _id: mongoose.Types.ObjectId;
+// API Type - Players subdocument for responses (after population)
+export interface LineupPlayers {
+  pg: Player;
+  sg: Player;
+  sf: Player;
+  pf: Player;
+  c: Player;
+}
+
+// DB Type - Players subdocument for database
+export interface LineupPlayersDoc {
+  pg: Types.ObjectId;
+  sg: Types.ObjectId;
+  sf: Types.ObjectId;
+  pf: Types.ObjectId;
+  c: Types.ObjectId;
+}
+
+// API Type - for responses and client-side usage (after population)
+export interface Lineup {
+  id: string;
   createdAt: Date;
   updatedAt: Date;
   featured: boolean;
-  players: {
-    pg: Types.ObjectId;
-    sg: Types.ObjectId;
-    sf: Types.ObjectId;
-    pf: Types.ObjectId;
-    c: Types.ObjectId;
-  };
+  players: LineupPlayers;
+  owner: User;
+  totalVotes: number;
+  avgRating: number;
+  timesGambled: number;
+}
+
+// DB Type - for database operations
+export interface LineupDoc extends Document {
+  createdAt: Date;
+  updatedAt: Date;
+  featured: boolean;
+  players: LineupPlayersDoc;
   owner: Types.ObjectId;
   totalVotes: number;
   avgRating: number;
   timesGambled: number;
 }
 
-const LineupSchema = new Schema<ILineup>(
+const LineupSchema = new Schema<LineupDoc>(
   {
     featured: { type: Boolean, default: false },
     players: {
@@ -44,51 +71,8 @@ const LineupSchema = new Schema<ILineup>(
 );
 
 // Virtual for id
-LineupSchema.virtual("id").get(function (this: ILineup) {
+LineupSchema.virtual("id").get(function (this: LineupDoc) {
   return this._id.toHexString();
-});
-
-// Virtual populations for positions
-LineupSchema.virtual("pg", {
-  ref: "Player",
-  localField: "players.pg",
-  foreignField: "_id",
-  justOne: true,
-});
-
-LineupSchema.virtual("sg", {
-  ref: "Player",
-  localField: "players.sg",
-  foreignField: "_id",
-  justOne: true,
-});
-
-LineupSchema.virtual("sf", {
-  ref: "Player",
-  localField: "players.sf",
-  foreignField: "_id",
-  justOne: true,
-});
-
-LineupSchema.virtual("pf", {
-  ref: "Player",
-  localField: "players.pf",
-  foreignField: "_id",
-  justOne: true,
-});
-
-LineupSchema.virtual("c", {
-  ref: "Player",
-  localField: "players.c",
-  foreignField: "_id",
-  justOne: true,
-});
-
-LineupSchema.virtual("owner", {
-  ref: "User",
-  localField: "owner",
-  foreignField: "_id",
-  justOne: true,
 });
 
 // Ensure virtuals are included in JSON output
@@ -98,6 +82,6 @@ LineupSchema.set("toObject", { virtuals: true });
 // add index on owner, avgRating, totalVotes
 LineupSchema.index({ owner: 1, avgRating: 1, totalVotes: 1 });
 
-export const Lineup: Model<ILineup> =
-  (mongoose.models.Lineup as Model<ILineup> | undefined) ??
-  mongoose.model<ILineup>("Lineup", LineupSchema);
+export const LineupModel: Model<LineupDoc> =
+  (mongoose.models.Lineup as Model<LineupDoc> | undefined) ??
+  mongoose.model<LineupDoc>("Lineup", LineupSchema);

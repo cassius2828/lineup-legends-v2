@@ -4,24 +4,27 @@ import mongoose, {
   type Model,
   type Types,
 } from "mongoose";
+import type { User } from "./user";
+import type { Lineup } from "./lineup";
 
-// Vote subdocument for comments
-export interface ICommentVote {
-  id: mongoose.Types.ObjectId;
-  user: Types.ObjectId;
-  type: "upvote" | "downvote";
+// API Type - Thread subdocument for responses (after population)
+export interface Thread {
+  id: string;
+  text: string;
+  user: User;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Thread subdocument (replies to comments)
-export interface IThread {
-  _id: mongoose.Types.ObjectId;
+// DB Type - Thread subdocument for database
+export interface ThreadDoc {
   text: string;
   user: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
 
-const ThreadSchema = new Schema<IThread>(
+const ThreadSchema = new Schema<ThreadDoc>(
   {
     text: { type: String, required: true },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -29,18 +32,28 @@ const ThreadSchema = new Schema<IThread>(
   { timestamps: true },
 );
 
-// Main Comment document
-export interface IComment extends Document {
-  _id: mongoose.Types.ObjectId;
+// API Type - for responses and client-side usage (after population)
+export interface Comment {
+  id: string;
   text: string;
-  user: Types.ObjectId;
-  lineup: Types.ObjectId;
-  thread: IThread[];
+  user: User;
+  lineup: Lineup;
+  thread: Thread[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-const CommentSchema = new Schema<IComment>(
+// DB Type - for database operations
+export interface CommentDoc extends Document {
+  text: string;
+  user: Types.ObjectId;
+  lineup: Types.ObjectId;
+  thread: ThreadDoc[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const CommentSchema = new Schema<CommentDoc>(
   {
     text: { type: String, required: true },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -56,7 +69,7 @@ const CommentSchema = new Schema<IComment>(
 CommentSchema.index({ lineup: 1, createdAt: -1 });
 
 // Virtual for id
-CommentSchema.virtual("id").get(function (this: IComment) {
+CommentSchema.virtual("id").get(function (this: CommentDoc) {
   return this._id.toHexString();
 });
 
@@ -64,6 +77,6 @@ CommentSchema.virtual("id").get(function (this: IComment) {
 CommentSchema.set("toJSON", { virtuals: true });
 CommentSchema.set("toObject", { virtuals: true });
 
-export const Comment: Model<IComment> =
-  (mongoose.models.Comment as Model<IComment> | undefined) ??
-  mongoose.model<IComment>("Comment", CommentSchema);
+export const CommentModel: Model<CommentDoc> =
+  (mongoose.models.Comment as Model<CommentDoc> | undefined) ??
+  mongoose.model<CommentDoc>("Comment", CommentSchema);

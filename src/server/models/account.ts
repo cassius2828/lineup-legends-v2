@@ -1,8 +1,15 @@
-import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
+import mongoose, {
+  Schema,
+  type Document,
+  type Model,
+  type Types,
+} from "mongoose";
+import type { User } from "./user";
 
-export interface IAccount extends Document {
-  _id: mongoose.Types.ObjectId;
-  userId: Types.ObjectId;
+// API Type - for responses and client-side usage (after population)
+export interface Account {
+  id: string;
+  user: User;
   type: string;
   provider: string;
   providerAccountId: string;
@@ -16,9 +23,25 @@ export interface IAccount extends Document {
   refresh_token_expires_in?: number | null;
 }
 
-const AccountSchema = new Schema<IAccount>(
+// DB Type - for database operations
+export interface AccountDoc extends Document {
+  user: Types.ObjectId;
+  type: string;
+  provider: string;
+  providerAccountId: string;
+  refresh_token?: string | null;
+  access_token?: string | null;
+  expires_at?: number | null;
+  token_type?: string | null;
+  scope?: string | null;
+  id_token?: string | null;
+  session_state?: string | null;
+  refresh_token_expires_in?: number | null;
+}
+
+const AccountSchema = new Schema<AccountDoc>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     type: { type: String, required: true },
     provider: { type: String, required: true },
     providerAccountId: { type: String, required: true },
@@ -33,14 +56,14 @@ const AccountSchema = new Schema<IAccount>(
   },
   {
     timestamps: false,
-  }
+  },
 );
 
 // Compound unique index for provider + providerAccountId
 AccountSchema.index({ provider: 1, providerAccountId: 1 }, { unique: true });
 
 // Virtual for id
-AccountSchema.virtual("id").get(function (this: IAccount) {
+AccountSchema.virtual("id").get(function (this: AccountDoc) {
   return this._id.toHexString();
 });
 
@@ -48,5 +71,6 @@ AccountSchema.virtual("id").get(function (this: IAccount) {
 AccountSchema.set("toJSON", { virtuals: true });
 AccountSchema.set("toObject", { virtuals: true });
 
-export const Account: Model<IAccount> =
-  (mongoose.models.Account as Model<IAccount> | undefined) ?? mongoose.model<IAccount>("Account", AccountSchema);
+export const AccountModel: Model<AccountDoc> =
+  (mongoose.models.Account as Model<AccountDoc> | undefined) ??
+  mongoose.model<AccountDoc>("Account", AccountSchema);
