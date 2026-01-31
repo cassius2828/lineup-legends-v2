@@ -35,6 +35,8 @@ export interface Lineup {
   owner: User;
   totalVotes: number;
   avgRating: number;
+  ratingCount: number;
+  ratingSum: number;
   timesGambled: number;
 }
 

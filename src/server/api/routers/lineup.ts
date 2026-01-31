@@ -3,11 +3,10 @@ import mongoose, { type SortOrder } from "mongoose";
 import { z } from "zod";
 import {
   getIdString,
+  incrementTotalVotes,
   lineupPopulateFields,
   processCommentVote,
-  recalculateAvgRating,
-  incrementTotalVotes,
-  transformLineup,
+  transformLineup
 } from "~/lib/utils";
 
 import {
@@ -16,15 +15,12 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import {
-  Comment,
-  Lineup,
-  Player,
-  Rating,
-  Vote,
-  type IComment,
-  type ILineup,
-  type IPlayer,
-  type IThread,
+  CommentModel,
+  LineupModel,
+  PlayerModel,
+  RatingModel,
+  VoteModel,
+  type Lineup
 } from "~/server/models";
 const playerSchema = z.object({
   _id: z.string(),
@@ -62,7 +58,9 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Fetch all selected players and validate budget
-      const selectedPlayers = await Player.find({ _id: { $in: playerIds } });
+      const selectedPlayers = await PlayerModel.find({
+        _id: { $in: playerIds },
+      });
 
       if (selectedPlayers.length !== 5) {
         throw new TRPCError({
@@ -83,22 +81,21 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Create the lineup
-      const lineup = await Lineup.create({
-        pg: selectedPlayers[0]?._id,
-        sg: selectedPlayers[1]?._id,
-        sf: selectedPlayers[2]?._id,
-        pf: selectedPlayers[3]?._id,
-        c: selectedPlayers[4]?._id,
-        ownerId: ctx.session.user.id,
-        featured: false,
+      const lineup = await LineupModel.create({
+        players: {
+          pg: selectedPlayers[0]?._id,
+          sg: selectedPlayers[1]?._id,
+          sf: selectedPlayers[2]?._id,
+          pf: selectedPlayers[3]?._id,
+          c: selectedPlayers[4]?._id,
+        },
+        owner: ctx.session.user.id,
       });
 
       // Populate and return
-      const populatedLineup = await Lineup.findById(lineup._id).populate(
-        lineupPopulateFields,
-      );
-
-      return transformLineup(populatedLineup);
+      return await LineupModel.findById(lineup._id)
+        .populate(lineupPopulateFields)
+        .lean();
     }),
 
   // Get current user's lineups (protected)
@@ -128,39 +125,10 @@ export const lineupRouter = createTRPCRouter({
           break;
       }
 
-      const lineups = await Lineup.find({ ownerId: ctx.session.user.id })
+      return await LineupModel.find({ ownerId: ctx.session.user.id })
         .sort(sortOption)
         .populate(lineupPopulateFields)
         .lean();
-
-      // Get user's votes and ratings for these lineups
-      const lineupIds = lineups.map((l) => l._id);
-      const userVotes = await Vote.find({
-        userId: ctx.session.user.id,
-        lineupId: { $in: lineupIds },
-      });
-      const userRatings = await Rating.find({
-        userId: ctx.session.user.id,
-        lineupId: { $in: lineupIds },
-      });
-
-      // Map votes and ratings to lineups
-      // if this is reused below, then extract this to a helper function
-      const voteMap = new Map(userVotes.map((v) => [v.lineupId.toString(), v]));
-      const ratingMap = new Map(
-        userRatings.map((r) => [r.lineupId.toString(), r]),
-      );
-
-      return lineups.map((lineup) => {
-        const lineupIdStr = lineup._id.toString();
-        return {
-          ...lineup,
-          votes: voteMap.has(lineupIdStr) ? [voteMap.get(lineupIdStr)] : [],
-          ratings: ratingMap.has(lineupIdStr)
-            ? [ratingMap.get(lineupIdStr)]
-            : [],
-        };
-      });
     }),
 
   // Get a specific user's lineups (public)
@@ -168,7 +136,7 @@ export const lineupRouter = createTRPCRouter({
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
       // may need to check if we need to map votes and ratings here
-      return await Lineup.find({ ownerId: input.userId })
+      return await LineupModel.find({ ownerId: input.userId })
         .sort({ createdAt: -1 })
         .populate(lineupPopulateFields)
         .lean();
@@ -201,7 +169,7 @@ export const lineupRouter = createTRPCRouter({
           break;
       }
       // may need to check if we need to map votes and ratings here
-      return await Lineup.find()
+      return await LineupModel.find()
         .sort(sortOption)
         .populate(lineupPopulateFields)
         .lean();
@@ -211,46 +179,17 @@ export const lineupRouter = createTRPCRouter({
   getLineupById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      return await Lineup.findById(input.id).populate(lineupPopulateFields);
+      return await LineupModel.findById(input.id).populate(
+        lineupPopulateFields,
+      );
     }),
 
   // Delete a lineup (protected - only owner can delete)
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.id).select("ownerId").lean();
-
-      if (!lineup) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Lineup not found.",
-        });
-      }
-
-      if (lineup.ownerId.toString() !== ctx.session.user.id) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You do not have permission to delete this lineup.",
-        });
-      }
-
-      // Delete related votes and ratings
-      const [deletedLineup, _deletedVotes, _deletedRatings] = await Promise.all(
-        [
-          Lineup.findByIdAndDelete(input.id).lean(),
-          Vote.deleteMany({ lineupId: input.id }),
-          Rating.deleteMany({ lineupId: input.id }),
-        ],
-      );
-      return deletedLineup;
-    }),
-
-  // Toggle featured status (protected - only owner)
-  toggleFeatured: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.id)
-        .select("ownerId featured")
+      const lineup = await LineupModel.findById(input.id)
+        .select("owner")
         .lean();
 
       if (!lineup) {
@@ -260,7 +199,40 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      if (lineup.ownerId.toString() !== ctx.session.user.id) {
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to delete this lineup.",
+        });
+      }
+
+      // Delete related votes and ratings
+      const [deletedLineup, _deletedVotes, _deletedRatings] = await Promise.all(
+        [
+          LineupModel.findByIdAndDelete(input.id).lean(),
+          VoteModel.deleteMany({ lineupId: input.id }),
+          RatingModel.deleteMany({ lineupId: input.id }),
+        ],
+      );
+      return deletedLineup;
+    }),
+
+  // Toggle featured status (protected - only owner)
+  toggleFeatured: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const lineup = await LineupModel.findById(input.id)
+        .select("owner featured")
+        .lean();
+
+      if (!lineup) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
+      }
+
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You do not have permission to modify this lineup.",
@@ -269,8 +241,8 @@ export const lineupRouter = createTRPCRouter({
 
       // Check if user already has 3 featured lineups
       if (!lineup.featured) {
-        const featuredCount = await Lineup.countDocuments({
-          ownerId: ctx.session.user.id,
+        const featuredCount = await LineupModel.countDocuments({
+          owner: ctx.session.user.id,
           featured: true,
         });
 
@@ -283,7 +255,7 @@ export const lineupRouter = createTRPCRouter({
         }
       }
 
-      return await Lineup.findByIdAndUpdate(
+      return await LineupModel.findByIdAndUpdate(
         input.id,
         { featured: !lineup.featured },
         { new: true },
@@ -305,11 +277,8 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const userId = new mongoose.Types.ObjectId(ctx.session.user.id);
-      const lineupId = new mongoose.Types.ObjectId(input.lineupId);
-
-      const lineup = await Lineup.findById(input.lineupId)
-        .select("ownerId totalVotes")
+      const lineup = await LineupModel.findById(input.lineupId)
+        .select("owner totalVotes")
         .lean();
 
       if (!lineup) {
@@ -320,7 +289,7 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Can't vote on your own lineup
-      if (lineup.ownerId === userId) {
+      if (lineup.owner._id.toString() === ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot vote on your own lineup.",
@@ -328,16 +297,16 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Check for existing vote
-      const existingVote = await Vote.findOneAndUpdate(
+      const existingVote = await VoteModel.findOneAndUpdate(
         {
-          userId,
-          lineupId,
+          user: ctx.session.user.id,
+          lineup: input.lineupId,
         },
 
         {
           $setOnInsert: {
-            userId,
-            lineupId,
+            user: ctx.session.user.id,
+            lineup: input.lineupId,
             type: input.type,
             createdAt: new Date(),
           },
@@ -354,7 +323,7 @@ export const lineupRouter = createTRPCRouter({
         existingVote,
       );
 
-      return await Lineup.findByIdAndUpdate(
+      return await LineupModel.findByIdAndUpdate(
         input.lineupId,
         {
           $inc: { totalVotes: amountToIncrementVotesBy },
@@ -367,7 +336,7 @@ export const lineupRouter = createTRPCRouter({
   getUserVote: protectedProcedure
     .input(z.object({ lineupId: z.string() }))
     .query(async ({ ctx, input }) => {
-      return Vote.findOne({
+      return VoteModel.findOne({
         userId: ctx.session.user.id,
         lineupId: input.lineupId,
       });
@@ -386,8 +355,8 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId)
-        .select("ownerId")
+      const lineup = await LineupModel.findById(input.lineupId)
+        .select("owner")
         .lean();
 
       if (!lineup) {
@@ -398,7 +367,7 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Can't rate your own lineup
-      if (lineup.ownerId.toString() === ctx.session.user.id) {
+      if (lineup.owner._id.toString() === ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot rate your own lineup.",
@@ -406,31 +375,48 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Upsert rating
-      await Rating.findOneAndUpdate(
+      const existingRating = await RatingModel.findOne({
+        user: ctx.session.user.id,
+        lineup: input.lineupId,
+      });
+
+      const isNewRating = !existingRating;
+      const oldRating = existingRating?.value ?? 0;
+      const newRating = input.value;
+      const sumDelta = newRating - oldRating;
+      const countDelta = isNewRating ? 1 : 0;
+
+      await RatingModel.findOneAndUpdate(
         {
-          userId: ctx.session.user.id,
-          lineupId: input.lineupId,
+          user: ctx.session.user.id,
+          lineup: input.lineupId,
         },
         {
-          value: input.value,
+          value: newRating,
         },
-        { upsert: true, new: true },
       );
 
-      // Recalculate average rating
-      const newAvg = await recalculateAvgRating(input.lineupId);
+      const updatedLineup = await LineupModel.findByIdAndUpdate(
+        input.lineupId,
+        {
+          $inc: {
+            ratingSum: sumDelta,
+            ratingCount: countDelta,
+          },
+        },
+        { new: true },
+      );
+      if (updatedLineup?.ratingCount && updatedLineup?.ratingSum) {
+        const avgRating =
+          updatedLineup?.ratingCount > 0
+            ? updatedLineup.ratingSum / updatedLineup.ratingCount
+            : 0;
 
-      return { avgRating: newAvg };
-    }),
+        await LineupModel.findByIdAndUpdate(input.lineupId, { avgRating });
 
-  // Get current user's rating on a lineup
-  getUserRating: protectedProcedure
-    .input(z.object({ lineupId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return Rating.findOne({
-        userId: ctx.session.user.id,
-        lineupId: input.lineupId,
-      });
+        return { avgRating };
+      }
+      return { avgRating: 0 };
     }),
 
   // ============================================
@@ -450,7 +436,7 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId)
+      const lineup = await LineupModel.findById(input.lineupId)
         .populate(lineupPopulateFields)
         .lean();
 
@@ -461,7 +447,7 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      if (lineup.ownerId.toString() !== ctx.session.user.id) {
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You do not have permission to edit this lineup.",
@@ -469,18 +455,18 @@ export const lineupRouter = createTRPCRouter({
       }
 
       const originalIds = new Set([
-        getIdString(lineup.pg?._id),
-        getIdString(lineup.sg?._id),
-        getIdString(lineup.sf?._id),
-        getIdString(lineup.pf?._id),
-        getIdString(lineup.c?._id),
+        getIdString(lineup.players.pg._id),
+        getIdString(lineup.players.sg._id),
+        getIdString(lineup.players.sf._id),
+        getIdString(lineup.players.pf._id),
+        getIdString(lineup.players.c._id),
       ]);
       const newIds = [
-        input.pg?._id,
-        input.sg?._id,
-        input.sf?._id,
-        input.pf?._id,
-        input.c?._id,
+        input.pg._id,
+        input.sg._id,
+        input.sf._id,
+        input.pf._id,
+        input.c._id,
       ];
 
       // Check for duplicates
@@ -503,7 +489,7 @@ export const lineupRouter = createTRPCRouter({
         }
       }
 
-      return await Lineup.findByIdAndUpdate(
+      return await LineupModel.findByIdAndUpdate(
         input.lineupId,
         {
           pg: input.pg,
@@ -532,7 +518,7 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId).populate(
+      const lineup = await LineupModel.findById(input.lineupId).populate(
         lineupPopulateFields,
       );
 
@@ -543,7 +529,7 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      if (lineup.ownerId.toString() !== ctx.session.user.id) {
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You do not have permission to gamble on this lineup.",
@@ -553,17 +539,17 @@ export const lineupRouter = createTRPCRouter({
       // Get the current player at the position
       const positionFieldMap: Record<
         "pg" | "sg" | "sf" | "pf" | "c",
-        keyof ILineup
+        keyof Lineup["players"]
       > = {
-        pg: "pgId",
-        sg: "sgId",
-        sf: "sfId",
-        pf: "pfId",
-        c: "cId",
+        pg: "pg",
+        sg: "sg",
+        sf: "sf",
+        pf: "pf",
+        c: "c",
       };
       const positionField = positionFieldMap[input.position];
       // revisit to tighten this type
-      const currentPlayer = lineup[positionField] as IPlayer;
+      const currentPlayer = lineup.players[positionField];
 
       if (!currentPlayer?.value) {
         throw new TRPCError({
@@ -572,7 +558,7 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      const currentValue = currentPlayer.value;
+      const currentValue = currentPlayer?.value;
 
       // Determine possible values for the new player
       let possibleValues: number[];
@@ -596,7 +582,7 @@ export const lineupRouter = createTRPCRouter({
         .map((id) => new mongoose.Types.ObjectId(id));
 
       // Find eligible players (matching value, not already in lineup)
-      const [newPlayer] = await Player.aggregate<IPlayer>([
+      const [newPlayer] = await PlayerModel.aggregate<IPlayer>([
         {
           $match: {
             value: { $in: possibleValues },
@@ -619,7 +605,7 @@ export const lineupRouter = createTRPCRouter({
         $inc: { timesGambled: 1 },
       };
 
-      const updatedLineup = await Lineup.findByIdAndUpdate(
+      const updatedLineup = await LineupModel.findByIdAndUpdate(
         input.lineupId,
         updateData,
         { new: true },
@@ -637,6 +623,7 @@ export const lineupRouter = createTRPCRouter({
   // ============================================
 
   // Get comments for a lineup
+  // TODO: must be refactored to use the new comment schema
   getComments: publicProcedure
     .input(
       z.object({
@@ -653,7 +640,7 @@ export const lineupRouter = createTRPCRouter({
       if (input.cursor) {
         matchStage._id = { $lt: new mongoose.Types.ObjectId(input.cursor) };
       }
-      const comments = await Comment.aggregate<IComment>([
+      const comments = await CommentModel.aggregate<Comment>([
         {
           $match: matchStage,
         },
@@ -666,7 +653,7 @@ export const lineupRouter = createTRPCRouter({
         {
           $lookup: {
             from: "users",
-            localField: "userId",
+            localField: "user",
             foreignField: "_id",
             as: "user",
             pipeline: [
@@ -725,8 +712,8 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId)
-        .select("ownerId")
+      const lineup = await LineupModel.findById(input.lineupId)
+        .select("owner")
         .lean();
 
       if (!lineup) {
@@ -736,22 +723,20 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      const comment = await Comment.create({
+      const comment = await CommentModel.create({
         text: input.text,
-        userId: ctx.session.user.id,
-        lineupId: input.lineupId,
-        votes: [],
-        totalVotes: 0,
-        thread: [],
+        user: ctx.session.user.id,
+        lineup: input.lineupId,
       });
 
       // Populate and return
-      return await Comment.findById(comment._id)
-        .populate("userId", "username name profileImg")
+      return await CommentModel.findById(comment._id)
+        .populate("user", "username name profileImg")
         .lean();
     }),
 
   // Add a thread reply to a comment
+  // TODO: must be refactored to use the new thread schema
   addThreadReply: protectedProcedure
     .input(
       z.object({
@@ -761,7 +746,7 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const comment = await Comment.findOne({
+      const comment = await CommentModel.findOne({
         _id: input.commentId,
         lineupId: input.lineupId,
       });
@@ -784,12 +769,13 @@ export const lineupRouter = createTRPCRouter({
       await comment.save();
 
       // Populate and return
-      return await Comment.findById(comment._id)
+      return await CommentModel.findById(comment._id)
         .populate("userId", "username name profileImg")
         .lean();
     }),
 
   // Vote on a comment (upvote or downvote)
+  // TODO: must be refactored to use the new comment vote schema
   voteComment: protectedProcedure
     .input(
       z.object({
@@ -799,7 +785,7 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const comment = await Comment.findOne({
+      const comment = await CommentModel.findOne({
         _id: input.commentId,
         lineupId: input.lineupId,
       });
@@ -834,6 +820,7 @@ export const lineupRouter = createTRPCRouter({
     }),
 
   // Vote on a thread reply
+  // TODO: must be refactored to use the new thread vote schema
   voteThread: protectedProcedure
     .input(
       z.object({
@@ -844,7 +831,7 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const comment = await Comment.findOne({
+      const comment = await CommentModel.findOne({
         _id: input.commentId,
         lineupId: input.lineupId,
       });

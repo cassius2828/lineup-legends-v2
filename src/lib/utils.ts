@@ -4,6 +4,9 @@ import {
   type ILineup,
   type IVote,
   type ICommentVote,
+  type LineupVote,
+  RatingModel,
+  LineupModel,
 } from "~/server/models";
 import type { LineupType, PopulatableField } from "./types";
 import mongoose from "mongoose";
@@ -78,23 +81,23 @@ export function getVoteDelta(
 // Helper to calculate total votes for lineup votes (uses IVote with type field)
 export function incrementTotalVotes(
   type: "upvote" | "downvote",
-  existingVote?: IVote | null,
+  existingVote?: LineupVote | null,
 ): number {
   return getVoteDelta(type, existingVote?.type ?? null);
 }
 
 // Helper to calculate average rating
-export async function recalculateAvgRating(lineupId: string) {
-  const ratings = await Rating.aggregate<{
-    _id: mongoose.Types.ObjectId;
+export async function recalculateAvgRating(lineup: Lineup) {
+  const ratings = await RatingModel.aggregate<{
+    id: string;
     avgRating: number;
   }>([
     {
-      $match: { lineupId: new mongoose.Types.ObjectId(lineupId) },
+      $match: { lineup: lineup._id.toString() },
     },
     {
       $group: {
-        _id: "$lineupId",
+        _id: "$lineup",
         avgRating: {
           $avg: "$value",
         },
@@ -103,7 +106,7 @@ export async function recalculateAvgRating(lineupId: string) {
   ]);
 
   const avgRating = ratings[0]?.avgRating ?? 0;
-  await Lineup.findByIdAndUpdate(lineupId, { avgRating });
+  await LineupModel.findByIdAndUpdate(lineupId, { avgRating });
   return avgRating;
 }
 
