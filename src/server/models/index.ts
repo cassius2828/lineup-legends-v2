@@ -18,12 +18,7 @@ export {
   type LineupVoteDoc as VoteDoc,
 } from "./lineupVote";
 export { RatingModel, type Rating, type RatingDoc } from "./rating";
-export {
-  FriendModel,
-  type Friend,
-  type FriendDoc,
-  type FriendStatus,
-} from "./friend";
+export { FollowModel, type Follow, type FollowDoc } from "./follow";
 export {
   CommentModel,
   type Comment,

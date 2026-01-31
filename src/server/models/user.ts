@@ -23,7 +23,6 @@ export interface User {
   bio?: string | null;
   profileImg?: string | null;
   bannerImg?: string | null;
-  friends: User[];
   socialMedia?: SocialMedia;
   newEmail?: string | null;
   emailConfirmationToken?: string | null;
@@ -42,7 +41,6 @@ export interface UserDoc extends Document {
   bio?: string | null;
   profileImg?: string | null;
   bannerImg?: string | null;
-  friends: Types.ObjectId[];
   socialMedia?: SocialMedia;
   newEmail?: string | null;
   emailConfirmationToken?: string | null;
@@ -69,7 +67,6 @@ const UserSchema = new Schema<UserDoc>(
     bio: { type: String, default: null, maxlength: 250 },
     profileImg: { type: String, default: null },
     bannerImg: { type: String, default: null },
-    friends: [{ type: Schema.Types.ObjectId, ref: "User" }],
     socialMedia: { type: SocialMediaSchema, default: null },
     newEmail: { type: String, default: null },
     emailConfirmationToken: { type: String, default: null },
