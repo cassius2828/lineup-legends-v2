@@ -22,7 +22,7 @@ export default function ExploreLineupsPage() {
     retry: false,
   });
 
-  const voteMutation = api.lineup.vote.useMutation({
+  const voteMutation = api.lineup.lineupVote.useMutation({
     onSuccess: () => {
       void utils.lineup.getAllLineups.invalidate();
     },

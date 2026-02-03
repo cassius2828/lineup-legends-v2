@@ -6,7 +6,7 @@ import {
   incrementTotalVotes,
   lineupPopulateFields,
   processCommentVote,
-  transformLineup
+  transformLineup,
 } from "~/lib/utils";
 
 import {
@@ -19,9 +19,11 @@ import {
   LineupModel,
   PlayerModel,
   RatingModel,
-  VoteModel,
-  type Lineup
+  VoteModel as LineupVoteModel,
+  type Lineup,
+  CommentVoteModel,
 } from "~/server/models";
+import { ThreadModel } from "~/server/models/threads";
 const playerSchema = z.object({
   _id: z.string(),
   firstName: z.string(),
@@ -207,10 +209,11 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Delete related votes and ratings
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const [deletedLineup, _deletedVotes, _deletedRatings] = await Promise.all(
         [
           LineupModel.findByIdAndDelete(input.id).lean(),
-          VoteModel.deleteMany({ lineupId: input.id }),
+          LineupVoteModel.deleteMany({ lineupId: input.id }),
           RatingModel.deleteMany({ lineupId: input.id }),
         ],
       );
@@ -269,7 +272,7 @@ export const lineupRouter = createTRPCRouter({
   // ============================================
 
   // Vote on a lineup (upvote or downvote)
-  vote: protectedProcedure
+  lineupVote: protectedProcedure
     .input(
       z.object({
         lineupId: z.string(),
@@ -297,7 +300,7 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Check for existing vote
-      const existingVote = await VoteModel.findOneAndUpdate(
+      const existingVote = await LineupVoteModel.findOneAndUpdate(
         {
           user: ctx.session.user.id,
           lineup: input.lineupId,
@@ -315,12 +318,14 @@ export const lineupRouter = createTRPCRouter({
           upsert: true,
           new: false,
         },
-      );
+      )
+        .select("type")
+        .lean();
 
       // Calculate vote delta - O(1) instead of scanning all votes
       const amountToIncrementVotesBy = incrementTotalVotes(
         input.type,
-        existingVote,
+        existingVote?.type ?? null,
       );
 
       return await LineupModel.findByIdAndUpdate(
@@ -336,10 +341,11 @@ export const lineupRouter = createTRPCRouter({
   getUserVote: protectedProcedure
     .input(z.object({ lineupId: z.string() }))
     .query(async ({ ctx, input }) => {
-      return VoteModel.findOne({
-        userId: ctx.session.user.id,
-        lineupId: input.lineupId,
-      });
+      return LineupVoteModel.findOne({
+        user: ctx.session.user.id,
+        lineup: input.lineupId,
+      }).lean();
+      //* chance we only need the type, will review later
     }),
 
   // ============================================
@@ -347,6 +353,8 @@ export const lineupRouter = createTRPCRouter({
   // ============================================
 
   // Rate a lineup (1-10)
+  // look at the way we handle async and try to use this pattern more
+  // when we have stuff that does not deepend on other things, we can fire without await and use await at the end. 
   rate: protectedProcedure
     .input(
       z.object({
@@ -357,6 +365,10 @@ export const lineupRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const lineup = await LineupModel.findById(input.lineupId)
         .select("owner")
+        // look up the projection to ensure we are not fetching anything extra
+        // can also do a mongodb lookup to get just the field we need
+        // our db is very relationship oriented so it may be better for sql tables and fk
+        // mongo is better when the data coming in can be unpredictable vs knowing exactly what is needed
         .lean();
 
       if (!lineup) {
@@ -373,7 +385,7 @@ export const lineupRouter = createTRPCRouter({
           message: "You cannot rate your own lineup.",
         });
       }
-
+      // look into have a .then to consolidate the awaits on the functions
       // Upsert rating
       const existingRating = await RatingModel.findOne({
         user: ctx.session.user.id,
@@ -386,7 +398,7 @@ export const lineupRouter = createTRPCRouter({
       const sumDelta = newRating - oldRating;
       const countDelta = isNewRating ? 1 : 0;
 
-      await RatingModel.findOneAndUpdate(
+      const updatedRating = RatingModel.findOneAndUpdate(
         {
           user: ctx.session.user.id,
           lineup: input.lineupId,
@@ -395,8 +407,8 @@ export const lineupRouter = createTRPCRouter({
           value: newRating,
         },
       );
-
-      const updatedLineup = await LineupModel.findByIdAndUpdate(
+      // can start promises earlier and await them later on
+      const avgRating = LineupModel.findByIdAndUpdate(
         input.lineupId,
         {
           $inc: {
@@ -405,18 +417,22 @@ export const lineupRouter = createTRPCRouter({
           },
         },
         { new: true },
-      );
-      if (updatedLineup?.ratingCount && updatedLineup?.ratingSum) {
-        const avgRating =
-          updatedLineup?.ratingCount > 0
-            ? updatedLineup.ratingSum / updatedLineup.ratingCount
-            : 0;
+      ).then(async (updatedLineup) => {
+        if (updatedLineup?.ratingCount && updatedLineup?.ratingSum) {
+          const avgRating =
+            updatedLineup?.ratingCount > 0
+              ? updatedLineup.ratingSum / updatedLineup.ratingCount
+              : 0;
+          await LineupModel.findByIdAndUpdate(input.lineupId, { avgRating });
 
-        await LineupModel.findByIdAndUpdate(input.lineupId, { avgRating });
+          return { avgRating };
+        }
+        return { avgRating: 0 };
+      });
+      // this is similar to a promise.all, we start the actual function earlier and but the time the await this down here it already ran the work
+      await updatedRating;
 
-        return { avgRating };
-      }
-      return { avgRating: 0 };
+      return await avgRating;
     }),
 
   // ============================================
@@ -640,60 +656,7 @@ export const lineupRouter = createTRPCRouter({
       if (input.cursor) {
         matchStage._id = { $lt: new mongoose.Types.ObjectId(input.cursor) };
       }
-      const comments = await CommentModel.aggregate<Comment>([
-        {
-          $match: matchStage,
-        },
-        {
-          $sort: {
-            createdAt: -1,
-          },
-        },
-        { $limit: (input.limit ?? 10) + 1 },
-        {
-          $lookup: {
-            from: "users",
-            localField: "user",
-            foreignField: "_id",
-            as: "user",
-            pipeline: [
-              {
-                $project: {
-                  username: 1,
-                  profileImg: 1,
-                  name: 1,
-                },
-              },
-            ],
-          },
-        },
-        {
-          $unwind: "$user",
-        },
-        {
-          $project: {
-            id: { $toString: "$_id" },
-            text: 1,
-            user: 1,
-            totalVotes: 1,
-            votes: 1,
-            createdAt: 1,
-            thread: {
-              $map: {
-                input: "$thread",
-                as: "t",
-                in: {
-                  id: { $toString: "$$t._id" },
-                  text: "$$t.text",
-                  userId: "$$t.userId",
-                  votes: "$$t.votes",
-                  totalVotes: "$$t.totalVotes",
-                },
-              },
-            },
-          },
-        },
-      ]);
+      const comments = await CommentModel.find(matchStage).lean();
       const hasMore = comments.length > (input.limit ?? 10);
       if (hasMore) comments.pop();
       return {
@@ -712,17 +675,6 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await LineupModel.findById(input.lineupId)
-        .select("owner")
-        .lean();
-
-      if (!lineup) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Lineup not found.",
-        });
-      }
-
       const comment = await CommentModel.create({
         text: input.text,
         user: ctx.session.user.id,
@@ -748,7 +700,7 @@ export const lineupRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const comment = await CommentModel.findOne({
         _id: input.commentId,
-        lineupId: input.lineupId,
+        lineup: new mongoose.Types.ObjectId(input.lineupId),
       });
 
       if (!comment) {
@@ -757,20 +709,15 @@ export const lineupRouter = createTRPCRouter({
           message: "Comment not found.",
         });
       }
-      const userId = new mongoose.Types.ObjectId(ctx.session.user.id);
-      comment.thread.push({
+      const newThreadReply = await ThreadModel.create({
         text: input.text,
-        userId,
-        votes: [],
-        totalVotes: 0,
-        // _id, userId, createdAt, updatedAt are automatically generated by Mongoose
-      } as unknown as IThread);
-
-      await comment.save();
+        user: ctx.session.user.id,
+        comment: new mongoose.Types.ObjectId(input.commentId),
+      });
 
       // Populate and return
-      return await CommentModel.findById(comment._id)
-        .populate("userId", "username name profileImg")
+      return await ThreadModel.findById(newThreadReply._id)
+        .populate("user", "username name profileImg")
         .lean();
     }),
 
@@ -787,7 +734,8 @@ export const lineupRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const comment = await CommentModel.findOne({
         _id: input.commentId,
-        lineupId: input.lineupId,
+        // * the types are not helping here, will review later
+        lineup: input.lineupId,
       });
 
       if (!comment) {
@@ -798,23 +746,24 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Can't vote on your own comment
-      if (comment.userId.toString() === ctx.session.user.id) {
+      if (comment.user._id.toString() === ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot vote on your own comment.",
         });
       }
+      // i am sleepy zzzzzzzzz
 
       // Process vote using shared helper (O(1) delta calculation)
-      const { totalVotes } = processCommentVote(
-        comment.votes,
-        ctx.session.user.id,
-        input.type,
-        comment.totalVotes,
-      );
-      comment.totalVotes = totalVotes;
+      // const { totalVotes } = processCommentVote(
+      //   comment.totalVotes,
+      //   ctx.session.user.id,
+      //   input.type,
+      //   comment.totalVotes,
+      // );
+      // comment.totalVotes = totalVotes;
 
-      await comment.save();
+      // await comment.save();
 
       return { totalVotes };
     }),

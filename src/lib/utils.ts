@@ -81,9 +81,9 @@ export function getVoteDelta(
 // Helper to calculate total votes for lineup votes (uses IVote with type field)
 export function incrementTotalVotes(
   type: "upvote" | "downvote",
-  existingVote?: LineupVote | null,
+  existingType: "upvote" | "downvote" | null,
 ): number {
-  return getVoteDelta(type, existingVote?.type ?? null);
+  return getVoteDelta(type, existingType ?? null);
 }
 
 // Helper to calculate average rating
