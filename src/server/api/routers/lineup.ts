@@ -354,7 +354,7 @@ export const lineupRouter = createTRPCRouter({
 
   // Rate a lineup (1-10)
   // look at the way we handle async and try to use this pattern more
-  // when we have stuff that does not deepend on other things, we can fire without await and use await at the end. 
+  // when we have stuff that does not deepend on other things, we can fire without await and use await at the end.
   rate: protectedProcedure
     .input(
       z.object({
@@ -362,13 +362,13 @@ export const lineupRouter = createTRPCRouter({
         value: z.number().min(1).max(10),
       }),
     )
+    // look up the projection to ensure we are not fetching anything extra
+    // can also do a mongodb lookup to get just the field we need
+    // our db is very relationship oriented so it may be better for sql tables and fk
+    // mongo is better when the data coming in can be unpredictable vs knowing exactly what is needed
     .mutation(async ({ ctx, input }) => {
       const lineup = await LineupModel.findById(input.lineupId)
-        .select("owner")
-        // look up the projection to ensure we are not fetching anything extra
-        // can also do a mongodb lookup to get just the field we need
-        // our db is very relationship oriented so it may be better for sql tables and fk
-        // mongo is better when the data coming in can be unpredictable vs knowing exactly what is needed
+        .select({ owner: 1, _id: 0 })
         .lean();
 
       if (!lineup) {
@@ -379,7 +379,7 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Can't rate your own lineup
-      if (lineup.owner._id.toString() === ctx.session.user.id) {
+      if (lineup.owner.toString() === ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot rate your own lineup.",
@@ -387,18 +387,10 @@ export const lineupRouter = createTRPCRouter({
       }
       // look into have a .then to consolidate the awaits on the functions
       // Upsert rating
-      const existingRating = await RatingModel.findOne({
-        user: ctx.session.user.id,
-        lineup: input.lineupId,
-      });
 
-      const isNewRating = !existingRating;
-      const oldRating = existingRating?.value ?? 0;
       const newRating = input.value;
-      const sumDelta = newRating - oldRating;
-      const countDelta = isNewRating ? 1 : 0;
-
-      const updatedRating = RatingModel.findOneAndUpdate(
+      // upsert the rating, await the values so we can use them to update the lineup
+      const existingRating = await RatingModel.findOneAndUpdate(
         {
           user: ctx.session.user.id,
           lineup: input.lineupId,
@@ -407,32 +399,44 @@ export const lineupRouter = createTRPCRouter({
           value: newRating,
         },
       );
-      // can start promises earlier and await them later on
-      const avgRating = LineupModel.findByIdAndUpdate(
-        input.lineupId,
-        {
-          $inc: {
-            ratingSum: sumDelta,
-            ratingCount: countDelta,
+
+      const isNewRating = !existingRating;
+      const oldRating = existingRating?.value ?? 0;
+      const sumDelta = newRating - oldRating;
+      const countDelta = isNewRating ? 1 : 0;
+
+      // update the lineup with the new rating atomically and in one pass
+      const updatedLineup = await LineupModel.findByIdAndUpdate(
+        lineup._id,
+
+        [
+          // step one: update the rating sum and count
+          {
+            $set: {
+              ratingSum: { $add: ["$ratingSum", sumDelta] },
+              ratingCount: { $add: ["$ratingCount", countDelta] },
+            },
           },
-        },
+          // step two: update the average rating
+          {
+            $set: {
+              avgRating: {
+                $cond: {
+                  if: {
+                    $gt: ["$ratingCount", 0],
+                  },
+                  then: {
+                    $divide: ["$ratingSum", "$ratingCount"],
+                  },
+                  else: 0,
+                },
+              },
+            },
+          },
+        ],
         { new: true },
-      ).then(async (updatedLineup) => {
-        if (updatedLineup?.ratingCount && updatedLineup?.ratingSum) {
-          const avgRating =
-            updatedLineup?.ratingCount > 0
-              ? updatedLineup.ratingSum / updatedLineup.ratingCount
-              : 0;
-          await LineupModel.findByIdAndUpdate(input.lineupId, { avgRating });
-
-          return { avgRating };
-        }
-        return { avgRating: 0 };
-      });
-      // this is similar to a promise.all, we start the actual function earlier and but the time the await this down here it already ran the work
-      await updatedRating;
-
-      return await avgRating;
+      );
+      return { avgRating: updatedLineup?.avgRating };
     }),
 
   // ============================================
