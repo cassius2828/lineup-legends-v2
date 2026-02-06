@@ -1,23 +1,29 @@
 import {
-  Lineup,
-  Rating,
-  type ILineup,
-  type IVote,
-  type ICommentVote,
+  type Lineup,
+  type LineupDoc,
   type LineupVote,
   RatingModel,
   LineupModel,
 } from "~/server/models";
+import type { Types } from "mongoose";
+
+// Legacy type aliases for backwards compatibility
+// TODO: These should be migrated to use the proper model types
+type ILineup = LineupDoc;
+interface ICommentVote {
+  userId: Types.ObjectId;
+  type: "upvote" | "downvote";
+}
 import type { LineupType, PopulatableField } from "./types";
 import mongoose from "mongoose";
 
 // Population fields for lineup queries
 export const lineupPopulateFields = [
-  { path: "pg", model: "Player" },
-  { path: "sg", model: "Player" },
-  { path: "sf", model: "Player" },
-  { path: "pf", model: "Player" },
-  { path: "c", model: "Player" },
+  { path: "players.pg", model: "Player" },
+  { path: "players.sg", model: "Player" },
+  { path: "players.sf", model: "Player" },
+  { path: "players.pf", model: "Player" },
+  { path: "players.c", model: "Player" },
   { path: "owner", model: "User" },
 ];
 
@@ -87,7 +93,7 @@ export function incrementTotalVotes(
 }
 
 // Helper to calculate average rating
-export async function recalculateAvgRating(lineup: Lineup) {
+export async function recalculateAvgRating(lineup: LineupDoc) {
   const ratings = await RatingModel.aggregate<{
     id: string;
     avgRating: number;
@@ -106,7 +112,7 @@ export async function recalculateAvgRating(lineup: Lineup) {
   ]);
 
   const avgRating = ratings[0]?.avgRating ?? 0;
-  await LineupModel.findByIdAndUpdate(lineupId, { avgRating });
+  await LineupModel.findByIdAndUpdate(lineup._id, { avgRating });
   return avgRating;
 }
 

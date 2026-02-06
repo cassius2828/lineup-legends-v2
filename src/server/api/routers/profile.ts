@@ -5,16 +5,16 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { User, Lineup, type ILineup } from "~/server/models";
+import { UserModel, LineupModel, type LineupDoc } from "~/server/models";
 import type { Document, Types } from "mongoose";
 
 // Population fields for lineup queries
 const lineupPopulateFields = [
-  { path: "pgId", model: "Player" },
-  { path: "sgId", model: "Player" },
-  { path: "sfId", model: "Player" },
-  { path: "pfId", model: "Player" },
-  { path: "cId", model: "Player" },
+  { path: "pg", model: "Player" },
+  { path: "sg", model: "Player" },
+  { path: "sf", model: "Player" },
+  { path: "pf", model: "Player" },
+  { path: "c", model: "Player" },
   { path: "ownerId", model: "User" },
 ];
 
@@ -22,11 +22,11 @@ const lineupPopulateFields = [
 interface LineupObject {
   _id?: Types.ObjectId;
   id?: string;
-  pgId: unknown;
-  sgId: unknown;
-  sfId: unknown;
-  pfId: unknown;
-  cId: unknown;
+  pg: unknown;
+  sg: unknown;
+  sf: unknown;
+  pf: unknown;
+  c: unknown;
   ownerId: unknown;
   createdAt: Date;
   updatedAt: Date;
@@ -37,17 +37,17 @@ interface LineupObject {
 }
 
 // Helper to transform lineup for API response
-function transformLineup(lineup: (Document & ILineup) | null) {
+function transformLineup(lineup: (Document & LineupDoc) | null) {
   if (!lineup) return null;
   const obj = lineup.toObject() as LineupObject;
   return {
     ...obj,
     id: obj._id?.toString() ?? obj.id,
-    pg: obj.pgId,
-    sg: obj.sgId,
-    sf: obj.sfId,
-    pf: obj.pfId,
-    c: obj.cId,
+    pg: obj.pg,
+    sg: obj.sg,
+    sf: obj.sf,
+    pf: obj.pf,
+    c: obj.c,
     owner: obj.ownerId,
   };
 }
@@ -57,7 +57,7 @@ export const profileRouter = createTRPCRouter({
   getById: publicProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
-      const user = await User.findById(input.userId)
+      const user = await UserModel.findById(input.userId)
         .select(
           "name username image bio profileImg bannerImg socialMedia friends",
         )
@@ -67,7 +67,7 @@ export const profileRouter = createTRPCRouter({
       if (!user) return null;
 
       // Get user's lineups (limited to 6)
-      const lineups = await Lineup.find({ ownerId: input.userId })
+      const lineups = await LineupModel.find({ ownerId: input.userId })
         .sort({ createdAt: -1 })
         .limit(6)
         .populate([
@@ -79,7 +79,7 @@ export const profileRouter = createTRPCRouter({
         ]);
 
       // Get total lineup count
-      const lineupCount = await Lineup.countDocuments({
+      const lineupCount = await LineupModel.countDocuments({
         ownerId: input.userId,
       });
 
@@ -89,11 +89,11 @@ export const profileRouter = createTRPCRouter({
         return {
           ...obj,
           id: obj._id?.toString(),
-          pg: obj.pgId,
-          sg: obj.sgId,
-          sf: obj.sfId,
-          pf: obj.pfId,
-          c: obj.cId,
+          pg: obj.pg,
+          sg: obj.sg,
+          sf: obj.sf,
+          pf: obj.pf,
+          c: obj.c,
         };
       });
 
@@ -109,7 +109,7 @@ export const profileRouter = createTRPCRouter({
 
   // Get current user's profile
   getMe: protectedProcedure.query(async ({ ctx }) => {
-    const user = await User.findById(ctx.session.user.id)
+    const user = await UserModel.findById(ctx.session.user.id)
       .select(
         "name username email image bio profileImg bannerImg socialMedia friends",
       )
@@ -144,11 +144,13 @@ export const profileRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       // Check if username is taken by another user
       if (input.username) {
-        const existingUser = await User.findOne({ username: input.username });
+        const existingUser = await UserModel.findOne({
+          username: input.username,
+        });
 
         if (
           existingUser &&
-          existingUser._id.toString() !== ctx.session.user.id
+          existingUserModel._id.toString() !== ctx.session.user.id
         ) {
           throw new Error("Username is already taken.");
         }
@@ -173,20 +175,20 @@ export const profileRouter = createTRPCRouter({
       if (input.socialMedia !== undefined)
         updateData.socialMedia = input.socialMedia;
 
-      const updatedUser = await User.findByIdAndUpdate(
+      const updatedUser = await UserModel.findByIdAndUpdate(
         ctx.session.user.id,
         updateData,
         { new: true },
       );
 
-      return updatedUser ? updatedUser.toObject() : null;
+      return updatedUser ? updatedUserModel.toObject() : null;
     }),
 
   // Get featured lineups for a user
   getFeaturedLineups: publicProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
-      const lineups = await Lineup.find({
+      const lineups = await LineupModel.find({
         ownerId: input.userId,
         featured: true,
       })

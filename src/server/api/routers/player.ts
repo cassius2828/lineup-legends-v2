@@ -1,11 +1,11 @@
 import { z } from "zod";
-import type { IPlayer } from "~/server/models";
+import type { Player } from "~/server/models";
 import {
   adminProcedure,
   createTRPCRouter,
   publicProcedure,
 } from "~/server/api/trpc";
-import { Player } from "~/server/models";
+import { PlayerModel } from "~/server/models";
 
 export const playerRouter = createTRPCRouter({
   // Get all players, optionally filtered by value
@@ -13,14 +13,14 @@ export const playerRouter = createTRPCRouter({
     .input(z.object({ value: z.number().min(1).max(5).optional() }).optional())
     .query(async ({ input }) => {
       const filter = input?.value ? { value: input.value } : {};
-      return await Player.find(filter).sort({ value: -1 }).lean();
+      return await PlayerModel.find(filter).sort({ value: -1 }).lean();
     }),
 
   // Get a single player by ID
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const player = await Player.findById(input.id).lean();
+      const player = await PlayerModel.findById(input.id).lean();
       return player ?? null;
     }),
 
@@ -28,12 +28,12 @@ export const playerRouter = createTRPCRouter({
   // Returns 5 random players for each value tier (1-5)
   getRandomByValue: publicProcedure.query(async () => {
     const twentyFiveRandomPlayers: {
-      value1Players: IPlayer[];
-      value2Players: IPlayer[];
-      value3Players: IPlayer[];
-      value4Players: IPlayer[];
-      value5Players: IPlayer[];
-    }[] = await Player.aggregate([
+      value1Players: Player[];
+      value2Players: Player[];
+      value3Players: Player[];
+      value4Players: Player[];
+      value5Players: Player[];
+    }[] = await PlayerModel.aggregate([
       {
         $facet: {
           value1Players: [{ $match: { value: 1 } }, { $sample: { size: 5 } }],
@@ -53,12 +53,12 @@ export const playerRouter = createTRPCRouter({
     .input(z.object({ query: z.string() }))
     .query(async ({ input }) => {
       if (!input.query.trim()) {
-        return await Player.find().limit(10).sort({ value: -1 }).lean();
+        return await PlayerModel.find().limit(10).sort({ value: -1 }).lean();
       }
 
       // Case-insensitive search on firstName or lastName using regex
       const searchRegex = new RegExp(input.query, "i");
-      const players = await Player.find({
+      const players = await PlayerModel.find({
         $or: [
           { firstName: { $regex: searchRegex } },
           { lastName: { $regex: searchRegex } },
@@ -82,15 +82,19 @@ export const playerRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const { id, ...updateData } = input;
 
-      const updatedPlayer = await Player.findByIdAndUpdate(id, updateData, {
-        new: true,
-      });
+      const updatedPlayer = await PlayerModel.findByIdAndUpdate(
+        id,
+        updateData,
+        {
+          new: true,
+        },
+      );
 
       if (!updatedPlayer) {
         throw new Error("Player not found");
       }
 
-      return updatedPlayer.toObject();
+      return updatedPlayerModel.toObject();
     }),
 
   // Create a new player (admin only)
@@ -109,7 +113,7 @@ export const playerRouter = createTRPCRouter({
       const lastName = input.lastName.trim();
 
       // Check if player with same name already exists (case-insensitive)
-      const existingPlayer = await Player.findOne({
+      const existingPlayer = await PlayerModel.findOne({
         firstName: { $regex: new RegExp(`^${firstName}$`, "i") },
         lastName: { $regex: new RegExp(`^${lastName}$`, "i") },
       });
@@ -121,13 +125,13 @@ export const playerRouter = createTRPCRouter({
       }
 
       // Create new player
-      const newPlayer = await Player.create({
+      const newPlayer = await PlayerModel.create({
         firstName,
         lastName,
         value: input.value,
         imgUrl: input.imgUrl,
       });
 
-      return newPlayer.toObject();
+      return newPlayerModel.toObject();
     }),
 });

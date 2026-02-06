@@ -185,6 +185,7 @@ export const lineupRouter = createTRPCRouter({
           message: `Lineup exceeds $${BUDGET_LIMIT} budget. Total value: $${totalValue}`,
         });
       }
+      console.log(selectedPlayers, ' <-- selected players');
 
       // Create the lineup
       const lineup = await LineupModel.create({
@@ -676,7 +677,7 @@ export const lineupRouter = createTRPCRouter({
 
       // Check cooldown
       const now = new Date();
-      const lastGambleAt = lineup.lastGambleAt as Date | undefined;
+      const lastGambleAt = lineup.lastGambleAt;
       if (lastGambleAt) {
         const timeSinceLastGamble = now.getTime() - lastGambleAt.getTime();
         if (timeSinceLastGamble < GAMBLE_COOLDOWN_MS) {
@@ -691,10 +692,8 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Check and reset daily gamble limit if needed
-      let dailyGamblesUsed: number = (lineup.dailyGamblesUsed as number) ?? 0;
-      let dailyGamblesResetAt: Date | undefined = lineup.dailyGamblesResetAt as
-        | Date
-        | undefined;
+      let dailyGamblesUsed = lineup.dailyGamblesUsed ?? 0;
+      let dailyGamblesResetAt = lineup.dailyGamblesResetAt;
 
       if (shouldResetDailyGambles(dailyGamblesResetAt)) {
         dailyGamblesUsed = 0;
@@ -779,18 +778,13 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Calculate outcome metrics
-      const newPlayerValue: number = newPlayer.value;
-      const valueChange: number = newPlayerValue - currentValue;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const outcomeTier: GambleOutcomeTier = getOutcomeTier(valueChange);
-      const currentStreak: number = (lineup.gambleStreak as number) ?? 0;
-      const newStreak: number = calculateStreakChange(
-        currentStreak,
-        valueChange,
-      );
+      const newPlayerValue = newPlayer.value;
+      const valueChange = newPlayerValue - currentValue;
+      const outcomeTier = getOutcomeTier(valueChange);
+      const currentStreak = lineup.gambleStreak ?? 0;
+      const newStreak = calculateStreakChange(currentStreak, valueChange);
 
       // Build the last gamble result
-      /* eslint-disable @typescript-eslint/no-unsafe-assignment */
       const lastGambleResult = {
         previousValue: currentValue,
         newValue: newPlayerValue,
@@ -799,7 +793,6 @@ export const lineupRouter = createTRPCRouter({
         position: input.position,
         timestamp: now,
       };
-      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
       // Update the lineup with the new player and gambling stats
       const updatedLineup = await LineupModel.findByIdAndUpdate(
