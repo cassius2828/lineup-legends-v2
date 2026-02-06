@@ -3,6 +3,7 @@ import mongoose, { type SortOrder } from "mongoose";
 import { z } from "zod";
 import {
   getIdString,
+  getVoteDelta,
   incrementTotalVotes,
   lineupPopulateFields,
   processCommentVote,
@@ -24,6 +25,7 @@ import {
   CommentVoteModel,
 } from "~/server/models";
 import { ThreadModel } from "~/server/models/threads";
+import { ThreadVoteModel } from "~/server/models/threadVotes";
 const playerSchema = z.object({
   _id: z.string(),
   firstName: z.string(),
@@ -448,11 +450,13 @@ export const lineupRouter = createTRPCRouter({
     .input(
       z.object({
         lineupId: z.string(),
-        pg: playerSchema,
-        sg: playerSchema,
-        sf: playerSchema,
-        pf: playerSchema,
-        c: playerSchema,
+        players: z.object({
+          pg: playerSchema,
+          sg: playerSchema,
+          sf: playerSchema,
+          pf: playerSchema,
+          c: playerSchema,
+        }),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -482,11 +486,11 @@ export const lineupRouter = createTRPCRouter({
         getIdString(lineup.players.c._id),
       ]);
       const newIds = [
-        input.pg._id,
-        input.sg._id,
-        input.sf._id,
-        input.pf._id,
-        input.c._id,
+        input.players.pg._id,
+        input.players.sg._id,
+        input.players.sf._id,
+        input.players.pf._id,
+        input.players.c._id,
       ];
 
       // Check for duplicates
@@ -512,11 +516,11 @@ export const lineupRouter = createTRPCRouter({
       return await LineupModel.findByIdAndUpdate(
         input.lineupId,
         {
-          pg: input.pg,
-          sg: input.sg,
-          sf: input.sf,
-          pf: input.pf,
-          c: input.c,
+          pg: input.players.pg,
+          sg: input.players.sg,
+          sf: input.players.sf,
+          pf: input.players.pf,
+          c: input.players.c,
         },
         { new: true },
       )
@@ -643,7 +647,6 @@ export const lineupRouter = createTRPCRouter({
   // ============================================
 
   // Get comments for a lineup
-  // TODO: must be refactored to use the new comment schema
   getComments: publicProcedure
     .input(
       z.object({
@@ -685,14 +688,19 @@ export const lineupRouter = createTRPCRouter({
         lineup: input.lineupId,
       });
 
-      // Populate and return
-      return await CommentModel.findById(comment._id)
-        .populate("user", "username name profileImg")
-        .lean();
+      // return the comment with the user data
+      return {
+        ...comment.toObject(),
+        user: {
+          username: ctx.session.user.username,
+          name: ctx.session.user.name,
+          profileImg: ctx.session.user.profileImg,
+          image: ctx.session.user.image,
+        },
+      };
     }),
 
   // Add a thread reply to a comment
-  // TODO: must be refactored to use the new thread schema
   addThreadReply: protectedProcedure
     .input(
       z.object({
@@ -719,10 +727,16 @@ export const lineupRouter = createTRPCRouter({
         comment: new mongoose.Types.ObjectId(input.commentId),
       });
 
-      // Populate and return
-      return await ThreadModel.findById(newThreadReply._id)
-        .populate("user", "username name profileImg")
-        .lean();
+      // return the thread reply with the user data
+      return {
+        ...newThreadReply.toObject(),
+        user: {
+          username: ctx.session.user.username,
+          name: ctx.session.user.name,
+          profileImg: ctx.session.user.profileImg,
+          image: ctx.session.user.image,
+        },
+      };
     }),
 
   // Vote on a comment (upvote or downvote)
@@ -738,9 +752,10 @@ export const lineupRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const comment = await CommentModel.findOne({
         _id: input.commentId,
-        // * the types are not helping here, will review later
         lineup: input.lineupId,
-      });
+      })
+        .select({ user: 1, _id: 0 })
+        .lean();
 
       if (!comment) {
         throw new TRPCError({
@@ -750,30 +765,40 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Can't vote on your own comment
-      if (comment.user._id.toString() === ctx.session.user.id) {
+      if (comment.user.toString() === ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot vote on your own comment.",
         });
       }
-      // i am sleepy zzzzzzzzz
+      // upsert the vote
+      const existingVote = await CommentVoteModel.findOneAndUpdate(
+        {
+          user: ctx.session.user.id,
+          comment: input.commentId,
+        },
+        {
+          type: input.type,
+        },
+        {
+          upsert: true,
+        },
+      );
+      // atomically update the total votes by the vote delta
+      const oldVote = existingVote?.type ?? null;
+      const voteDelta = getVoteDelta(input.type, oldVote);
+      const updatedComment = await CommentModel.findByIdAndUpdate(
+        input.commentId,
+        {
+          $inc: { totalVotes: voteDelta },
+        },
+        { new: true, projection: { totalVotes: 1 } },
+      );
 
-      // Process vote using shared helper (O(1) delta calculation)
-      // const { totalVotes } = processCommentVote(
-      //   comment.totalVotes,
-      //   ctx.session.user.id,
-      //   input.type,
-      //   comment.totalVotes,
-      // );
-      // comment.totalVotes = totalVotes;
-
-      // await comment.save();
-
-      return { totalVotes };
+      return { totalVotes: updatedComment?.totalVotes ?? 0 };
     }),
 
   // Vote on a thread reply
-  // TODO: must be refactored to use the new thread vote schema
   voteThread: protectedProcedure
     .input(
       z.object({
@@ -796,36 +821,46 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      const thread = comment.thread.find(
-        (t) => t._id.toString() === input.threadId,
-      );
-
-      if (!thread) {
+      const existingThread = await ThreadModel.findById(input.threadId)
+        .select("user votes totalVotes")
+        .lean();
+      if (!existingThread) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Thread reply not found.",
         });
       }
-
       // Can't vote on your own thread
-      if (thread.userId.toString() === ctx.session.user.id) {
+      if (existingThread?.user.toString() === ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot vote on your own reply.",
         });
       }
 
-      // Process vote using shared helper (O(1) delta calculation)
-      const { totalVotes } = processCommentVote(
-        thread.votes,
-        ctx.session.user.id,
-        input.type,
-        thread.totalVotes,
+      const existingVote = await ThreadVoteModel.findOneAndUpdate(
+        {
+          user: ctx.session.user.id,
+          thread: input.threadId,
+        },
+        {
+          type: input.type,
+        },
+        {
+          upsert: true,
+        },
       );
-      thread.totalVotes = totalVotes;
+      const oldVote = existingVote?.type ?? null;
+      const voteDelta = getVoteDelta(input.type, oldVote);
+      const updatedThread = await ThreadModel.findByIdAndUpdate(
+        input.threadId,
+        {
+          $inc: { totalVotes: voteDelta },
+        },
+        { new: true, projection: { totalVotes: 1 } },
+      );
+      // await comment.save();
 
-      await comment.save();
-
-      return { totalVotes };
+      return { totalVotes: updatedThread?.totalVotes ?? 0 };
     }),
 });

@@ -17,6 +17,8 @@ declare module "next-auth" {
     user: {
       id: string;
       admin?: boolean;
+      username?: string | null;
+      profileImg?: string | null;
     } & DefaultSession["user"];
   }
 }
@@ -114,8 +116,10 @@ export const authConfig = {
         return {
           id: user._id.toString(),
           name: user.name,
+          username: user.username,
           email: user.email,
           image: user.image,
+          profileImg: user.profileImg,
         };
       },
     }),
@@ -140,10 +144,12 @@ export const authConfig = {
       const userId = token.id ?? token.sub;
       if (typeof userId === "string") {
         session.user.id = userId;
-        // Fetch fresh admin status from database (in case it changed)
+        // Fetch fresh user data from database (in case it changed)
         await connectDB();
         const dbUser = await UserModel.findById(userId).lean();
         session.user.admin = dbUser?.admin ?? false;
+        session.user.username = dbUser?.username ?? null;
+        session.user.profileImg = dbUser?.profileImg ?? null;
       } else {
         throw new Error("User ID is not a string");
       }
