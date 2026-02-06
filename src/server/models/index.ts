@@ -8,6 +8,9 @@ export {
   type LineupDoc,
   type LineupPlayers,
   type LineupPlayersDoc,
+  type GambleOutcomeTier,
+  type LastGambleResult,
+  type LastGambleResultDoc,
 } from "./lineup";
 export {
   LineupVoteModel,

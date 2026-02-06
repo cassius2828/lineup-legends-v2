@@ -8,6 +8,7 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 | ------------------------------------------------------------- | ------------------------------------------------- |
 | [Authentication](./authentication.md)                         | OAuth authentication with NextAuth.js             |
 | [Lineups](./lineups.md)                                       | Creating, managing, and exploring fantasy lineups |
+| [Gambling mechanic](./gambling-mechanic.md)                   | Weighted odds, probability matrix, and API        |
 | [Players](./players.md)                                       | Player data structure, values, and retrieval      |
 | [tRPC API](./trpc-api.md)                                     | End-to-end type-safe API architecture             |
 | [Database](./database.md)                                     | Prisma schema and MongoDB integration             |

@@ -22,6 +22,9 @@ import {
   RatingModel,
   VoteModel as LineupVoteModel,
   type Lineup,
+  type Player,
+  type PlayerDoc,
+  type GambleOutcomeTier,
   CommentVoteModel,
 } from "~/server/models";
 import { ThreadModel } from "~/server/models/threads";
@@ -34,6 +37,105 @@ const playerSchema = z.object({
   value: z.number(),
 });
 const BUDGET_LIMIT = 15;
+
+// ============================================
+// GAMBLING CONFIGURATION
+// ============================================
+
+/**
+ * Weighted probability matrix for gambling outcomes.
+ * Each row represents the current player value (1-5).
+ * Each column represents the probability (%) of getting a player of that value.
+ *
+ * Design philosophy:
+ * - Lower value players = higher risk, small upside potential (hail mary)
+ * - Higher value players = safer odds, maintain value (low risk, low reward)
+ */
+const GAMBLE_ODDS: Record<number, number[]> = {
+  // [chance of getting value: 1, 2, 3, 4, 5]
+  1: [55, 25, 12, 6, 2], // 45% upgrade chance, mostly small gains
+  2: [30, 40, 20, 7, 3], // 30% upgrade, 30% downgrade
+  3: [10, 20, 45, 18, 7], // 25% upgrade, 30% downgrade - balanced
+  4: [5, 8, 17, 45, 25], // 25% upgrade to 5, 30% downgrade
+  5: [2, 5, 8, 25, 60], // 60% stay at 5, very safe
+};
+
+/** Maximum gambles allowed per day per lineup */
+const DAILY_GAMBLE_LIMIT = 5;
+
+/** Cooldown between gambles in milliseconds (30 seconds) */
+const GAMBLE_COOLDOWN_MS = 30 * 1000;
+
+/**
+ * Selects a target player value based on weighted probabilities.
+ * Uses cumulative probability distribution for selection.
+ */
+function selectWeightedValue(currentValue: number): number {
+  const weights = GAMBLE_ODDS[currentValue];
+  if (!weights) return currentValue;
+
+  const random = Math.random() * 100;
+  let cumulative = 0;
+
+  for (let i = 0; i < weights.length; i++) {
+    const weight = weights[i] ?? 0;
+    cumulative += weight;
+    if (random < cumulative) {
+      return i + 1; // Values are 1-indexed
+    }
+  }
+
+  return currentValue; // Fallback
+}
+
+/**
+ * Determines the outcome tier based on value change.
+ * Used for visual feedback in the UI.
+ */
+function getOutcomeTier(valueChange: number): GambleOutcomeTier {
+  if (valueChange >= 3) return "jackpot";
+  if (valueChange === 2) return "big_win";
+  if (valueChange === 1) return "upgrade";
+  if (valueChange === 0) return "neutral";
+  if (valueChange === -1) return "downgrade";
+  if (valueChange === -2) return "big_loss";
+  return "disaster"; // -3 or worse
+}
+
+/**
+ * Calculates streak change based on outcome.
+ * Positive outcomes continue/start positive streak.
+ * Negative outcomes continue/start negative streak.
+ * Neutral resets streak.
+ */
+function calculateStreakChange(
+  currentStreak: number,
+  valueChange: number,
+): number {
+  if (valueChange > 0) {
+    // Upgrade: continue positive streak or start new one
+    return currentStreak >= 0 ? currentStreak + 1 : 1;
+  } else if (valueChange < 0) {
+    // Downgrade: continue negative streak or start new one
+    return currentStreak <= 0 ? currentStreak - 1 : -1;
+  }
+  // Neutral: reset streak
+  return 0;
+}
+
+/**
+ * Checks if the daily gamble limit should reset (new day).
+ */
+function shouldResetDailyGambles(resetAt: Date | undefined): boolean {
+  if (!resetAt) return true;
+  const now = new Date();
+  const resetDate = new Date(resetAt);
+  return (
+    now.getUTCFullYear() !== resetDate.getUTCFullYear() ||
+    now.getUTCMonth() !== resetDate.getUTCMonth() ||
+    now.getUTCDate() !== resetDate.getUTCDate()
+  );
+}
 
 export const lineupRouter = createTRPCRouter({
   // Create a new lineup (protected - requires auth)
@@ -532,8 +634,20 @@ export const lineupRouter = createTRPCRouter({
   // GAMBLING MECHANICS
   // ============================================
 
-  // Gamble a player for a random player of similar value
-  // TODO: Create a more robust gambling mechanic that offers a wider range of players to gamble with
+  /**
+   * Gamble a player for a random player with weighted probability.
+   *
+   * Probability system:
+   * - Lower value players have lower chance of upgrade (high risk, high reward potential)
+   * - Higher value players have higher chance of maintaining value (low risk, low reward)
+   *
+   * Features:
+   * - Weighted probability matrix for fair risk/reward
+   * - Daily gamble limit (5 per day per lineup)
+   * - Cooldown between gambles (30 seconds)
+   * - Streak tracking for consecutive upgrades/downgrades
+   * - Outcome tiers for visual feedback (jackpot, upgrade, neutral, downgrade, etc.)
+   */
   gamble: protectedProcedure
     .input(
       z.object({
@@ -560,6 +674,40 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
+      // Check cooldown
+      const now = new Date();
+      const lastGambleAt = lineup.lastGambleAt as Date | undefined;
+      if (lastGambleAt) {
+        const timeSinceLastGamble = now.getTime() - lastGambleAt.getTime();
+        if (timeSinceLastGamble < GAMBLE_COOLDOWN_MS) {
+          const remainingSeconds = Math.ceil(
+            (GAMBLE_COOLDOWN_MS - timeSinceLastGamble) / 1000,
+          );
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: `Please wait ${remainingSeconds} seconds before gambling again.`,
+          });
+        }
+      }
+
+      // Check and reset daily gamble limit if needed
+      let dailyGamblesUsed: number = (lineup.dailyGamblesUsed as number) ?? 0;
+      let dailyGamblesResetAt: Date | undefined = lineup.dailyGamblesResetAt as
+        | Date
+        | undefined;
+
+      if (shouldResetDailyGambles(dailyGamblesResetAt)) {
+        dailyGamblesUsed = 0;
+        dailyGamblesResetAt = now;
+      }
+
+      if (dailyGamblesUsed >= DAILY_GAMBLE_LIMIT) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Daily gamble limit reached (${DAILY_GAMBLE_LIMIT}). Try again tomorrow!`,
+        });
+      }
+
       // Get the current player at the position
       const positionFieldMap: Record<
         "pg" | "sg" | "sf" | "pf" | "c",
@@ -572,8 +720,8 @@ export const lineupRouter = createTRPCRouter({
         c: "c",
       };
       const positionField = positionFieldMap[input.position];
-      // revisit to tighten this type
-      const currentPlayer = lineup.players[positionField];
+      // After population, players are Player objects, not ObjectIds
+      const currentPlayer = lineup.players[positionField] as unknown as Player;
 
       if (!currentPlayer?.value) {
         throw new TRPCError({
@@ -582,39 +730,46 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      const currentValue = currentPlayer?.value;
+      const currentValue = currentPlayer.value;
 
-      // Determine possible values for the new player
-      let possibleValues: number[];
-      if (currentValue === 1) {
-        possibleValues = [1];
-      } else if (currentValue === 5) {
-        possibleValues = [4, 5];
-      } else {
-        possibleValues = [currentValue - 1, currentValue, currentValue + 1];
-      }
+      // Use weighted probability to determine target value
+      const targetValue = selectWeightedValue(currentValue);
 
       // Convert string IDs to ObjectIds for proper MongoDB $nin comparison
       const currentLineupPlayerIds = [
-        getIdString(lineup.pgId),
-        getIdString(lineup.sgId),
-        getIdString(lineup.sfId),
-        getIdString(lineup.pfId),
-        getIdString(lineup.cId),
+        getIdString(lineup.players.pg._id),
+        getIdString(lineup.players.sg._id),
+        getIdString(lineup.players.sf._id),
+        getIdString(lineup.players.pf._id),
+        getIdString(lineup.players.c._id),
       ]
         .filter((id): id is string => Boolean(id))
         .map((id) => new mongoose.Types.ObjectId(id));
 
-      // Find eligible players (matching value, not already in lineup)
-      const [newPlayer] = await PlayerModel.aggregate<IPlayer>([
+      // Find a random player at the target value (not already in lineup)
+      let [newPlayer] = await PlayerModel.aggregate<PlayerDoc>([
         {
           $match: {
-            value: { $in: possibleValues },
+            value: targetValue,
             _id: { $nin: currentLineupPlayerIds },
           },
         },
         { $sample: { size: 1 } },
       ]);
+
+      // Fallback: if no player found at target value, try adjacent values
+      if (!newPlayer) {
+        const fallbackValues = [1, 2, 3, 4, 5].filter((v) => v !== targetValue);
+        [newPlayer] = await PlayerModel.aggregate<PlayerDoc>([
+          {
+            $match: {
+              value: { $in: fallbackValues },
+              _id: { $nin: currentLineupPlayerIds },
+            },
+          },
+          { $sample: { size: 1 } },
+        ]);
+      }
 
       if (!newPlayer) {
         throw new TRPCError({
@@ -623,23 +778,65 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      // Update the lineup with the new player
-      const updateData = {
-        [positionField]: newPlayer._id,
-        $inc: { timesGambled: 1 },
-      };
+      // Calculate outcome metrics
+      const newPlayerValue: number = newPlayer.value;
+      const valueChange: number = newPlayerValue - currentValue;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const outcomeTier: GambleOutcomeTier = getOutcomeTier(valueChange);
+      const currentStreak: number = (lineup.gambleStreak as number) ?? 0;
+      const newStreak: number = calculateStreakChange(
+        currentStreak,
+        valueChange,
+      );
 
+      // Build the last gamble result
+      /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+      const lastGambleResult = {
+        previousValue: currentValue,
+        newValue: newPlayerValue,
+        valueChange,
+        outcomeTier,
+        position: input.position,
+        timestamp: now,
+      };
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+
+      // Update the lineup with the new player and gambling stats
       const updatedLineup = await LineupModel.findByIdAndUpdate(
         input.lineupId,
-        updateData,
+        {
+          [`players.${positionField}`]: newPlayer._id,
+          $inc: { timesGambled: 1 },
+          $set: {
+            lastGambleResult,
+            gambleStreak: newStreak,
+            lastGambleAt: now,
+            dailyGamblesUsed: dailyGamblesUsed + 1,
+            dailyGamblesResetAt,
+          },
+        },
         { new: true },
       ).populate(lineupPopulateFields);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const transformedLineup = transformLineup(updatedLineup);
+
+      /* eslint-disable @typescript-eslint/no-unsafe-assignment */
       return {
-        lineup: transformLineup(updatedLineup),
+        lineup: transformedLineup,
         previousPlayer: currentPlayer,
         newPlayer,
+        outcome: {
+          previousValue: currentValue,
+          newValue: newPlayerValue,
+          valueChange,
+          outcomeTier,
+          streak: newStreak,
+          dailyGamblesRemaining: DAILY_GAMBLE_LIMIT - (dailyGamblesUsed + 1),
+          cooldownSeconds: GAMBLE_COOLDOWN_MS / 1000,
+        },
       };
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
     }),
 
   // ============================================
