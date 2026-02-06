@@ -53,9 +53,9 @@ const BUDGET_LIMIT = 15;
  */
 const GAMBLE_ODDS: Record<number, number[]> = {
   // [chance of getting value: 1, 2, 3, 4, 5]
-  1: [55, 25, 12, 6, 2], // 45% upgrade chance, mostly small gains
-  2: [30, 40, 20, 7, 3], // 30% upgrade, 30% downgrade
-  3: [10, 20, 45, 18, 7], // 25% upgrade, 30% downgrade - balanced
+  1: [70, 15, 8, 6, 1], // 45% upgrade chance, mostly small gains
+  2: [35, 45, 10, 7, 3], // 30% upgrade, 30% downgrade
+  3: [9, 20, 50, 14, 7], // 25% upgrade, 30% downgrade - balanced
   4: [5, 8, 17, 45, 25], // 25% upgrade to 5, 30% downgrade
   5: [2, 5, 8, 25, 60], // 60% stay at 5, very safe
 };
