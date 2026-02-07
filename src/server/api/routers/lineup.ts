@@ -142,17 +142,20 @@ export const lineupRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        pg: playerSchema,
-        sg: playerSchema,
-        sf: playerSchema,
-        pf: playerSchema,
-        c: playerSchema,
+        players: z.object({
+          pg: playerSchema,
+          sg: playerSchema,
+          sf: playerSchema,
+          pf: playerSchema,
+          c: playerSchema,
+        }),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { pg, sg, sf, pf, c } = input;
+      const { players } = input;
+      const { pg, sg, sf, pf, c } = players;
       const playerIds = [pg._id, sg._id, sf._id, pf._id, c._id];
-
+      console.log(players, " <-- players");
       // Check for duplicate players
       const uniqueIds = new Set(playerIds);
       if (uniqueIds.size !== playerIds.length) {
@@ -163,19 +166,14 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      // Fetch all selected players and validate budget
-      const selectedPlayers = await PlayerModel.find({
-        _id: { $in: playerIds },
-      });
-
-      if (selectedPlayers.length !== 5) {
+      if (Object.values(players).length !== 5) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "One or more selected players not found.",
         });
       }
 
-      const totalValue = selectedPlayers.reduce(
+      const totalValue = Object.values(players).reduce(
         (sum, player) => sum + player.value,
         0,
       );
@@ -185,16 +183,16 @@ export const lineupRouter = createTRPCRouter({
           message: `Lineup exceeds $${BUDGET_LIMIT} budget. Total value: $${totalValue}`,
         });
       }
-      console.log(selectedPlayers, ' <-- selected players');
+      console.log(players, " <-- players");
 
       // Create the lineup
       const lineup = await LineupModel.create({
         players: {
-          pg: selectedPlayers[0]?._id,
-          sg: selectedPlayers[1]?._id,
-          sf: selectedPlayers[2]?._id,
-          pf: selectedPlayers[3]?._id,
-          c: selectedPlayers[4]?._id,
+          pg: players.pg._id,
+          sg: players.sg._id,
+          sf: players.sf._id,
+          pf: players.pf._id,
+          c: players.c._id,
         },
         owner: ctx.session.user.id,
       });
@@ -232,10 +230,12 @@ export const lineupRouter = createTRPCRouter({
           break;
       }
 
-      return await LineupModel.find({ ownerId: ctx.session.user.id })
+      const data = await LineupModel.find({ owner: ctx.session.user.id })
         .sort(sortOption)
         .populate(lineupPopulateFields)
         .lean();
+      console.log(data, " <-- data");
+      return data;
     }),
 
   // Get a specific user's lineups (public)

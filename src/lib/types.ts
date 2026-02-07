@@ -43,11 +43,13 @@ export interface LineupType {
   createdAt: Date;
   updatedAt: Date;
   featured: boolean;
-  pg: PlayerType;
-  sg: PlayerType;
-  sf: PlayerType;
-  pf: PlayerType;
-  c: PlayerType;
+  players: {
+    pg: PlayerType;
+    sg: PlayerType;
+    sf: PlayerType;
+    pf: PlayerType;
+    c: PlayerType;
+  };
   owner: UserType;
   totalVotes: number;
   avgRating: number;

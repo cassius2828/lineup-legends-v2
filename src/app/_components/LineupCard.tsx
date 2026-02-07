@@ -37,11 +37,11 @@ export function LineupCard({
   userVote,
 }: LineupCardProps) {
   const totalValue =
-    lineup.pg?.value +
-    lineup.sg?.value +
-    lineup.sf?.value +
-    lineup.pf?.value +
-    lineup.c?.value;
+    lineup.players.pg?.value +
+    lineup.players.sg?.value +
+    lineup.players.sf?.value +
+    lineup.players.pf?.value +
+    lineup.players.c?.value;
 
   const relativeTime = formatDistanceToNow(new Date(lineup.createdAt), {
     addSuffix: true,
@@ -202,7 +202,7 @@ export function LineupCard({
             <span className="mb-1 text-xs font-bold text-white/50 uppercase">
               {positionLabels[position]}
             </span>
-            <PlayerCard player={lineup[position]} compact />
+            <PlayerCard player={lineup.players[position]} compact />
           </div>
         ))}
       </div>

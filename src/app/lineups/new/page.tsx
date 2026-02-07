@@ -24,11 +24,13 @@ export default function CreateLineupPage() {
     if (selectedPlayers.length !== 5) return;
 if(selectedPlayers.some(player => !player)) return;
     createLineup.mutate({
-      pg: selectedPlayers[0],
-      sg: selectedPlayers[1],
-      sf: selectedPlayers[2],
-      pf: selectedPlayers[3],
-      c: selectedPlayers[4],
+      players: {
+        pg: selectedPlayers[0],
+        sg: selectedPlayers[1],
+        sf: selectedPlayers[2],
+        pf: selectedPlayers[3],
+        c: selectedPlayers[4],
+      },
     });
   };
 
