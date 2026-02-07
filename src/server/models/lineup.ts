@@ -81,7 +81,7 @@ export interface LineupDoc extends Document {
   createdAt: Date;
   updatedAt: Date;
   featured: boolean;
-  players: LineupPlayers;
+  players: LineupPlayersDoc;
   owner: Types.ObjectId;
   totalVotes: number;
   avgRating: number;

@@ -2,12 +2,10 @@ import { TRPCError } from "@trpc/server";
 import mongoose, { type SortOrder } from "mongoose";
 import { z } from "zod";
 import {
-  getIdString,
   getVoteDelta,
   incrementTotalVotes,
   lineupPopulateFields,
-  processCommentVote,
-  transformLineup,
+  transformLineup
 } from "~/lib/utils";
 
 import {
@@ -17,16 +15,15 @@ import {
 } from "~/server/api/trpc";
 import {
   CommentModel,
+  CommentVoteModel,
   LineupModel,
-  PlayerModel,
-  UserModel,
-  RatingModel,
   VoteModel as LineupVoteModel,
+  PlayerModel,
+  RatingModel,
+  type GambleOutcomeTier,
   type Lineup,
   type Player,
-  type PlayerDoc,
-  type GambleOutcomeTier,
-  CommentVoteModel,
+  type PlayerDoc
 } from "~/server/models";
 import { ThreadModel } from "~/server/models/threads";
 import { ThreadVoteModel } from "~/server/models/threadVotes";
@@ -184,8 +181,7 @@ export const lineupRouter = createTRPCRouter({
           message: `Lineup exceeds $${BUDGET_LIMIT} budget. Total value: $${totalValue}`,
         });
       }
-      console.log(players, " <-- players");
-      console.log(ctx, " <-- ctx.session.user.id");
+
       // Create the lineup
       const lineup = await LineupModel.create({
         players: {
@@ -583,18 +579,18 @@ export const lineupRouter = createTRPCRouter({
       }
 
       const originalIds = new Set([
-        getIdString(lineup.players.pg.id),
-        getIdString(lineup.players.sg.id),
-        getIdString(lineup.players.sf.id),
-        getIdString(lineup.players.pf.id),
-        getIdString(lineup.players.c.id),
+        lineup.players.pg._id.toString(),
+        lineup.players.sg._id.toString(),
+        lineup.players.sf._id.toString(),
+        lineup.players.pf._id.toString(),
+        lineup.players.c._id.toString(),
       ]);
       const newIds = [
-        input.players.pg.id,
-        input.players.sg.id,
-        input.players.sf.id,
-        input.players.pf.id,
-        input.players.c.id,
+        input.players.pg._id.toString(),
+        input.players.sg._id.toString(),
+        input.players.sf._id.toString(),
+        input.players.pf._id.toString(),
+        input.players.c._id.toString(),
       ];
 
       // Check for duplicates
@@ -744,11 +740,11 @@ export const lineupRouter = createTRPCRouter({
 
       // Convert string IDs to ObjectIds for proper MongoDB $nin comparison
       const currentLineupPlayerIds = [
-        getIdString(lineup.players.pg.id),
-        getIdString(lineup.players.sg.id),
-        getIdString(lineup.players.sf.id),
-        getIdString(lineup.players.pf.id),
-        getIdString(lineup.players.c.id),
+        lineup.players.pg._id.toString(),
+        lineup.players.sg._id.toString(),
+        lineup.players.sf._id.toString(),
+        lineup.players.pf._id.toString(),
+        lineup.players.c._id.toString(),
       ]
         .filter((id): id is string => Boolean(id))
         .map((id) => new mongoose.Types.ObjectId(id));

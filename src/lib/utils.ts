@@ -27,18 +27,6 @@ export const lineupPopulateFields = [
   { path: "owner", model: "User" },
 ];
 
-export const getIdString = (field: PopulatableField) => {
-  switch (typeof field) {
-    case "string":
-      return field;
-    case "object":
-      if (field instanceof mongoose.Types.ObjectId) return field.toString();
-      return field?._id?.toString();
-    default:
-      return null;
-  }
-};
-
 // Helper to transform lineup for API response (rename populated fields)
 // * we may not need this
 export function transformLineup(lineup: ILineup | null) {
