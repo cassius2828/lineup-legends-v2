@@ -8,6 +8,8 @@ import {
 } from "~/app/_components/LineupCard";
 import { api } from "~/trpc/react";
 import { getId } from "~/lib/types";
+import { ButtonLink } from "~/app/_components/ui/Button";
+import LineupsHeader from "~/app/_components/Header/Header";
 
 type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
 
@@ -39,28 +41,14 @@ export default function ExploreLineupsPage() {
     <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white">Explore Lineups</h1>
-            <p className="mt-1 text-white/60">
-              Discover lineups from the community
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              href="/lineups"
-              className="rounded-lg bg-white/10 px-4 py-2 font-medium text-white transition-colors hover:bg-white/20"
-            >
-              My Lineups
-            </Link>
-            <Link
-              href="/lineups/new"
-              className="rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-emerald-500"
-            >
-              + Create Lineup
-            </Link>
-          </div>
-        </div>
+        <LineupsHeader
+          title="Explore Lineups"
+          description="Discover lineups from the community"
+          exploreLink="/lineups"
+          createLink="/lineups/new"
+          exploreLinkText="My Lineups"
+          createLinkText="+ Create Lineup"
+        />
 
         {/* Sort Controls */}
         <div className="mb-6 flex gap-2">
@@ -95,12 +83,12 @@ export default function ExploreLineupsPage() {
             </div>
           </div>
         ) : lineups && lineups.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2">
             {lineups.map((lineup) => (
               <LineupCard
                 key={getId(lineup)}
                 // improve type safety later
-                lineup={lineup as LineupWithRelations}
+                lineup={lineup}
                 showOwner={true}
                 isOwner={false}
                 currentUserId={getId(session)}

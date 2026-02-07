@@ -5,6 +5,7 @@ import { useState } from "react";
 import { LineupCard } from "~/app/_components/LineupCard";
 import { getId } from "~/lib/types";
 import { api } from "~/trpc/react";
+import LineupsHeader from "../_components/Header/Header";
 
 type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
 
@@ -51,29 +52,15 @@ export default function MyLineupsPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white">My Lineups</h1>
-            <p className="mt-1 text-white/60">
-              Manage your fantasy basketball lineups
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              href="/lineups/explore"
-              className="rounded-lg bg-white/10 px-4 py-2 font-medium text-white transition-colors hover:bg-white/20"
-            >
-              Explore Lineups
-            </Link>
-            <Link
-              href="/lineups/new"
-              className="rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-emerald-500"
-            >
-              + Create Lineup
-            </Link>
-          </div>
-        </div>
+            {/* Header */}
+            <LineupsHeader
+          title="My Lineups"
+          description="Manage your fantasy basketball lineups"
+          exploreLink="/lineups/explore"
+          createLink="/lineups/new"
+          exploreLinkText="Explore Lineups"
+          createLinkText="+ Create Lineup"
+        />
 
         {/* Sort Controls */}
         <div className="mb-6 flex gap-2">

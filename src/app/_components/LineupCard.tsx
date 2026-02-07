@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import { type LineupType } from "~/lib/types";
 import { PlayerCard } from "./PlayerCard";
+import { Button, ButtonLink } from "./ui/Button";
 
 interface LineupCardProps {
   lineup: LineupType;
@@ -210,33 +211,33 @@ export function LineupCard({
       {/* Owner Actions */}
       {isOwner && (
         <div className="mt-4 flex flex-wrap justify-end gap-2">
-          <Link
+          <ButtonLink
             href={`/lineups/${lineup._id?.toString() ?? ""}/edit`}
-            className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/20"
+            color="white"
           >
             Reorder
-          </Link>
-          <Link
+          </ButtonLink>
+          <ButtonLink
             href={`/lineups/${lineup._id?.toString() ?? ""}/gamble`}
-            className="rounded-lg bg-green-500/20 px-3 py-1.5 text-sm font-medium text-green-400 transition-colors hover:bg-green-500/30"
+            color="green"
           >
             Gamble
-          </Link>
+          </ButtonLink>
           {onToggleFeatured && (
-            <button
-              onClick={() => onToggleFeatured(lineup._id?.toString() ?? "")}
-              className="bg-gold/20 text-gold hover:bg-gold/30 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            <Button
+              handleClick={() => onToggleFeatured(lineup._id?.toString() ?? "")}
+              color="gold"
             >
               {lineup.featured ? "Unfeature" : "Feature"}
-            </button>
+            </Button>
           )}
           {onDelete && (
-            <button
-              onClick={() => onDelete(lineup._id?.toString() ?? "")}
-              className="rounded-lg bg-red-500/20 px-3 py-1.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30"
+            <Button
+              handleClick={() => onDelete(lineup._id?.toString() ?? "")}
+              color="red"
             >
               Delete
-            </button>
+            </Button>
           )}
         </div>
       )}
