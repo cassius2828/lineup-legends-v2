@@ -1,11 +1,10 @@
-import {
-  type Lineup,
-  type LineupDoc,
-  type LineupVote,
-  RatingModel,
-  LineupModel,
-} from "~/server/models";
 import type { Types } from "mongoose";
+import mongoose from "mongoose";
+import {
+  type LineupDoc,
+  LineupModel,
+  RatingModel
+} from "~/server/models";
 
 // Legacy type aliases for backwards compatibility
 // TODO: These should be migrated to use the proper model types
@@ -14,8 +13,6 @@ interface ICommentVote {
   userId: Types.ObjectId;
   type: "upvote" | "downvote";
 }
-import type { LineupType, PopulatableField } from "./types";
-import mongoose from "mongoose";
 
 // Population fields for lineup queries
 export const lineupPopulateFields = [
@@ -26,27 +23,6 @@ export const lineupPopulateFields = [
   { path: "players.c", model: "Player" },
   { path: "owner", model: "User" },
 ];
-
-// Helper to transform lineup for API response (rename populated fields)
-// * we may not need this
-export function transformLineup(lineup: ILineup | null) {
-  if (!lineup) return null;
-
-  // const obj = lineup.toObject() as LineupType;
-  // this is stringifying everything. Is that what i want to do?
-  // return {
-  //   ...obj,
-  //   id: obj._id?.toString(),
-  //   pg: obj.pg?.toString(),
-  //   sg: obj.sg?.toString(),
-  //   sf: obj.sf?.toString(),
-  //   pf: obj.pf?.toString(),
-  //   c: obj.c?.toString(),
-  //   owner: obj.owner?.toString(),
-  //   // pg, sg, sf, pf, c, owner are already correct from virtuals
-  // };
-  return lineup;
-}
 
 /**
  * Shared vote delta calculator - O(1) operation

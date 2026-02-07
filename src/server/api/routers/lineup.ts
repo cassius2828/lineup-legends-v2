@@ -5,7 +5,6 @@ import {
   getVoteDelta,
   incrementTotalVotes,
   lineupPopulateFields,
-  transformLineup
 } from "~/lib/utils";
 
 import {
@@ -23,7 +22,7 @@ import {
   type GambleOutcomeTier,
   type Lineup,
   type Player,
-  type PlayerDoc
+  type PlayerDoc,
 } from "~/server/models";
 import { ThreadModel } from "~/server/models/threads";
 import { ThreadVoteModel } from "~/server/models/threadVotes";
@@ -816,11 +815,10 @@ export const lineupRouter = createTRPCRouter({
       ).populate(lineupPopulateFields);
 
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const transformedLineup = transformLineup(updatedLineup);
 
       /* eslint-disable @typescript-eslint/no-unsafe-assignment */
       return {
-        lineup: transformedLineup,
+        lineup: updatedLineup,
         previousPlayer: currentPlayer,
         newPlayer,
         outcome: {

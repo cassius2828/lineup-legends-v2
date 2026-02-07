@@ -1,56 +1,12 @@
 import { z } from "zod";
+import { lineupPopulateFields } from "~/lib/utils";
 
 import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { UserModel, LineupModel, type LineupDoc } from "~/server/models";
-import type { Document, Types } from "mongoose";
-
-// Population fields for lineup queries
-const lineupPopulateFields = [
-  { path: "pg", model: "Player" },
-  { path: "sg", model: "Player" },
-  { path: "sf", model: "Player" },
-  { path: "pf", model: "Player" },
-  { path: "c", model: "Player" },
-  { path: "ownerId", model: "User" },
-];
-
-// Type for lineup plain object after toObject()
-interface LineupObject {
-  _id?: Types.ObjectId;
-  id?: string;
-  pg: unknown;
-  sg: unknown;
-  sf: unknown;
-  pf: unknown;
-  c: unknown;
-  ownerId: unknown;
-  createdAt: Date;
-  updatedAt: Date;
-  featured: boolean;
-  totalVotes: number;
-  avgRating: number;
-  timesGambled: number;
-}
-
-// Helper to transform lineup for API response
-function transformLineup(lineup: (Document & LineupDoc) | null) {
-  if (!lineup) return null;
-  const obj = lineup.toObject() as LineupObject;
-  return {
-    ...obj,
-    id: obj._id?.toString() ?? obj.id,
-    pg: obj.pg,
-    sg: obj.sg,
-    sf: obj.sf,
-    pf: obj.pf,
-    c: obj.c,
-    owner: obj.ownerId,
-  };
-}
+import { LineupModel, UserModel } from "~/server/models";
 
 export const profileRouter = createTRPCRouter({
   // Get a user's profile by ID
@@ -71,38 +27,19 @@ export const profileRouter = createTRPCRouter({
         .sort({ createdAt: -1 })
         .limit(6)
         .populate([
-          { path: "pgId", model: "Player" },
-          { path: "sgId", model: "Player" },
-          { path: "sfId", model: "Player" },
-          { path: "pfId", model: "Player" },
-          { path: "cId", model: "Player" },
+          { path: "players.pg", model: "Player" },
+          { path: "players.sg", model: "Player" },
+          { path: "players.sf", model: "Player" },
+          { path: "players.pf", model: "Player" },
+          { path: "players.c", model: "Player" },
         ]);
-
-      // Get total lineup count
-      const lineupCount = await LineupModel.countDocuments({
-        ownerId: input.userId,
-      });
-
-      // Transform lineups
-      const transformedLineups = lineups.map((lineup) => {
-        const obj = lineup.toObject();
-        return {
-          ...obj,
-          id: obj._id?.toString(),
-          pg: obj.pg,
-          sg: obj.sg,
-          sf: obj.sf,
-          pf: obj.pf,
-          c: obj.c,
-        };
-      });
 
       return {
         ...user,
         id: user._id?.toString(),
-        lineups: transformedLineups,
+        lineups,
         _count: {
-          lineups: lineupCount,
+          lineups: lineups.length,
         },
       };
     }),
@@ -150,7 +87,7 @@ export const profileRouter = createTRPCRouter({
 
         if (
           existingUser &&
-          existingUserModel._id.toString() !== ctx.session.user.id
+          existingUser._id.toString() !== ctx.session.user.id
         ) {
           throw new Error("Username is already taken.");
         }
@@ -181,20 +118,19 @@ export const profileRouter = createTRPCRouter({
         { new: true },
       );
 
-      return updatedUser ? updatedUserModel.toObject() : null;
+      return updatedUser ?? null;
     }),
 
   // Get featured lineups for a user
   getFeaturedLineups: publicProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
-      const lineups = await LineupModel.find({
+      return await LineupModel.find({
         ownerId: input.userId,
         featured: true,
       })
         .limit(3)
-        .populate(lineupPopulateFields);
-
-      return lineups.map(transformLineup);
+        .populate(lineupPopulateFields)
+        .lean();
     }),
 });

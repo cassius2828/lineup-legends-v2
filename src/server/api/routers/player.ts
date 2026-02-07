@@ -20,8 +20,7 @@ export const playerRouter = createTRPCRouter({
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const player = await PlayerModel.findById(input.id).lean();
-      return player ?? null;
+      return await PlayerModel.findById(input.id).lean();
     }),
 
   // Get random players grouped by value tier (for lineup creation)
@@ -94,7 +93,7 @@ export const playerRouter = createTRPCRouter({
         throw new Error("Player not found");
       }
 
-      return updatedPlayerModel.toObject();
+      return updatedPlayer.toObject();
     }),
 
   // Create a new player (admin only)
@@ -132,6 +131,6 @@ export const playerRouter = createTRPCRouter({
         imgUrl: input.imgUrl,
       });
 
-      return newPlayerModel.toObject();
+      return newPlayer.toObject();
     }),
 });
