@@ -3,8 +3,24 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { api } from "~/trpc/react";
-import { type PlayerType, getId } from "~/lib/types";
+import { type PlayerType } from "~/lib/types";
 
 const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
 const POSITION_LABELS = {
@@ -15,6 +31,122 @@ const POSITION_LABELS = {
   c: "Center",
 };
 
+type Position = (typeof POSITIONS)[number];
+
+interface SortablePositionCardProps {
+  pos: Position;
+  index: number;
+  player: PlayerType;
+  onSwap: (pos1: Position, pos2: Position) => void;
+}
+
+function SortablePositionCard({
+  pos,
+  index,
+  player,
+  onSwap,
+}: SortablePositionCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: pos });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-4 rounded-xl bg-slate-800/80 p-4 ${
+        isDragging ? "opacity-90 shadow-2xl ring-2 ring-emerald-500/50" : ""
+      }`}
+    >
+      {/* Drag handle - the entire row except buttons */}
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex flex-1 cursor-grab items-center gap-4 active:cursor-grabbing"
+      >
+        <span className="w-8 text-center text-lg font-bold text-white/40">
+          {index + 1}
+        </span>
+        <div className="flex-1">
+          <span className="text-xs font-bold text-white/50 uppercase">
+            {POSITION_LABELS[pos]}
+          </span>
+          <div className="mt-1 flex items-center gap-3">
+            <img
+              src={player.imgUrl}
+              alt={`${player.firstName} ${player.lastName}`}
+              className="h-12 w-12 rounded-full object-cover"
+            />
+            <div>
+              <p className="font-semibold text-white">
+                {player.firstName} {player.lastName}
+              </p>
+              <p className="text-sm text-white/50">${player.value}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Swap buttons - clicks take precedence over drag */}
+      <div className="flex gap-1">
+        {index > 0 && (
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => onSwap(pos, POSITIONS[index - 1]!)}
+            className="rounded-lg bg-white/10 p-2 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 15l7-7 7 7"
+              />
+            </svg>
+          </button>
+        )}
+        {index < POSITIONS.length - 1 && (
+          <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => onSwap(pos, POSITIONS[index + 1]!)}
+            className="rounded-lg bg-white/10 p-2 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function EditLineupPage() {
   const params = useParams();
   const router = useRouter();
@@ -23,6 +155,11 @@ export default function EditLineupPage() {
   const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery({
     id: lineupId,
   });
+
+  // Track the current order of positions (for drag reordering)
+  const [positionOrder, setPositionOrder] = useState<Position[]>([
+    ...POSITIONS,
+  ]);
 
   const [positions, setPositions] = useState<
     Record<(typeof POSITIONS)[number], PlayerType | null>
@@ -34,14 +171,26 @@ export default function EditLineupPage() {
     c: null,
   });
 
+  // Configure sensors with activation constraints to allow button clicks
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px of movement before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
   useEffect(() => {
     if (lineup) {
       setPositions({
-        pg: lineup.pg,
-        sg: lineup.sg,
-        sf: lineup.sf,
-        pf: lineup.pf,
-        c: lineup.c,
+        pg: lineup.players.pg,
+        sg: lineup.players.sg,
+        sf: lineup.players.sf,
+        pf: lineup.players.pf,
+        c: lineup.players.c,
       });
     }
   }, [lineup]);
@@ -55,15 +204,28 @@ export default function EditLineupPage() {
     },
   });
 
-  const handleSwap = (
-    pos1: (typeof POSITIONS)[number],
-    pos2: (typeof POSITIONS)[number],
-  ) => {
+  const handleSwap = (pos1: Position, pos2: Position) => {
+    // Swap in positions record
     setPositions((prev) => ({
       ...prev,
       [pos1]: prev[pos2],
       [pos2]: prev[pos1],
     }));
+    // Swap in order array
+    setPositionOrder((prev) => {
+      const newOrder = [...prev];
+      const idx1 = newOrder.indexOf(pos1);
+      const idx2 = newOrder.indexOf(pos2);
+      [newOrder[idx1], newOrder[idx2]] = [newOrder[idx2]!, newOrder[idx1]!];
+      return newOrder;
+    });
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      handleSwap(active.id as Position, over.id as Position);
+    }
   };
 
   const handleSubmit = () => {
@@ -79,11 +241,13 @@ export default function EditLineupPage() {
 
     reorderMutation.mutate({
       lineupId,
-      pgId: getId(positions.pg),
-      sgId: getId(positions.sg),
-      sfId: getId(positions.sf),
-      pfId: getId(positions.pf),
-      cId: getId(positions.c),
+      players: {
+        pg: positions.pg,
+        sg: positions.sg,
+        sf: positions.sf,
+        pf: positions.pf,
+        c: positions.c,
+      },
     });
   };
 
@@ -139,90 +303,38 @@ export default function EditLineupPage() {
           </Link>
           <h1 className="text-3xl font-bold text-white">Reorder Lineup</h1>
           <p className="mt-1 text-white/60">
-            Click two positions to swap players
+            Drag to reorder or use arrows to swap players
           </p>
         </div>
 
-        {/* Position Cards */}
-        <div className="space-y-3">
-          {POSITIONS.map((pos, index) => {
-            const player = positions[pos];
-            if (!player) return null;
+        {/* Position Cards with Drag and Drop */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={positionOrder}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3">
+              {positionOrder.map((pos, index) => {
+                const player = positions[pos];
+                if (!player) return null;
 
-            return (
-              <div
-                key={pos}
-                className="flex items-center gap-4 rounded-xl bg-slate-800/80 p-4"
-              >
-                <span className="w-8 text-center text-lg font-bold text-white/40">
-                  {index + 1}
-                </span>
-                <div className="flex-1">
-                  <span className="text-xs font-bold text-white/50 uppercase">
-                    {POSITION_LABELS[pos]}
-                  </span>
-                  <div className="mt-1 flex items-center gap-3">
-                    <img
-                      src={player.imgUrl}
-                      alt={`${player.firstName} ${player.lastName}`}
-                      className="h-12 w-12 rounded-full object-cover"
-                    />
-                    <div>
-                      <p className="font-semibold text-white">
-                        {player.firstName} {player.lastName}
-                      </p>
-                      <p className="text-sm text-white/50">${player.value}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Swap buttons */}
-                <div className="flex gap-1">
-                  {index > 0 && (
-                    <button
-                      onClick={() => handleSwap(pos, POSITIONS[index - 1]!)}
-                      className="rounded-lg bg-white/10 p-2 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
-                    >
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 15l7-7 7 7"
-                        />
-                      </svg>
-                    </button>
-                  )}
-                  {index < POSITIONS.length - 1 && (
-                    <button
-                      onClick={() => handleSwap(pos, POSITIONS[index + 1]!)}
-                      className="rounded-lg bg-white/10 p-2 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
-                    >
-                      <svg
-                        className="h-5 w-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                return (
+                  <SortablePositionCard
+                    key={pos}
+                    pos={pos}
+                    index={index}
+                    player={player}
+                    onSwap={handleSwap}
+                  />
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
 
         {/* Submit */}
         <div className="mt-8 flex gap-3">

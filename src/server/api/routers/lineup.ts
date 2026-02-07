@@ -583,18 +583,18 @@ export const lineupRouter = createTRPCRouter({
       }
 
       const originalIds = new Set([
-        getIdString(lineup.players.pg._id),
-        getIdString(lineup.players.sg._id),
-        getIdString(lineup.players.sf._id),
-        getIdString(lineup.players.pf._id),
-        getIdString(lineup.players.c._id),
+        getIdString(lineup.players.pg.id),
+        getIdString(lineup.players.sg.id),
+        getIdString(lineup.players.sf.id),
+        getIdString(lineup.players.pf.id),
+        getIdString(lineup.players.c.id),
       ]);
       const newIds = [
-        input.players.pg._id,
-        input.players.sg._id,
-        input.players.sf._id,
-        input.players.pf._id,
-        input.players.c._id,
+        input.players.pg.id,
+        input.players.sg.id,
+        input.players.sf.id,
+        input.players.pf.id,
+        input.players.c.id,
       ];
 
       // Check for duplicates
