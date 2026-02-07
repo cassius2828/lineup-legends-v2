@@ -5,9 +5,18 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
 import { type PlayerType } from "~/lib/types";
-import Image from "next/image";
 
 const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
+
+// Value-based box-shadow glow colors matching original design
+const valueShadows: Record<number, string> = {
+  5: "shadow-[0px_0px_10px_3px_#99fcff]", // Light blue diamond
+  4: "shadow-[0px_0px_10px_3px_#8317e8]", // Purple
+  3: "shadow-[0px_0px_10px_3px_#e3b920]", // Gold
+  2: "shadow-[0px_0px_10px_3px_#c0c0c0]", // Silver
+  1: "shadow-[0px_0px_10px_3px_#804a14]", // Bronze
+};
+
 const POSITION_LABELS = {
   pg: "PG",
   sg: "SG",
@@ -112,16 +121,6 @@ export default function GambleLineupPage() {
           </p>
         </div>
 
-        {/* Rules */}
-        <div className="mb-6 rounded-xl bg-green-500/10 p-4 text-sm text-white/70">
-          <h3 className="mb-2 font-semibold text-green-400">Gambling Rules:</h3>
-          <ul className="list-inside list-disc space-y-1">
-            <li>$1 players can only get other $1 players</li>
-            <li>$5 players can get $4 or $5 players</li>
-            <li>$2-$4 players can get -1, same, or +1 value</li>
-          </ul>
-        </div>
-
         {/* Gamble Result */}
         {gambleResult ? (
           <div className="mb-8 rounded-2xl bg-slate-800/80 p-6">
@@ -132,12 +131,10 @@ export default function GambleLineupPage() {
             <div className="flex items-center justify-center gap-8">
               {/* Previous Player */}
               <div className="text-center opacity-50">
-                <Image
-                  width={96}
-                  height={96}
+                <img
                   src={gambleResult.previousPlayer.imgUrl}
                   alt={`${gambleResult.previousPlayer.firstName} ${gambleResult.previousPlayer.lastName}`}
-                  className="mx-auto rounded-full object-cover grayscale"
+                  className={`mx-auto rounded-full object-cover grayscale ${valueShadows[gambleResult.previousPlayer.value] ?? "shadow"}`}
                 />
                 <p className="mt-2 font-semibold text-white line-through">
                   {gambleResult.previousPlayer.firstName}
@@ -153,12 +150,10 @@ export default function GambleLineupPage() {
               {/* New Player */}
               <div className="text-center">
                 <div className="relative">
-                  <Image
-                    width={96}
-                    height={96}
+                  <img
                     src={gambleResult.newPlayer.imgUrl}
                     alt={`${gambleResult.newPlayer.firstName} ${gambleResult.newPlayer.lastName}`}
-                    className="mx-auto rounded-full border-4 border-green-500 object-cover"
+                    className={`mx-auto rounded-full border-4 border-green-500 object-cover ${valueShadows[gambleResult.newPlayer.value] ?? "shadow"}`}
                   />
                   {gambleResult.newPlayer.value >
                     gambleResult.previousPlayer.value && (
@@ -210,7 +205,8 @@ export default function GambleLineupPage() {
               </h2>
               <div className="grid grid-cols-5 gap-3">
                 {POSITIONS.map((pos) => {
-                  const player = lineup[pos];
+                  const player =
+                    lineup.players[pos as keyof typeof lineup.players];
                   const isSelected = selectedPosition === pos;
 
                   return (
@@ -226,15 +222,16 @@ export default function GambleLineupPage() {
                       <span className="mb-1 block text-xs font-bold text-white/50">
                         {POSITION_LABELS[pos]}
                       </span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={player?.imgUrl ?? ""}
+                        src={player.imgUrl ?? ""}
                         alt={`${player?.firstName} ${player?.lastName}`}
-                        className="mx-auto h-16 w-16 rounded-full object-cover"
+                        className={`mx-auto h-16 w-16 rounded-full object-cover ${valueShadows[player.value] ?? "shadow"}`}
                       />
                       <p className="mt-2 truncate text-sm font-medium text-white">
-                        {player?.firstName}
+                        {player.firstName}
                       </p>
-                      <p className="text-xs text-green-400">${player?.value}</p>
+                      <p className="text-xs text-green-400">${player.value}</p>
                     </button>
                   );
                 })}
@@ -247,17 +244,10 @@ export default function GambleLineupPage() {
                 <p className="text-sm text-white/60">
                   Gambling{" "}
                   <strong className="text-white">
-                    {lineup[selectedPosition]?.firstName}{" "}
-                    {lineup[selectedPosition]?.lastName}
+                    {lineup.players[selectedPosition]?.firstName}{" "}
+                    {lineup.players[selectedPosition]?.lastName}
                   </strong>{" "}
-                  (${lineup[selectedPosition]?.value})
-                </p>
-                <p className="mt-1 text-xs text-white/40">
-                  {lineup[selectedPosition]?.value === 1
-                    ? "Can only receive $1 players"
-                    : lineup[selectedPosition]?.value === 5
-                      ? "Can receive $4 or $5 players"
-                      : `Can receive $${lineup[selectedPosition]?.value ? lineup[selectedPosition]?.value - 1 : 0}-$${lineup[selectedPosition]?.value ? lineup[selectedPosition]?.value + 1 : 0} players`}
+                  (${lineup.players[selectedPosition]?.value})
                 </p>
               </div>
             )}

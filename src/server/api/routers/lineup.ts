@@ -19,6 +19,7 @@ import {
   CommentModel,
   LineupModel,
   PlayerModel,
+  UserModel,
   RatingModel,
   VoteModel as LineupVoteModel,
   type Lineup,
@@ -184,7 +185,7 @@ export const lineupRouter = createTRPCRouter({
         });
       }
       console.log(players, " <-- players");
-
+console.log(ctx, " <-- ctx.session.user.id");
       // Create the lineup
       const lineup = await LineupModel.create({
         players: {
@@ -661,14 +662,16 @@ export const lineupRouter = createTRPCRouter({
         lineupPopulateFields,
       );
 
+      //       const {owner} = await LineupModel.findById(input.lineupId).select("owner").lean();
+      // const ownerId = owner._id.toString();
       if (!lineup) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Lineup not found.",
         });
       }
-
-      if (lineup.owner._id.toString() !== ctx.session.user.id) {
+      console.log("\n\n", "\n\n", lineup, ctx.session.user.id, "\n\n", "\n\n");
+      if (lineup.owner.toString() !== ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You do not have permission to gamble on this lineup.",
@@ -736,11 +739,11 @@ export const lineupRouter = createTRPCRouter({
 
       // Convert string IDs to ObjectIds for proper MongoDB $nin comparison
       const currentLineupPlayerIds = [
-        getIdString(lineup.players.pg._id),
-        getIdString(lineup.players.sg._id),
-        getIdString(lineup.players.sf._id),
-        getIdString(lineup.players.pf._id),
-        getIdString(lineup.players.c._id),
+        getIdString(lineup.players.pg.id),
+        getIdString(lineup.players.sg.id),
+        getIdString(lineup.players.sf.id),
+        getIdString(lineup.players.pf.id),
+        getIdString(lineup.players.c.id),
       ]
         .filter((id): id is string => Boolean(id))
         .map((id) => new mongoose.Types.ObjectId(id));
