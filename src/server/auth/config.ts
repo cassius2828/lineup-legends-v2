@@ -143,7 +143,6 @@ export const authConfig = {
           token.image = dbUser?.image ?? null;
         }
       }
-      console.log(token, " <-- token");
       return token;
     },
     async session({ session, token }) {

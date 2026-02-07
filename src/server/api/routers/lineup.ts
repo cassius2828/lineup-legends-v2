@@ -185,7 +185,7 @@ export const lineupRouter = createTRPCRouter({
         });
       }
       console.log(players, " <-- players");
-console.log(ctx, " <-- ctx.session.user.id");
+      console.log(ctx, " <-- ctx.session.user.id");
       // Create the lineup
       const lineup = await LineupModel.create({
         players: {
@@ -658,9 +658,14 @@ console.log(ctx, " <-- ctx.session.user.id");
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await LineupModel.findById(input.lineupId).populate(
-        lineupPopulateFields,
-      );
+      const lineup = await LineupModel.findById(input.lineupId).populate([
+        { path: "players.pg", model: "Player" },
+        { path: "players.sg", model: "Player" },
+        { path: "players.sf", model: "Player" },
+        { path: "players.pf", model: "Player" },
+        { path: "players.c", model: "Player" },
+        { path: "owner", model: "User", select: "_id" },
+      ]);
 
       //       const {owner} = await LineupModel.findById(input.lineupId).select("owner").lean();
       // const ownerId = owner._id.toString();
@@ -670,8 +675,8 @@ console.log(ctx, " <-- ctx.session.user.id");
           message: "Lineup not found.",
         });
       }
-      console.log("\n\n", "\n\n", lineup, ctx.session.user.id, "\n\n", "\n\n");
-      if (lineup.owner.toString() !== ctx.session.user.id) {
+
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You do not have permission to gamble on this lineup.",
