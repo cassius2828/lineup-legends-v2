@@ -483,7 +483,7 @@ export const lineupRouter = createTRPCRouter({
     .input(
       z.object({
         lineupId: z.string(),
-        value: z.number().min(1).max(10),
+        value: z.number().min(0.01).max(10),
       }),
     )
     // look up the projection to ensure we are not fetching anything extra
@@ -492,7 +492,7 @@ export const lineupRouter = createTRPCRouter({
     // mongo is better when the data coming in can be unpredictable vs knowing exactly what is needed
     .mutation(async ({ ctx, input }) => {
       const lineup = await LineupModel.findById(input.lineupId)
-        .select({ owner: 1, _id: 0 })
+        .select({ owner: 1 })
         .lean();
 
       if (!lineup) {
@@ -534,11 +534,15 @@ export const lineupRouter = createTRPCRouter({
         lineup._id,
 
         [
-          // step one: update the rating sum and count
+          // step one: update the rating sum and count (treat missing/null as 0)
           {
             $set: {
-              ratingSum: { $add: ["$ratingSum", sumDelta] },
-              ratingCount: { $add: ["$ratingCount", countDelta] },
+              ratingSum: {
+                $add: [{ $ifNull: ["$ratingSum", 0] }, sumDelta],
+              },
+              ratingCount: {
+                $add: [{ $ifNull: ["$ratingCount", 0] }, countDelta],
+              },
             },
           },
           // step two: update the average rating
@@ -558,8 +562,10 @@ export const lineupRouter = createTRPCRouter({
             },
           },
         ],
-        { new: true },
+        // { new: true },
+        { updatePipeline: true, new: true },
       );
+      console.log(updatedLineup, " <-- updatedLineup\n\n");
       return { avgRating: updatedLineup?.avgRating };
     }),
 

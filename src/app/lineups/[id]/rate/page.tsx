@@ -1,25 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
 import { PlayerCard } from "~/app/_components/PlayerCard";
+
+const RATING_MIN = 0.01;
+const RATING_MAX = 10;
+const RATING_STEP = 0.01;
+const RATING_DEFAULT = 5;
+
+// Rating color scale: deep red → orange → yellow → green → diamond (#99fcff)
+const RATING_COLORS = [
+  { at: 0.01, hex: "#7f1d1d" }, // dark red
+  { at: 2.5, hex: "#ea580c" }, // orange
+  { at: 5, hex: "#eab308" }, // yellow
+  { at: 7.5, hex: "#22c55e" }, // green
+  { at: 10, hex: "#99fcff" }, // diamond light blue
+] as const;
+
+function hexToRgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return (
+    "#" +
+    [r, g, b].map((x) => Math.round(x).toString(16).padStart(2, "0")).join("")
+  );
+}
+
+function getRatingColor(rating: number): string {
+  const r = Math.max(RATING_MIN, Math.min(RATING_MAX, rating));
+  let i = 0;
+  // understand how this works, the complexity, and how to improve perf
+  while (i < RATING_COLORS.length - 1 && RATING_COLORS[i + 1]!.at < r) i++;
+  const low = RATING_COLORS[i]!;
+  const high = RATING_COLORS[i + 1] ?? low;
+  const t = low.at === high.at ? 1 : (r - low.at) / (high.at - low.at);
+  const [r1, g1, b1] = hexToRgb(low.hex);
+  const [r2, g2, b2] = hexToRgb(high.hex);
+  return rgbToHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
+}
 
 export default function RateLineupPage() {
   const params = useParams();
   const router = useRouter();
   const lineupId = params.id as string;
 
-  const [selectedRating, setSelectedRating] = useState<number | null>(null);
+  const [selectedRating, setSelectedRating] = useState<number>(RATING_DEFAULT);
 
   const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery({
     id: lineupId,
   });
-  const { data: existingRating } = api.lineup.getUserRating.useQuery(
-    { lineupId },
-    { enabled: !!lineupId },
-  );
 
   const rateMutation = api.lineup.rate.useMutation({
     onSuccess: () => {
@@ -30,17 +65,19 @@ export default function RateLineupPage() {
     },
   });
 
-  // Set initial rating from existing
-  useState(() => {
-    if (existingRating) {
-      setSelectedRating(existingRating.value);
+  useEffect(() => {
+    if (lineup?.avgRating != null && lineup.avgRating > 0) {
+      setSelectedRating(
+        Math.min(RATING_MAX, Math.max(RATING_MIN, lineup.avgRating)),
+      );
     }
-  });
+  }, [lineup?.avgRating]);
 
   const handleSubmit = () => {
-    if (selectedRating === null) return;
     rateMutation.mutate({ lineupId, value: selectedRating });
   };
+
+  const ratingColor = getRatingColor(selectedRating);
 
   if (isLoading) {
     return (
@@ -106,7 +143,7 @@ export default function RateLineupPage() {
                 <span className="mb-1 block text-xs font-bold text-white/50 uppercase">
                   {pos.toUpperCase()}
                 </span>
-                <PlayerCard player={lineup[pos]} compact />
+                <PlayerCard player={lineup.players[pos]} compact />
               </div>
             ))}
           </div>
@@ -125,31 +162,39 @@ export default function RateLineupPage() {
           </div>
         </div>
 
-        {/* Rating Selector */}
-        <div className="mb-8">
+        {/* Rating Slider */}
+        <div
+          className="mb-8"
+          style={{ ["--rating-color"]: ratingColor } as React.CSSProperties}
+        >
           <h2 className="mb-4 text-center text-lg font-semibold text-white">
             How would you rate this lineup?
           </h2>
-          <div className="flex flex-wrap justify-center gap-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-              <button
-                key={value}
-                onClick={() => setSelectedRating(value)}
-                className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold transition-all ${
-                  selectedRating === value
-                    ? "bg-gold scale-110 text-black"
-                    : existingRating?.value === value
-                      ? "bg-gold/30 text-gold"
-                      : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                {value}
-              </button>
-            ))}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-white/50">{RATING_MIN}</span>
+              <input
+                type="range"
+                min={RATING_MIN}
+                max={RATING_MAX}
+                step={RATING_STEP}
+                value={selectedRating}
+                onChange={(e) => setSelectedRating(parseFloat(e.target.value))}
+                style={{ accentColor: ratingColor }}
+                className="h-3 flex-1 appearance-none rounded-full bg-white/20 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[var(--rating-color)] [&::-moz-range-thumb]:bg-stone-100 [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[var(--rating-color)] [&::-webkit-slider-thumb]:bg-stone-100 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:transition-colors [&::-webkit-slider-thumb]:hover:scale-110"
+              />
+              <span className="text-sm text-white/50">{RATING_MAX}</span>
+            </div>
+            <p
+              className="text-center text-2xl font-bold tabular-nums transition-colors duration-150"
+              style={{ color: ratingColor }}
+            >
+              {selectedRating.toFixed(2)}
+            </p>
           </div>
-          {existingRating && (
+          {lineup?.avgRating != null && lineup.avgRating > 0 && (
             <p className="mt-3 text-center text-sm text-white/50">
-              Your previous rating: {existingRating.value}
+              Lineup average: {lineup.avgRating.toFixed(2)}
             </p>
           )}
         </div>
@@ -164,7 +209,7 @@ export default function RateLineupPage() {
           </Link>
           <button
             onClick={handleSubmit}
-            disabled={selectedRating === null || rateMutation.isPending}
+            disabled={rateMutation.isPending}
             className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:opacity-50"
           >
             {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
