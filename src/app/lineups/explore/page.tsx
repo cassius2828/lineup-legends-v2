@@ -7,6 +7,7 @@ import { LineupCard } from "~/app/_components/LineupCard";
 import { getId } from "~/lib/types";
 import { api } from "~/trpc/react";
 import { useSession } from "next-auth/react";
+import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
 
 type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
 
@@ -79,7 +80,7 @@ export default function ExploreLineupsPage() {
             </div>
           </div>
         ) : lineups && lineups.length > 0 ? (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <LineupCardGrid>
             {lineups.map((lineup) => (
               <LineupCard
                 key={getId(lineup)}
@@ -92,7 +93,7 @@ export default function ExploreLineupsPage() {
                 userVote={userVotes.get(getId(lineup))}
               />
             ))}
-          </div>
+          </LineupCardGrid>
         ) : (
           <div className="rounded-2xl bg-white/5 p-12 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10">

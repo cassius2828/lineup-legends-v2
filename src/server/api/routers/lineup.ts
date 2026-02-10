@@ -638,11 +638,13 @@ export const lineupRouter = createTRPCRouter({
       return await LineupModel.findByIdAndUpdate(
         input.lineupId,
         {
-          pg: input.players.pg,
-          sg: input.players.sg,
-          sf: input.players.sf,
-          pf: input.players.pf,
-          c: input.players.c,
+          players: {
+            pg: input.players.pg,
+            sg: input.players.sg,
+            sf: input.players.sf,
+            pf: input.players.pf,
+            c: input.players.c,
+          },
         },
         { new: true },
       )

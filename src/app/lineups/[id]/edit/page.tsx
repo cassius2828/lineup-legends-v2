@@ -53,7 +53,7 @@ function SortablePositionCard({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: pos });
+  } = useSortable({ id: pos, animateLayoutChanges: () => false });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -157,20 +157,25 @@ export default function EditLineupPage() {
   });
 
   // Track the current order of positions (for drag reordering)
-  const [positionOrder, setPositionOrder] = useState<Position[]>([
-    ...POSITIONS,
+  const [positionsArray, setPositionsArray] = useState([
+    lineup?.players.pg,
+    lineup?.players.sg,
+    lineup?.players.sf,
+    lineup?.players.pf,
+    lineup?.players.c,
   ]);
-
+  console.log(positionsArray, ' <-- positionsArray')
   const [positions, setPositions] = useState<
     Record<(typeof POSITIONS)[number], PlayerType | null>
   >({
-    pg: null,
-    sg: null,
-    sf: null,
-    pf: null,
-    c: null,
+    pg: lineup?.players.pg,
+    sg: lineup?.players.sg,
+    sf: lineup?.players.sf,
+    pf: lineup?.players.pf,
+    c: lineup?.players.c,
   });
 
+  console.log(positions, " <-- positions");
   // Configure sensors with activation constraints to allow button clicks
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -192,7 +197,16 @@ export default function EditLineupPage() {
         pf: lineup.players.pf,
         c: lineup.players.c,
       });
+      setPositionsArray([
+       {...lineup.players.pg},
+        {...lineup.players.sg},
+        {...lineup.players.sf},
+        {...lineup.players.pf},
+        {...lineup.players.c},
+      ]);
     }
+    console.log(positionsArray, ' <-- positionsArray')
+
   }, [lineup]);
 
   const reorderMutation = api.lineup.reorder.useMutation({
@@ -204,27 +218,26 @@ export default function EditLineupPage() {
     },
   });
 
-  const handleSwap = (pos1: Position, pos2: Position) => {
+  const handleButtonSwap = (activeId: Position, overId: Position) => {
     // Swap in positions record
     setPositions((prev) => ({
       ...prev,
-      [pos1]: prev[pos2],
-      [pos2]: prev[pos1],
+      [activeId]: prev[overId],
+      [overId]: prev[activeId],
     }));
-    // Swap in order array
-    setPositionOrder((prev) => {
-      const newOrder = [...prev];
-      const idx1 = newOrder.indexOf(pos1);
-      const idx2 = newOrder.indexOf(pos2);
-      [newOrder[idx1], newOrder[idx2]] = [newOrder[idx2]!, newOrder[idx1]!];
-      return newOrder;
-    });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      handleSwap(active.id as Position, over.id as Position);
+      // console.log(handleButtonSwap(active.id as Position, over.id as Position));
+      // setPositionsArray((prev) => {
+        // active id is position
+        // find the over index
+
+      // });
+      console.log(active, " <-- active");
+      console.log(over, " <-- over");
     }
   };
 
@@ -314,21 +327,21 @@ export default function EditLineupPage() {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={positionOrder}
+            items={POSITIONS}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-3">
-              {positionOrder.map((pos, index) => {
-                const player = positions[pos];
+              {positionsArray?.map((player, index) => {
+              
                 if (!player) return null;
 
                 return (
                   <SortablePositionCard
-                    key={pos}
-                    pos={pos}
+                    key={POSITIONS[index]}
+                    pos={POSITIONS[index]}
                     index={index}
-                    player={player}
-                    onSwap={handleSwap}
+                    player={positions[POSITIONS[index]]}
+                    onSwap={handleButtonSwap}
                   />
                 );
               })}
