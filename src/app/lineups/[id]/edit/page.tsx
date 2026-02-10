@@ -7,7 +7,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  type DragEndEvent
+  type DragEndEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -19,7 +19,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { type PlayerType } from "~/lib/types";
+import { getId, type PlayerType } from "~/lib/types";
 import { api } from "~/trpc/react";
 
 const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
@@ -152,9 +152,12 @@ export default function EditLineupPage() {
   const router = useRouter();
   const lineupId = params.id as string;
 
-  const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery({
-    id: lineupId,
-  });
+  const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery(
+    {
+      id: lineupId,
+    },
+    { enabled: !!lineupId },
+  );
 
   // Players are stored in a fixed slot order: [pg, sg, sf, pf, c]
   const [positionsArray, setPositionsArray] = useState<PlayerType[]>([]);
@@ -173,14 +176,16 @@ export default function EditLineupPage() {
 
   useEffect(() => {
     if (!lineup) return;
-
-    setPositionsArray([
+    // getLineupById populates players at runtime; API type is unpopulated ObjectId
+    const players = [
       lineup.players.pg,
       lineup.players.sg,
       lineup.players.sf,
       lineup.players.pf,
       lineup.players.c,
-    ]);
+      // improve type later
+    ] as unknown as PlayerType[];
+    setPositionsArray(players);
   }, [lineup]);
 
   const reorderMutation = api.lineup.reorder.useMutation({
@@ -200,9 +205,10 @@ export default function EditLineupPage() {
     setPositionsArray((prev) => {
       const next = [...prev];
       const tmp = next[from];
-      next[from] = next[to];
+      const over = next[to];
+      if (tmp === undefined || over === undefined) return prev;
+      next[from] = over;
       next[to] = tmp;
-
       return next;
     });
   };
@@ -217,11 +223,9 @@ export default function EditLineupPage() {
 
     setPositionsArray((prev) => {
       const next = [...prev];
-      // returns deleted player
       const [moved] = next.splice(from, 1);
-      // insert the deleted player at the new index
+      if (moved === undefined) return prev;
       next.splice(to, 0, moved);
-
       return next;
     });
   };
@@ -229,14 +233,22 @@ export default function EditLineupPage() {
   const handleSubmit = () => {
     if (positionsArray.length !== 5 || positionsArray.some((p) => !p)) return;
 
+    const toPlayer = (p: PlayerType) => ({
+      _id: getId(p) ?? "",
+      firstName: p.firstName,
+      lastName: p.lastName,
+      imgUrl: p.imgUrl,
+      value: p.value,
+    });
+
     reorderMutation.mutate({
       lineupId,
       players: {
-        pg: positionsArray[0]!,
-        sg: positionsArray[1]!,
-        sf: positionsArray[2]!,
-        pf: positionsArray[3]!,
-        c: positionsArray[4]!,
+        pg: toPlayer(positionsArray[0]!),
+        sg: toPlayer(positionsArray[1]!),
+        sf: toPlayer(positionsArray[2]!),
+        pf: toPlayer(positionsArray[3]!),
+        c: toPlayer(positionsArray[4]!),
       },
     });
   };
@@ -304,12 +316,12 @@ export default function EditLineupPage() {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={POSITIONS}
+            items={POSITIONS.map((pos) => ({ id: pos }))}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-3">
               {positionsArray?.map((player, index) => {
-                if (!player) return null;
+                if (!player || !POSITIONS[index]) return null;
 
                 return (
                   <SortablePositionCard
