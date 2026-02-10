@@ -1,16 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import {
-  DndContext,
   closestCenter,
+  DndContext,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  type DragEndEvent,
+  type DragEndEvent
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -19,8 +16,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { api } from "~/trpc/react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { type PlayerType } from "~/lib/types";
+import { api } from "~/trpc/react";
 
 const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
 const POSITION_LABELS = {
@@ -156,26 +156,9 @@ export default function EditLineupPage() {
     id: lineupId,
   });
 
-  // Track the current order of positions (for drag reordering)
-  const [positionsArray, setPositionsArray] = useState([
-    lineup?.players.pg,
-    lineup?.players.sg,
-    lineup?.players.sf,
-    lineup?.players.pf,
-    lineup?.players.c,
-  ]);
-  console.log(positionsArray, ' <-- positionsArray')
-  const [positions, setPositions] = useState<
-    Record<(typeof POSITIONS)[number], PlayerType | null>
-  >({
-    pg: lineup?.players.pg,
-    sg: lineup?.players.sg,
-    sf: lineup?.players.sf,
-    pf: lineup?.players.pf,
-    c: lineup?.players.c,
-  });
+  // Players are stored in a fixed slot order: [pg, sg, sf, pf, c]
+  const [positionsArray, setPositionsArray] = useState<PlayerType[]>([]);
 
-  console.log(positions, " <-- positions");
   // Configure sensors with activation constraints to allow button clicks
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -189,24 +172,15 @@ export default function EditLineupPage() {
   );
 
   useEffect(() => {
-    if (lineup) {
-      setPositions({
-        pg: lineup.players.pg,
-        sg: lineup.players.sg,
-        sf: lineup.players.sf,
-        pf: lineup.players.pf,
-        c: lineup.players.c,
-      });
-      setPositionsArray([
-       {...lineup.players.pg},
-        {...lineup.players.sg},
-        {...lineup.players.sf},
-        {...lineup.players.pf},
-        {...lineup.players.c},
-      ]);
-    }
-    console.log(positionsArray, ' <-- positionsArray')
+    if (!lineup) return;
 
+    setPositionsArray([
+      lineup.players.pg,
+      lineup.players.sg,
+      lineup.players.sf,
+      lineup.players.pf,
+      lineup.players.c,
+    ]);
   }, [lineup]);
 
   const reorderMutation = api.lineup.reorder.useMutation({
@@ -219,47 +193,50 @@ export default function EditLineupPage() {
   });
 
   const handleButtonSwap = (activeId: Position, overId: Position) => {
-    // Swap in positions record
-    setPositions((prev) => ({
-      ...prev,
-      [activeId]: prev[overId],
-      [overId]: prev[activeId],
-    }));
+    const from = POSITIONS.indexOf(activeId);
+    const to = POSITIONS.indexOf(overId);
+    if (from < 0 || to < 0 || from === to) return;
+
+    setPositionsArray((prev) => {
+      const next = [...prev];
+      const tmp = next[from];
+      next[from] = next[to];
+      next[to] = tmp;
+
+      return next;
+    });
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      // console.log(handleButtonSwap(active.id as Position, over.id as Position));
-      // setPositionsArray((prev) => {
-        // active id is position
-        // find the over index
+    if (!over || active.id === over.id) return;
 
-      // });
-      console.log(active, " <-- active");
-      console.log(over, " <-- over");
-    }
+    const from = POSITIONS.indexOf(active.id as Position);
+    const to = POSITIONS.indexOf(over.id as Position);
+    if (from < 0 || to < 0) return;
+
+    setPositionsArray((prev) => {
+      const next = [...prev];
+      // returns deleted player
+      const [moved] = next.splice(from, 1);
+      // insert the deleted player at the new index
+      next.splice(to, 0, moved);
+
+      return next;
+    });
   };
 
   const handleSubmit = () => {
-    if (
-      !positions.pg ||
-      !positions.sg ||
-      !positions.sf ||
-      !positions.pf ||
-      !positions.c
-    ) {
-      return;
-    }
+    if (positionsArray.length !== 5 || positionsArray.some((p) => !p)) return;
 
     reorderMutation.mutate({
       lineupId,
       players: {
-        pg: positions.pg,
-        sg: positions.sg,
-        sf: positions.sf,
-        pf: positions.pf,
-        c: positions.c,
+        pg: positionsArray[0]!,
+        sg: positionsArray[1]!,
+        sf: positionsArray[2]!,
+        pf: positionsArray[3]!,
+        c: positionsArray[4]!,
       },
     });
   };
@@ -332,7 +309,6 @@ export default function EditLineupPage() {
           >
             <div className="space-y-3">
               {positionsArray?.map((player, index) => {
-              
                 if (!player) return null;
 
                 return (
@@ -340,7 +316,7 @@ export default function EditLineupPage() {
                     key={POSITIONS[index]}
                     pos={POSITIONS[index]}
                     index={index}
-                    player={positions[POSITIONS[index]]}
+                    player={player}
                     onSwap={handleButtonSwap}
                   />
                 );
