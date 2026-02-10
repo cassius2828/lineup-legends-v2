@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { LineupCard } from "~/app/_components/LineupCard";
+import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { api } from "~/trpc/react";
 import { getId } from "~/lib/types";
 
@@ -79,7 +79,8 @@ export default function ProfilePage() {
               <p className="mt-2 max-w-xl text-white/70">{profile.bio}</p>
             )}
             <p className="mt-2 text-sm text-white/50">
-              {profile._count.lineups} lineup{profile._count.lineups !== 1 ? "s" : ""}
+              {profile._count.lineups} lineup
+              {profile._count.lineups !== 1 ? "s" : ""}
             </p>
           </div>
 
@@ -110,20 +111,22 @@ export default function ProfilePage() {
               {profile.lineups.map((lineup) => (
                 <LineupCard
                   key={getId(lineup)}
-                  lineup={{
-                    ...lineup,
-                    owner: {
-                      id: getId(profile),
-                      name: profile.name,
-                      username: profile.username,
-                      image: profile.profileImg ?? profile.image,
-                      email: undefined,
-                      emailVerified: null,
-                      bio: profile.bio,
-                      profileImg: profile.profileImg,
-                      bannerImg: profile.bannerImg,
-                    },
-                  } as any}
+                  lineup={
+                    {
+                      ...lineup,
+                      owner: {
+                        id: getId(profile),
+                        name: profile.name,
+                        username: profile.username,
+                        image: profile.profileImg ?? profile.image,
+                        email: undefined,
+                        emailVerified: null,
+                        bio: profile.bio,
+                        profileImg: profile.profileImg,
+                        bannerImg: profile.bannerImg,
+                      },
+                    } as any
+                  }
                   showOwner={false}
                   isOwner={false}
                 />
@@ -139,4 +142,3 @@ export default function ProfilePage() {
     </main>
   );
 }
-

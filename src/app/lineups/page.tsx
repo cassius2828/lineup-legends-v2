@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { LineupCard } from "~/app/_components/LineupCard";
+import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { getId } from "~/lib/types";
 import { api } from "~/trpc/react";
 import LineupsHeader from "../_components/Header/LineupsHeader";

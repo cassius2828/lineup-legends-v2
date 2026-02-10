@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import LineupsHeader from "~/app/_components/Header/LineupsHeader";
-import { LineupCard } from "~/app/_components/LineupCard";
+import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { getId } from "~/lib/types";
 import { api } from "~/trpc/react";
 import { useSession } from "next-auth/react";
