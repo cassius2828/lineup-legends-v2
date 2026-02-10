@@ -5,7 +5,8 @@ import { useState } from "react";
 import { LineupCard } from "~/app/_components/LineupCard";
 import { getId } from "~/lib/types";
 import { api } from "~/trpc/react";
-import LineupsHeader from "../_components/Header/Header";
+import LineupsHeader from "../_components/Header/LineupsHeader";
+import LineupCardGrid from "../_components/common/LineupCardGrid";
 
 type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
 
@@ -52,8 +53,8 @@ export default function MyLineupsPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-4 py-8">
-            {/* Header */}
-            <LineupsHeader
+        {/* Header */}
+        <LineupsHeader
           title="My Lineups"
           description="Manage your fantasy basketball lineups"
           exploreLink="/lineups/explore"
@@ -95,7 +96,7 @@ export default function MyLineupsPage() {
             </div>
           </div>
         ) : usersLineups && usersLineups.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <LineupCardGrid>
             {usersLineups.map((lineup) => (
               <LineupCard
                 key={lineup._id?.toString() ?? ""}
@@ -107,7 +108,7 @@ export default function MyLineupsPage() {
                 onToggleFeatured={handleToggleFeatured}
               />
             ))}
-          </div>
+          </LineupCardGrid>
         ) : (
           <div className="rounded-2xl bg-white/5 p-12 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10">

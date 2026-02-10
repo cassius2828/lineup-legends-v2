@@ -1,28 +1,24 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import {
-  LineupCard,
-  type LineupWithRelations,
-} from "~/app/_components/LineupCard";
-import { api } from "~/trpc/react";
+import { useState } from "react";
+import LineupsHeader from "~/app/_components/Header/LineupsHeader";
+import { LineupCard } from "~/app/_components/LineupCard";
 import { getId } from "~/lib/types";
-import { ButtonLink } from "~/app/_components/ui/Button";
-import LineupsHeader from "~/app/_components/Header/Header";
+import { api } from "~/trpc/react";
+import { useSession } from "next-auth/react";
 
 type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
 
 export default function ExploreLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const utils = api.useUtils();
-
-  const { data: lineups, isLoading } = api.lineup.getAllLineups.useQuery({
-    sort,
-  });
-  const { data: session } = api.profile.getMe.useQuery(undefined, {
-    retry: false,
-  });
+  const { data: session } = useSession();
+  const { data: lineups, isLoading } =
+    api.lineup.getLineupsByOtherUsers.useQuery({
+      sort,
+      userId: session?.user.id ?? "",
+    });
 
   const voteMutation = api.lineup.lineupVote.useMutation({
     onSuccess: () => {
@@ -91,7 +87,7 @@ export default function ExploreLineupsPage() {
                 lineup={lineup}
                 showOwner={true}
                 isOwner={false}
-                currentUserId={getId(session)}
+                currentUserId={session?.user.id ?? ""}
                 onVote={handleVote}
                 userVote={userVotes.get(getId(lineup))}
               />

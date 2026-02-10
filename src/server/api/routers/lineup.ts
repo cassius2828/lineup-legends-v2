@@ -235,12 +235,35 @@ export const lineupRouter = createTRPCRouter({
     }),
 
   // Get a specific user's lineups (public)
-  getLineupsByOtherUser: publicProcedure
-    .input(z.object({ userId: z.string() }))
+  getLineupsByOtherUsers: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        sort: z
+          .enum(["newest", "oldest", "highest-rated", "most-votes"])
+          .optional()
+          .default("newest"),
+      }),
+    )
     .query(async ({ input }) => {
+      let sortOption: Record<string, SortOrder> = { createdAt: -1 };
+
+      switch (input?.sort) {
+        case "oldest":
+          sortOption = { createdAt: 1 };
+          break;
+        case "highest-rated":
+          sortOption = { avgRating: -1 };
+          break;
+        case "most-votes":
+          sortOption = { totalVotes: -1 };
+          break;
+      }
       // may need to check if we need to map votes and ratings here
-      return await LineupModel.find({ ownerId: input.userId })
-        .sort({ createdAt: -1 })
+      return await LineupModel.find({
+        owner: { $ne: new mongoose.Types.ObjectId(input.userId) },
+      })
+        .sort(sortOption)
         .populate(lineupPopulateFields)
         .lean();
     }),

@@ -6,6 +6,8 @@ import { Geist, Stick_No_Bills } from "next/font/google";
 import { TRPCReactProvider } from "~/trpc/react";
 import Nav from "./_components/Nav";
 import { Footer } from "./_components/landing";
+import { SessionProvider } from "next-auth/react";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Lineup Legends",
@@ -31,10 +33,14 @@ export default function RootLayout({
     <html lang="en" className={`${geist.variable} ${stickNoBills.variable}`}>
       <body>
         <TRPCReactProvider>
-          <Nav />
-          <div className="mb-24 md:mb-16"></div>
-          {children}
-          <Footer />
+          <SessionProvider>
+            <Nav />
+            <div className="mb-24 md:mb-16"></div>
+            <Suspense fallback={<div>Loading...</div>}>
+              {children}
+            </Suspense>
+            <Footer />
+          </SessionProvider>
         </TRPCReactProvider>
       </body>
     </html>

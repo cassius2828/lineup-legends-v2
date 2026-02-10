@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { PlayerSelector } from "~/app/_components/PlayerSelector";
+import { PlayerSelector } from "~/app/_components/CreateNew/PlayerSelector";
 import { api } from "~/trpc/react";
 import { type PlayerType, getId } from "~/lib/types";
 
@@ -22,7 +22,7 @@ export default function CreateLineupPage() {
 
   const handleSubmit = (selectedPlayers: PlayerType[]) => {
     if (selectedPlayers.length !== 5) return;
-if(selectedPlayers.some(player => !player)) return;
+    if (selectedPlayers.some((player) => !player)) return;
     createLineup.mutate({
       players: {
         pg: selectedPlayers[0],
