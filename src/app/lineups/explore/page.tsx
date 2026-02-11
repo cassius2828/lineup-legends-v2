@@ -1,13 +1,15 @@
 "use client";
 
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useState } from "react";
+import { toast } from "sonner";
+import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
 import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { getId } from "~/lib/types";
+import { getVoteDelta } from "~/lib/utils";
 import { api } from "~/trpc/react";
-import { useSession } from "next-auth/react";
-import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
 
 type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
 
@@ -20,10 +22,64 @@ export default function ExploreLineupsPage() {
       sort,
       userId: session?.user.id ?? "",
     });
+  // figure out simplest way to handle optimistic vote
+  const queryInput = { sort, userId: session?.user.id ?? "" };
 
   const voteMutation = api.lineup.lineupVote.useMutation({
-    onSuccess: () => {
-      void utils.lineup.getAllLineups.invalidate();
+    onMutate: async (input) => {
+      // cancel any outgoing refetches so we don't overwrite the optimistic update
+      await utils.lineup.getLineupsByOtherUsers.cancel(queryInput);
+      // get snapshot of the previous data
+      const previousLineups =
+        utils.lineup.getLineupsByOtherUsers.getData(queryInput);
+      const previousVote = userVotes.get(input.lineupId) ?? null;
+
+      // compute delta + next vote (toggle/switch)
+      const voteDelta = getVoteDelta(input.type, previousVote);
+
+      // optimistically update the list cache
+      utils.lineup.getLineupsByOtherUsers.setData(queryInput, (old) => {
+        if (!old) return old;
+        return old.map((lineup) => {
+          if (getId(lineup) !== input.lineupId) return lineup;
+          return {
+            ...lineup,
+            totalVotes: (lineup.totalVotes ?? 0) + voteDelta,
+          } as (typeof old)[number];
+        }) as typeof old;
+      });
+
+      // optimistically update the vote cache
+      userVotes.set(input.lineupId, input.type);
+
+      return { previousLineups, previousVote, lineupId: input.lineupId };
+    },
+    onSuccess: (lineup) => {
+      // void utils.lineup.getAllLineups.invalidate();
+      // invalidate the lineup based on the lineup id
+      void utils.lineup.getLineupById.invalidate({
+        id: lineup?._id?.toString() ?? "",
+      });
+    },
+    onError: (_err, _input, ctx) => {
+      if (!ctx) return;
+
+      utils.lineup.getLineupsByOtherUsers.setData(
+        queryInput,
+        ctx.previousLineups,
+      );
+      userVotes.delete(ctx.lineupId);
+      (toast as { error: (message: string) => void }).error(
+        "Error voting on lineup",
+      );
+    },
+    onSettled: async (_data, _error, vars) => {
+      await utils.lineup.getLineupsByOtherUsers.invalidate(queryInput);
+      if (vars?.lineupId) {
+        await utils.lineup.getLineupById.invalidate({
+          id: vars.lineupId,
+        });
+      }
     },
   });
 
@@ -31,6 +87,7 @@ export default function ExploreLineupsPage() {
   const userVotes = new Map<string, "upvote" | "downvote">();
 
   const handleVote = (lineupId: string, type: "upvote" | "downvote") => {
+    if (voteMutation.isPending) return;
     voteMutation.mutate({ lineupId, type });
   };
 

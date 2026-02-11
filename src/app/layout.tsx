@@ -2,6 +2,7 @@ import "~/styles/globals.css";
 
 import { type Metadata } from "next";
 import { Geist, Stick_No_Bills } from "next/font/google";
+import { Toaster } from "sonner";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import Nav from "./_components/Nav";
@@ -36,10 +37,9 @@ export default function RootLayout({
           <SessionProvider>
             <Nav />
             <div className="mb-24 md:mb-16"></div>
-            <Suspense fallback={<div>Loading...</div>}>
-              {children}
-            </Suspense>
+            <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
             <Footer />
+            <Toaster richColors position="top-center" />
           </SessionProvider>
         </TRPCReactProvider>
       </body>
