@@ -21,6 +21,7 @@ const config = {
     // This allows the build to succeed during Prisma to Mongoose migration
     ignoreDuringBuilds: true,
   },
+  reactCompiler: true,
 };
 
 export default config;
