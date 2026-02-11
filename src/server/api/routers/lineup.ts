@@ -404,9 +404,27 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // #region agent log
+      console.log("[lineupVote] entry", {
+        lineupId: input.lineupId,
+        type: input.type,
+        userId: ctx.session.user.id,
+      });
+      // #endregion
+
       const lineup = await LineupModel.findById(input.lineupId)
         .select("owner totalVotes")
         .lean();
+
+      // #region agent log
+      console.log("[lineupVote] lineup fetch", {
+        found: !!lineup,
+        totalVotes: lineup?.totalVotes,
+        ownerId: lineup?.owner
+          ? String((lineup.owner as { _id?: unknown })._id)
+          : undefined,
+      });
+      // #endregion
 
       if (!lineup) {
         throw new TRPCError({
@@ -416,7 +434,19 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Can't vote on your own lineup
-      if (lineup.owner._id.toString() === ctx.session.user.id) {
+      const ownerIdStr =
+        (
+          lineup.owner as { _id?: { toString: () => string } }
+        )._id?.toString?.() ?? "";
+      // #region agent log
+      console.log("[lineupVote] owner check", {
+        ownerIdStr,
+        currentUserId: ctx.session.user.id,
+        isOwnLineup: ownerIdStr === ctx.session.user.id,
+      });
+      // #endregion
+
+      if (ownerIdStr === ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot vote on your own lineup.",
@@ -424,6 +454,13 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Check for existing vote
+      // #region agent log
+      console.log("[lineupVote] before findOneAndUpdate", {
+        query: { user: ctx.session.user.id, lineup: input.lineupId },
+        upsertType: input.type,
+      });
+      // #endregion
+
       const existingVote = await LineupVoteModel.findOneAndUpdate(
         {
           user: ctx.session.user.id,
@@ -446,19 +483,47 @@ export const lineupRouter = createTRPCRouter({
         .select("type")
         .lean();
 
+      // #region agent log
+      console.log("[lineupVote] after findOneAndUpdate", {
+        existingVote: existingVote ?? null,
+        existingVoteType: existingVote?.type ?? null,
+        wasNewVote: !existingVote,
+      });
+      // #endregion
+
       // Calculate vote delta - O(1) instead of scanning all votes
       const amountToIncrementVotesBy = incrementTotalVotes(
         input.type,
         existingVote?.type ?? null,
       );
 
-      return await LineupModel.findByIdAndUpdate(
+      // #region agent log
+      console.log("[lineupVote] delta", {
+        inputType: input.type,
+        previousVoteType: existingVote?.type ?? null,
+        amountToIncrementVotesBy,
+        lineupTotalVotesBefore: lineup.totalVotes,
+        lineupTotalVotesAfter:
+          (lineup.totalVotes ?? 0) + amountToIncrementVotesBy,
+      });
+      // #endregion
+
+      const updated = await LineupModel.findByIdAndUpdate(
         input.lineupId,
         {
           $inc: { totalVotes: amountToIncrementVotesBy },
         },
         { new: true },
       );
+
+      // #region agent log
+      console.log("[lineupVote] after findByIdAndUpdate", {
+        updatedLineupId: updated?._id?.toString?.(),
+        newTotalVotes: updated?.totalVotes,
+      });
+      // #endregion
+
+      return updated;
     }),
 
   // Get current user's vote on a lineup
