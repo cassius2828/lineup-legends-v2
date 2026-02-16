@@ -65,8 +65,8 @@ export default function AdminFeedbackPage() {
     <div>
       {/* Page header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">Feedback</h1>
-        <p className="mt-1 text-white/50">
+        <h1 className="text-3xl font-bold text-foreground">Feedback</h1>
+        <p className="mt-1 text-foreground/50">
           View and manage feedback submitted by users
         </p>
       </div>
@@ -82,7 +82,7 @@ export default function AdminFeedbackPage() {
               className={`relative rounded-lg px-4 py-2 text-sm font-medium transition-all ${
                 isActive
                   ? "bg-gold/15 text-gold"
-                  : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70"
+                  : "bg-foreground/5 text-foreground/50 hover:bg-foreground/10 hover:text-foreground/70"
               }`}
             >
               {tab.label}
@@ -93,7 +93,7 @@ export default function AdminFeedbackPage() {
                       ? "bg-gold/20 text-gold"
                       : tab.value === "new"
                         ? "bg-amber-400/15 text-amber-400"
-                        : "bg-white/10 text-white/40"
+                        : "bg-foreground/10 text-foreground/40"
                   }`}
                 >
                   {counts[tab.value]}
@@ -107,7 +107,7 @@ export default function AdminFeedbackPage() {
       {/* Feedback list */}
       {isLoading ? (
         <div className="flex h-40 items-center justify-center">
-          <div className="border-t-gold h-10 w-10 animate-spin rounded-full border-4 border-white/20" />
+          <div className="border-t-gold h-10 w-10 animate-spin rounded-full border-4 border-foreground/20" />
         </div>
       ) : feedback && feedback.length > 0 ? (
         <div className="space-y-3">
@@ -116,22 +116,22 @@ export default function AdminFeedbackPage() {
             return (
               <div
                 key={item.id}
-                className="overflow-hidden rounded-xl border border-white/10 bg-white/3 transition-colors"
+                className="overflow-hidden rounded-xl border border-foreground/10 bg-foreground/3 transition-colors"
               >
                 {/* Header row - always visible */}
                 <button
                   onClick={() => toggleExpand(item.id)}
-                  className="flex w-full items-center gap-4 p-4 text-left transition-colors hover:bg-white/2"
+                  className="flex w-full items-center gap-4 p-4 text-left transition-colors hover:bg-foreground/2"
                 >
                   <StatusIcon status={item.status} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-medium text-white">
+                      <p className="truncate text-sm font-medium text-foreground">
                         {item.subject}
                       </p>
                       <StatusBadge status={item.status} />
                     </div>
-                    <p className="mt-0.5 truncate text-xs text-white/40">
+                    <p className="mt-0.5 truncate text-xs text-foreground/40">
                       {item.name} ({item.email}) &middot;{" "}
                       {formatDistanceToNow(new Date(item.createdAt), {
                         addSuffix: true,
@@ -139,24 +139,24 @@ export default function AdminFeedbackPage() {
                     </p>
                   </div>
                   {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 shrink-0 text-white/30" />
+                    <ChevronUp className="h-4 w-4 shrink-0 text-foreground/30" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 shrink-0 text-white/30" />
+                    <ChevronDown className="h-4 w-4 shrink-0 text-foreground/30" />
                   )}
                 </button>
 
                 {/* Expanded content */}
                 {isExpanded && (
-                  <div className="border-t border-white/10 px-4 pb-4 pt-3">
+                  <div className="border-t border-foreground/10 px-4 pb-4 pt-3">
                     {/* Message */}
-                    <div className="mb-4 rounded-lg bg-white/3 p-4">
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-white/80">
+                    <div className="mb-4 rounded-lg bg-foreground/3 p-4">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/80">
                         {item.message}
                       </p>
                     </div>
 
                     {/* Meta info */}
-                    <div className="mb-4 flex flex-wrap gap-4 text-xs text-white/40">
+                    <div className="mb-4 flex flex-wrap gap-4 text-xs text-foreground/40">
                       <span>From: {item.name}</span>
                       <span>Email: {item.email}</span>
                       <span>
@@ -182,7 +182,7 @@ export default function AdminFeedbackPage() {
                             handleStatusChange(item.id, "resolved")
                           }
                           disabled={updateStatus.isPending}
-                          className="rounded-lg bg-emerald-400/10 px-3 py-1.5 text-xs font-medium text-emerald-400 transition-colors hover:bg-emerald-400/20 disabled:opacity-50"
+                          className="rounded-lg bg-gold-300/10 px-3 py-1.5 text-xs font-medium text-gold-300 transition-colors hover:bg-gold-300/20 disabled:opacity-50"
                         >
                           Mark as Resolved
                         </button>
@@ -191,7 +191,7 @@ export default function AdminFeedbackPage() {
                         <button
                           onClick={() => handleStatusChange(item.id, "new")}
                           disabled={updateStatus.isPending}
-                          className="rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-white/50 transition-colors hover:bg-white/10 disabled:opacity-50"
+                          className="rounded-lg bg-foreground/5 px-3 py-1.5 text-xs font-medium text-foreground/50 transition-colors hover:bg-foreground/10 disabled:opacity-50"
                         >
                           Reset to New
                         </button>
@@ -204,10 +204,10 @@ export default function AdminFeedbackPage() {
           })}
         </div>
       ) : (
-        <div className="flex h-40 items-center justify-center rounded-xl border border-white/10 bg-white/3">
+        <div className="flex h-40 items-center justify-center rounded-xl border border-foreground/10 bg-foreground/3">
           <div className="text-center">
-            <Mail className="mx-auto mb-2 h-8 w-8 text-white/20" />
-            <p className="text-sm text-white/40">
+            <Mail className="mx-auto mb-2 h-8 w-8 text-foreground/20" />
+            <p className="text-sm text-foreground/40">
               {activeTab === "all"
                 ? "No feedback received yet"
                 : `No ${activeTab} feedback`}
@@ -235,8 +235,8 @@ function StatusIcon({ status }: { status: string }) {
       );
     case "resolved":
       return (
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-400/10">
-          <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-300/10">
+          <CheckCircle2 className="h-4 w-4 text-gold-300" />
         </div>
       );
     default:
@@ -256,13 +256,13 @@ function StatusBadge({ status }: { status: string }) {
     },
     resolved: {
       label: "Resolved",
-      className: "bg-emerald-400/15 text-emerald-400",
+      className: "bg-gold-300/15 text-gold-300",
     },
   };
 
   const { label, className } = config[status] ?? {
     label: status,
-    className: "bg-white/10 text-white/60",
+    className: "bg-foreground/10 text-foreground/60",
   };
 
   return (

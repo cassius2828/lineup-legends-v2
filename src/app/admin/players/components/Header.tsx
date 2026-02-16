@@ -5,8 +5,8 @@ const Header = () => {
     <div className="mb-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Find Players</h1>
-          <p className="mt-1 text-white/50">
+          <h1 className="text-3xl font-bold text-foreground">Find Players</h1>
+          <p className="mt-1 text-foreground/50">
             Search and manage players in the database
           </p>
         </div>

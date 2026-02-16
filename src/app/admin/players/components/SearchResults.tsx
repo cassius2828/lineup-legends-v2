@@ -39,10 +39,10 @@ const SearchResults = ({
 
           {/* Player Info */}
           <div className="mt-2 text-center">
-            <p className="text-sm font-medium text-white">
+            <p className="text-sm font-medium text-foreground">
               {player?.item?.firstName ?? ""}
             </p>
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-foreground/80">
               {player?.item?.lastName ?? ""}
             </p>
             <p className="text-gold mt-1 text-xs">
@@ -51,7 +51,7 @@ const SearchResults = ({
           </div>
 
           {/* Edit Indicator */}
-          <p className="mt-2 text-xs text-white/40 opacity-0 transition-opacity group-hover:opacity-100">
+          <p className="mt-2 text-xs text-foreground/40 opacity-0 transition-opacity group-hover:opacity-100">
             Click to edit
           </p>
         </Link>

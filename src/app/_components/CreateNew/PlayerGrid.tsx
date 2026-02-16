@@ -20,7 +20,7 @@ const PlayerGrid = ({
       {allPlayers.map(({ label, players }) => (
         <div key={label} className="flex items-start gap-3">
           {/* Price Label */}
-          <h2 className="w-8 pt-6 text-right text-xl font-bold text-white">
+          <h2 className="w-8 pt-6 text-right text-xl font-bold text-foreground">
             {label}
           </h2>
 

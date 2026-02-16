@@ -32,13 +32,13 @@ export const CantFindPlayerSection = ({
   setRequestError,
 }: CantFindPlayerSectionProps) => {
   return (
-    <div className="mt-12 rounded-lg border border-white/10 bg-white/5 p-6">
+    <div className="mt-12 rounded-lg border border-foreground/10 bg-foreground/5 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-white">
+          <h2 className="text-lg font-semibold text-foreground">
             Can&apos;t find the player you&apos;re looking for?
           </h2>
-          <p className="mt-1 text-sm text-white/60">
+          <p className="mt-1 text-sm text-foreground/60">
             Submit a request to add a new player to the database
           </p>
         </div>
@@ -57,7 +57,7 @@ export const CantFindPlayerSection = ({
         <form onSubmit={handleRequestSubmit} className="mt-6 space-y-4">
           {/* Success Message */}
           {requestSuccess && (
-            <div className="rounded-lg bg-emerald-500/20 p-3 text-sm text-emerald-400">
+            <div className="rounded-lg bg-gold-500/20 p-3 text-sm text-gold-300">
               Player request submitted successfully!
             </div>
           )}
@@ -74,7 +74,7 @@ export const CantFindPlayerSection = ({
             <div>
               <label
                 htmlFor="requestFirstName"
-                className="mb-2 block text-sm font-medium text-white/80"
+                className="mb-2 block text-sm font-medium text-foreground/80"
               >
                 First Name
               </label>
@@ -85,7 +85,7 @@ export const CantFindPlayerSection = ({
                 onChange={(e) => setRequestFirstName(e.target.value)}
                 required
                 placeholder="e.g. LeBron"
-                className="focus:border-gold focus:ring-gold w-full rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-white placeholder-white/50 focus:ring-1 focus:outline-none"
+                className="focus:border-gold focus:ring-gold w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
               />
             </div>
 
@@ -93,7 +93,7 @@ export const CantFindPlayerSection = ({
             <div>
               <label
                 htmlFor="requestLastName"
-                className="mb-2 block text-sm font-medium text-white/80"
+                className="mb-2 block text-sm font-medium text-foreground/80"
               >
                 Last Name
               </label>
@@ -104,14 +104,14 @@ export const CantFindPlayerSection = ({
                 onChange={(e) => setRequestLastName(e.target.value)}
                 required
                 placeholder="e.g. James"
-                className="focus:border-gold focus:ring-gold w-full rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-white placeholder-white/50 focus:ring-1 focus:outline-none"
+                className="focus:border-gold focus:ring-gold w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
               />
             </div>
           </div>
 
           {/* Suggested Value */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-white/80">
+            <label className="mb-2 block text-sm font-medium text-foreground/80">
               Suggested Value ($1-$5)
             </label>
             <div className="flex gap-2">
@@ -123,7 +123,7 @@ export const CantFindPlayerSection = ({
                   className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
                     requestValue === v
                       ? "bg-gold text-black"
-                      : "bg-white/10 text-white hover:bg-white/20"
+                      : "bg-foreground/10 text-foreground hover:bg-foreground/20"
                   }`}
                 >
                   ${v}
@@ -147,7 +147,7 @@ export const CantFindPlayerSection = ({
                 setShowRequestForm(false);
                 setRequestError("");
               }}
-              className="rounded-lg bg-white/10 px-6 py-2 font-medium text-white transition-colors hover:bg-white/20"
+              className="rounded-lg bg-foreground/10 px-6 py-2 font-medium text-foreground transition-colors hover:bg-foreground/20"
             >
               Cancel
             </button>
@@ -156,10 +156,10 @@ export const CantFindPlayerSection = ({
       )}
 
       {/* Link to view all requests (admin) */}
-      <div className="mt-4 border-t border-white/10 pt-4">
+      <div className="mt-4 border-t border-foreground/10 pt-4">
         <Link
           href="/admin/requested"
-          className="text-sm text-white/60 hover:text-white/80"
+          className="text-sm text-foreground/60 hover:text-foreground/80"
         >
           View all player requests →
         </Link>

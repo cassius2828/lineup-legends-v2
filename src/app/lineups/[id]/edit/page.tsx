@@ -66,8 +66,8 @@ function SortablePositionCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-4 rounded-xl bg-slate-800/80 p-4 ${
-        isDragging ? "opacity-90 shadow-2xl ring-2 ring-emerald-500/50" : ""
+      className={`flex items-center gap-4 rounded-xl bg-surface-800/80 p-4 ${
+        isDragging ? "opacity-90 shadow-2xl ring-2 ring-gold/50" : ""
       }`}
     >
       {/* Drag handle - the entire row except buttons */}
@@ -76,11 +76,11 @@ function SortablePositionCard({
         {...listeners}
         className="flex flex-1 cursor-grab items-center gap-4 active:cursor-grabbing"
       >
-        <span className="w-8 text-center text-lg font-bold text-white/40">
+        <span className="w-8 text-center text-lg font-bold text-foreground/40">
           {index + 1}
         </span>
         <div className="flex-1">
-          <span className="text-xs font-bold text-white/50 uppercase">
+          <span className="text-xs font-bold text-foreground/50 uppercase">
             {POSITION_LABELS[pos]}
           </span>
           <div className="mt-1 flex items-center gap-3">
@@ -92,10 +92,10 @@ function SortablePositionCard({
               />
             </div>
             <div>
-              <p className="font-semibold text-white">
+              <p className="font-semibold text-foreground">
                 {player.firstName} {player.lastName}
               </p>
-              <p className="text-sm text-white/50">${player.value}</p>
+              <p className="text-sm text-foreground/50">${player.value}</p>
             </div>
           </div>
         </div>
@@ -107,7 +107,7 @@ function SortablePositionCard({
           <button
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => onSwap(pos, POSITIONS[index - 1]!)}
-            className="rounded-lg bg-white/10 p-2 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
+            className="rounded-lg bg-foreground/10 p-2 text-foreground/60 transition-colors hover:bg-foreground/20 hover:text-foreground"
           >
             <svg
               className="h-5 w-5"
@@ -128,7 +128,7 @@ function SortablePositionCard({
           <button
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => onSwap(pos, POSITIONS[index + 1]!)}
-            className="rounded-lg bg-white/10 p-2 text-white/60 transition-colors hover:bg-white/20 hover:text-white"
+            className="rounded-lg bg-foreground/10 p-2 text-foreground/60 transition-colors hover:bg-foreground/20 hover:text-foreground"
           >
             <svg
               className="h-5 w-5"
@@ -258,9 +258,9 @@ export default function EditLineupPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
         <div className="flex h-64 items-center justify-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500" />
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-foreground/20 border-t-gold" />
         </div>
       </main>
     );
@@ -268,12 +268,12 @@ export default function EditLineupPage() {
 
   if (!lineup) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold text-white">Lineup not found</h1>
+          <h1 className="text-2xl font-bold text-foreground">Lineup not found</h1>
           <Link
             href="/lineups"
-            className="mt-4 text-emerald-400 hover:underline"
+            className="mt-4 text-gold-300 hover:underline"
           >
             Back to My Lineups
           </Link>
@@ -283,13 +283,13 @@ export default function EditLineupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
       <div className="container mx-auto max-w-2xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/lineups"
-            className="mb-2 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
+            className="mb-2 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
           >
             <svg
               className="h-4 w-4"
@@ -306,8 +306,8 @@ export default function EditLineupPage() {
             </svg>
             Back to My Lineups
           </Link>
-          <h1 className="text-3xl font-bold text-white">Reorder Lineup</h1>
-          <p className="mt-1 text-white/60">
+          <h1 className="text-3xl font-bold text-foreground">Reorder Lineup</h1>
+          <p className="mt-1 text-foreground/60">
             Drag to reorder or use arrows to swap players
           </p>
         </div>
@@ -344,14 +344,14 @@ export default function EditLineupPage() {
         <div className="mt-8 flex gap-3">
           <Link
             href="/lineups"
-            className="flex-1 rounded-lg bg-white/10 py-3 text-center font-medium text-white transition-colors hover:bg-white/20"
+            className="flex-1 rounded-lg bg-foreground/10 py-3 text-center font-medium text-foreground transition-colors hover:bg-foreground/20"
           >
             Cancel
           </Link>
           <button
             onClick={handleSubmit}
             disabled={reorderMutation.isPending}
-            className="flex-1 rounded-lg bg-emerald-600 py-3 font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+            className="flex-1 rounded-lg bg-gold py-3 font-semibold text-black transition-colors hover:bg-gold-light disabled:opacity-50"
           >
             {reorderMutation.isPending ? "Saving..." : "Save Order"}
           </button>

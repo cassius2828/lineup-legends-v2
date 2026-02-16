@@ -47,9 +47,9 @@ const ButtonColors = {
     hover: "hover:bg-black/30",
   },
   white: {
-    bg: "bg-white/20",
-    text: "text-white",
-    hover: "hover:bg-white/30",
+    bg: "bg-foreground/20",
+    text: "text-foreground",
+    hover: "hover:bg-foreground/30",
   },
 };
 

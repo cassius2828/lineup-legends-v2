@@ -35,12 +35,12 @@ export default function CreateLineupPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0a1a]">
+    <main className="min-h-screen bg-surface-950">
       <div className="container mx-auto px-4 py-8">
         {/* Back Link */}
         <Link
           href="/lineups"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
         >
           <svg
             className="h-4 w-4"
@@ -62,8 +62,8 @@ export default function CreateLineupPage() {
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <div className="text-center">
-              <div className="border-t-gold mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20" />
-              <p className="text-white/60">Loading players...</p>
+              <div className="border-t-gold mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-foreground/20" />
+              <p className="text-foreground/60">Loading players...</p>
             </div>
           </div>
         ) : playersByValue ? (

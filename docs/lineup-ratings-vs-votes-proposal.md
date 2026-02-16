@@ -1,8 +1,11 @@
-# Proposal: Lineup popularity via ratings only (remove lineup upvote/downvote)
+# Lineup popularity: ratings only (no voting)
+
+**This is the current design.** Lineup voting (upvote/downvote) has been removed as redundant. We use **average rating** and **rating count** only for lineup popularity. Comments and thread replies keep Reddit-style upvote/downvote.
 
 ## Summary
 
-Use **average rating** and **rating count** as the sole signals of lineup popularity. Remove upvote/downvote for lineups. Keep Reddit-style upvote/downvote for **comments and threads** so discussion stays driven by public opinion.
+- **Lineups**: Popularity is expressed via `avgRating` and `ratingCount`. Users rate lineups (e.g. 1–10); there is no upvote/downvote for lineups.
+- **Comments / threads**: Upvote/downvote and `totalVotes` remain for discussion quality and public opinion.
 
 ## Rationale
 
@@ -11,15 +14,15 @@ Use **average rating** and **rating count** as the sole signals of lineup popula
 - **Clear mental model**: “Rate this lineup” is one action; “upvote or downvote” alongside “rate” is confusing and encourages quick thumbs without thoughtful rating.
 - **Comments stay Reddit-style**: For comments and thread replies, upvote/downvote remains valuable—quick expression of agreement/disagreement and surfacing the best discussion. No rating scale is needed there.
 
-## Current state
+## Current state (implemented)
 
-| Entity      | Current signals                                    | Proposed signals                |
-| ----------- | -------------------------------------------------- | ------------------------------- |
-| **Lineup**  | `totalVotes` (up/down), `avgRating`, `ratingCount` | `avgRating`, `ratingCount` only |
-| **Comment** | `totalVotes` (up/down)                             | **Unchanged** (keep up/down)    |
-| **Thread**  | `totalVotes` (up/down)                             | **Unchanged** (keep up/down)    |
+| Entity      | Signals for popularity                          |
+| ----------- | ----------------------------------------------- |
+| **Lineup**  | `avgRating`, `ratingCount` only (no votes)      |
+| **Comment** | `totalVotes` (upvote/downvote)                  |
+| **Thread**  | `totalVotes` (upvote/downvote)                  |
 
-## Desired UX
+## UX (current)
 
 - **Lineup cards (grid/list)**  
   Show **avg rating** (e.g. `4.2`) and **rating count** (e.g. `12 ratings`). No up/down buttons or vote count.
@@ -28,9 +31,11 @@ Use **average rating** and **rating count** as the sole signals of lineup popula
 - **Lineup detail / rate page**  
   Continue to show `avgRating` and allow rating; remove any vote UI.
 - **Comments / threads**  
-  No change: keep upvote/downvote and `totalVotes` for comments and thread replies.
+  Upvote/downvote and `totalVotes` remain for comments and thread replies.
 
-## Implementation steps
+## What was done (reference)
+
+In short: lineup vote procedures and `totalVotes` were removed; lineup cards and explore page show only `avgRating` and `ratingCount` with sort options Newest, Oldest, Highest rated, Most rated. Comment and thread voting unchanged. See steps below for file-level detail.
 
 ### 1. Backend – tRPC router (`src/server/api/routers/lineup.ts`)
 
@@ -112,4 +117,3 @@ Use **average rating** and **rating count** as the sole signals of lineup popula
 | Types/helpers | Keep comment/thread vote logic; remove lineup-only vote usage.                                 |
 | Docs/tests    | Update lineup and API docs; adjust tests.                                                      |
 
-Once these steps are done, lineup popularity will be gauged only by **avgRating** and **ratingCount**, and comments/threads will retain Reddit-style upvote/downvote for discussion.

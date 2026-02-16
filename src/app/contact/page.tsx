@@ -28,7 +28,7 @@ const containerVariants = {
 
 export default function ContactPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
       <motion.div
         className="container mx-auto px-4 py-12"
         variants={containerVariants}
@@ -40,7 +40,7 @@ export default function ContactPage() {
           <h1 className="font-stencil text-4xl uppercase tracking-wide text-gradient-gold sm:text-5xl">
             Contact Us
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-white/60">
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-foreground/60">
             Request new players, share your feedback, or get in touch with the
             developer.
           </p>
@@ -101,7 +101,7 @@ function PlayerRequestSection() {
 
   return (
     <motion.section
-      className="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
+      className="rounded-xl border border-foreground/10 bg-foreground/5 p-6 backdrop-blur-sm"
       variants={sectionVariants}
     >
       <div className="mb-6">
@@ -121,11 +121,11 @@ function PlayerRequestSection() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-white">
+          <h2 className="text-xl font-semibold text-foreground">
             Request a Player
           </h2>
         </div>
-        <p className="text-sm text-white/60">
+        <p className="text-sm text-foreground/60">
           Can&apos;t find the player you&apos;re looking for? Submit a request
           and we&apos;ll work on adding them to the database.
         </p>
@@ -133,7 +133,7 @@ function PlayerRequestSection() {
 
       {!session ? (
         <div className="rounded-lg border border-gold/20 bg-gold/5 p-4 text-center">
-          <p className="mb-3 text-sm text-white/70">
+          <p className="mb-3 text-sm text-foreground/70">
             You need to be signed in to request a player.
           </p>
           <Link
@@ -149,7 +149,7 @@ function PlayerRequestSection() {
             <div>
               <label
                 htmlFor="reqFirstName"
-                className="mb-2 block text-sm font-medium text-white/80"
+                className="mb-2 block text-sm font-medium text-foreground/80"
               >
                 First Name
               </label>
@@ -160,13 +160,13 @@ function PlayerRequestSection() {
                 onChange={(e) => setFirstName(e.target.value)}
                 required
                 placeholder="e.g. LeBron"
-                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-white placeholder-white/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+                className="w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
               />
             </div>
             <div>
               <label
                 htmlFor="reqLastName"
-                className="mb-2 block text-sm font-medium text-white/80"
+                className="mb-2 block text-sm font-medium text-foreground/80"
               >
                 Last Name
               </label>
@@ -177,13 +177,13 @@ function PlayerRequestSection() {
                 onChange={(e) => setLastName(e.target.value)}
                 required
                 placeholder="e.g. James"
-                className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-white placeholder-white/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+                className="w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-white/80">
+            <label className="mb-2 block text-sm font-medium text-foreground/80">
               Suggested Value ($1-$5)
             </label>
             <div className="flex gap-2">
@@ -195,7 +195,7 @@ function PlayerRequestSection() {
                   className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
                     suggestedValue === v
                       ? "bg-gold text-black"
-                      : "bg-white/10 text-white hover:bg-white/20"
+                      : "bg-foreground/10 text-foreground hover:bg-foreground/20"
                   }`}
                 >
                   ${v}
@@ -250,7 +250,7 @@ function FeedbackSection() {
 
   return (
     <motion.section
-      className="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
+      className="rounded-xl border border-foreground/10 bg-foreground/5 p-6 backdrop-blur-sm"
       variants={sectionVariants}
     >
       <div className="mb-6">
@@ -270,9 +270,9 @@ function FeedbackSection() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-white">App Feedback</h2>
+          <h2 className="text-xl font-semibold text-foreground">App Feedback</h2>
         </div>
-        <p className="text-sm text-white/60">
+        <p className="text-sm text-foreground/60">
           Have suggestions, found a bug, or just want to share your thoughts?
           We&apos;d love to hear from you.
         </p>
@@ -283,7 +283,7 @@ function FeedbackSection() {
           <div>
             <label
               htmlFor="feedbackName"
-              className="mb-2 block text-sm font-medium text-white/80"
+              className="mb-2 block text-sm font-medium text-foreground/80"
             >
               Name
             </label>
@@ -294,13 +294,13 @@ function FeedbackSection() {
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="Your name"
-              className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-white placeholder-white/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+              className="w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
             />
           </div>
           <div>
             <label
               htmlFor="feedbackEmail"
-              className="mb-2 block text-sm font-medium text-white/80"
+              className="mb-2 block text-sm font-medium text-foreground/80"
             >
               Email
             </label>
@@ -311,7 +311,7 @@ function FeedbackSection() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="your@email.com"
-              className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-white placeholder-white/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+              className="w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
             />
           </div>
         </div>
@@ -319,7 +319,7 @@ function FeedbackSection() {
         <div>
           <label
             htmlFor="feedbackSubject"
-            className="mb-2 block text-sm font-medium text-white/80"
+            className="mb-2 block text-sm font-medium text-foreground/80"
           >
             Subject
           </label>
@@ -330,14 +330,14 @@ function FeedbackSection() {
             onChange={(e) => setSubject(e.target.value)}
             required
             placeholder="What's this about?"
-            className="w-full rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-white placeholder-white/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+            className="w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
           />
         </div>
 
         <div>
           <label
             htmlFor="feedbackMessage"
-            className="mb-2 block text-sm font-medium text-white/80"
+            className="mb-2 block text-sm font-medium text-foreground/80"
           >
             Message
           </label>
@@ -349,9 +349,9 @@ function FeedbackSection() {
             rows={5}
             maxLength={2000}
             placeholder="Tell us what's on your mind..."
-            className="w-full resize-none rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-white placeholder-white/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+            className="w-full resize-none rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
           />
-          <p className="mt-1 text-right text-xs text-white/40">
+          <p className="mt-1 text-right text-xs text-foreground/40">
             {message.length}/2000
           </p>
         </div>
@@ -416,7 +416,7 @@ function ConnectSection() {
 
   return (
     <motion.section
-      className="rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
+      className="rounded-xl border border-foreground/10 bg-foreground/5 p-6 backdrop-blur-sm"
       variants={sectionVariants}
     >
       <div className="mb-6">
@@ -436,9 +436,9 @@ function ConnectSection() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-white">Connect</h2>
+          <h2 className="text-xl font-semibold text-foreground">Connect</h2>
         </div>
-        <p className="text-sm text-white/60">
+        <p className="text-sm text-foreground/60">
           Find me around the web or reach out directly.
         </p>
       </div>
@@ -454,19 +454,19 @@ function ConnectSection() {
                 ? undefined
                 : "noopener noreferrer"
             }
-            className="group flex items-center gap-4 rounded-lg border border-white/10 p-4 transition-all hover:border-gold/30 hover:bg-white/5"
+            className="group flex items-center gap-4 rounded-lg border border-foreground/10 p-4 transition-all hover:border-gold/30 hover:bg-foreground/5"
           >
-            <div className="text-white/60 transition-colors group-hover:text-gold">
+            <div className="text-foreground/60 transition-colors group-hover:text-gold">
               {link.icon}
             </div>
             <div>
-              <p className="font-medium text-white group-hover:text-gold">
+              <p className="font-medium text-foreground group-hover:text-gold">
                 {link.label}
               </p>
-              <p className="text-sm text-white/50">{link.description}</p>
+              <p className="text-sm text-foreground/50">{link.description}</p>
             </div>
             <svg
-              className="ml-auto h-5 w-5 text-white/30 transition-colors group-hover:text-gold"
+              className="ml-auto h-5 w-5 text-foreground/30 transition-colors group-hover:text-gold"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -509,7 +509,7 @@ function ConnectSection() {
           </div>
           <div>
             <p className="font-medium text-gold">Getting Technical</p>
-            <p className="text-sm text-white/50">
+            <p className="text-sm text-foreground/50">
               Explore the engineering behind Lineup Legends
             </p>
           </div>

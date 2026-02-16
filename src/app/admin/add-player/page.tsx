@@ -54,7 +54,7 @@ export default function AddPlayerPage() {
       <div className="mb-8">
         <Link
           href="/admin/players"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
         >
           <svg
             className="h-4 w-4"
@@ -71,13 +71,13 @@ export default function AddPlayerPage() {
           </svg>
           Back to Players
         </Link>
-        <h1 className="text-3xl font-bold text-white">Add New Player</h1>
-        <p className="mt-1 text-white/50">Add a new player to the database</p>
+        <h1 className="text-3xl font-bold text-foreground">Add New Player</h1>
+        <p className="mt-1 text-foreground/50">Add a new player to the database</p>
       </div>
 
         {/* Player Preview */}
         {(firstName || lastName || imgUrl) && (
-          <div className="mb-8 flex items-center gap-6 rounded-lg bg-white/5 p-6">
+          <div className="mb-8 flex items-center gap-6 rounded-lg bg-foreground/5 p-6">
             <div className="h-24 w-24 overflow-hidden rounded-lg bg-[#f2f2f2]">
               {imgUrl ? (
                 <img
@@ -95,7 +95,7 @@ export default function AddPlayerPage() {
               )}
             </div>
             <div>
-              <p className="text-xl font-semibold text-white">
+              <p className="text-xl font-semibold text-foreground">
                 {firstName || "First"} {lastName || "Last"}
               </p>
               <p className="text-gold">${value} Player</p>
@@ -105,7 +105,7 @@ export default function AddPlayerPage() {
 
         {/* Success/Error Messages */}
         {successMessage && (
-          <div className="mb-6 rounded-lg bg-emerald-500/20 p-4 text-emerald-400">
+          <div className="mb-6 rounded-lg bg-gold-500/20 p-4 text-gold-300">
             {successMessage}
           </div>
         )}
@@ -121,7 +121,7 @@ export default function AddPlayerPage() {
           <div>
             <label
               htmlFor="firstName"
-              className="mb-2 block text-sm font-medium text-white/80"
+              className="mb-2 block text-sm font-medium text-foreground/80"
             >
               First Name
             </label>
@@ -132,7 +132,7 @@ export default function AddPlayerPage() {
               onChange={(e) => setFirstName(e.target.value)}
               required
               placeholder="e.g. Stephen"
-              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder-white/50 focus:ring-1 focus:outline-none"
+              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-3 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
             />
           </div>
 
@@ -140,7 +140,7 @@ export default function AddPlayerPage() {
           <div>
             <label
               htmlFor="lastName"
-              className="mb-2 block text-sm font-medium text-white/80"
+              className="mb-2 block text-sm font-medium text-foreground/80"
             >
               Last Name
             </label>
@@ -151,7 +151,7 @@ export default function AddPlayerPage() {
               onChange={(e) => setLastName(e.target.value)}
               required
               placeholder="e.g. Curry"
-              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder-white/50 focus:ring-1 focus:outline-none"
+              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-3 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
             />
           </div>
 
@@ -159,7 +159,7 @@ export default function AddPlayerPage() {
           <div>
             <label
               htmlFor="value"
-              className="mb-2 block text-sm font-medium text-white/80"
+              className="mb-2 block text-sm font-medium text-foreground/80"
             >
               Value ($1-$5)
             </label>
@@ -172,7 +172,7 @@ export default function AddPlayerPage() {
                   className={`flex-1 rounded-lg py-3 text-sm font-medium transition-colors ${
                     value === v
                       ? "bg-gold text-black"
-                      : "bg-white/10 text-white hover:bg-white/20"
+                      : "bg-foreground/10 text-foreground hover:bg-foreground/20"
                   }`}
                 >
                   ${v}
@@ -185,7 +185,7 @@ export default function AddPlayerPage() {
           <div>
             <label
               htmlFor="imgUrl"
-              className="mb-2 block text-sm font-medium text-white/80"
+              className="mb-2 block text-sm font-medium text-foreground/80"
             >
               Image URL
             </label>
@@ -196,7 +196,7 @@ export default function AddPlayerPage() {
               onChange={(e) => setImgUrl(e.target.value)}
               required
               placeholder="https://example.com/player-image.jpg"
-              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder-white/50 focus:ring-1 focus:outline-none"
+              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-3 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
             />
           </div>
 
@@ -211,7 +211,7 @@ export default function AddPlayerPage() {
             </button>
             <Link
               href="/admin/players"
-              className="rounded-lg bg-white/10 px-6 py-3 font-medium text-white transition-colors hover:bg-white/20"
+              className="rounded-lg bg-foreground/10 px-6 py-3 font-medium text-foreground transition-colors hover:bg-foreground/20"
             >
               Cancel
             </Link>

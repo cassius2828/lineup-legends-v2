@@ -9,6 +9,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import Nav from "./_components/Nav";
 import { Footer } from "./_components/landing";
 import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
@@ -32,8 +33,9 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${stickNoBills.variable}`}>
+    <html lang="en" className={`${geist.variable} ${stickNoBills.variable}`} suppressHydrationWarning>
       <body>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
         <TRPCReactProvider>
           <SessionProvider>
             <TooltipProvider>
@@ -49,6 +51,7 @@ export default function RootLayout({
             </TooltipProvider>
           </SessionProvider>
         </TRPCReactProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import mongoose from "mongoose";
 import { lineupPopulateFields } from "~/lib/utils";
 
 import {
@@ -9,37 +10,76 @@ import {
 import { LineupModel, UserModel } from "~/server/models";
 
 export const profileRouter = createTRPCRouter({
-  // Get a user's profile by ID
+  // Get a user's profile by ID (includes lineups + stats)
   getById: publicProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
       const user = await UserModel.findById(input.userId)
         .select(
-          "name username image bio profileImg bannerImg socialMedia friends",
+          "name username image bio profileImg bannerImg socialMedia followerCount followingCount",
         )
-        .populate("friends", "username name profileImg")
         .lean();
 
       if (!user) return null;
 
-      // Get user's lineups (limited to 6)
-      const lineups = await LineupModel.find({ ownerId: input.userId })
-        .sort({ createdAt: -1 })
-        .limit(6)
-        .populate([
-          { path: "players.pg", model: "Player" },
-          { path: "players.sg", model: "Player" },
-          { path: "players.sf", model: "Player" },
-          { path: "players.pf", model: "Player" },
-          { path: "players.c", model: "Player" },
+      const ownerId = new mongoose.Types.ObjectId(input.userId);
+
+      // Run lineup queries and stats aggregation in parallel
+      const [lineups, totalLineups, statsAgg, featuredLineups] =
+        await Promise.all([
+          LineupModel.find({ owner: ownerId })
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .populate(lineupPopulateFields)
+            .lean(),
+
+          LineupModel.countDocuments({ owner: ownerId }),
+
+          LineupModel.aggregate([
+            { $match: { owner: ownerId } },
+            {
+              $group: {
+                _id: null,
+                avgRating: { $avg: "$avgRating" },
+                highestRating: { $max: "$avgRating" },
+              },
+            },
+          ]),
+
+          LineupModel.find({ owner: ownerId, featured: true })
+            .limit(3)
+            .populate(lineupPopulateFields)
+            .lean(),
         ]);
+
+      // Get the highest rated lineup separately (need full doc)
+      const aggResult = statsAgg[0] as
+        | { avgRating: number; highestRating: number }
+        | undefined;
+
+      let highestRatedLineup = null;
+      if (aggResult?.highestRating && aggResult.highestRating > 0) {
+        highestRatedLineup = await LineupModel.findOne({
+          owner: ownerId,
+          avgRating: aggResult.highestRating,
+        })
+          .populate(lineupPopulateFields)
+          .lean();
+      }
 
       return {
         ...user,
         id: user._id?.toString(),
         lineups,
+        featuredLineups,
+        stats: {
+          totalLineups,
+          avgRating: Math.round((aggResult?.avgRating ?? 0) * 100) / 100,
+          highestRatedLineup,
+          featuredCount: featuredLineups.length,
+        },
         _count: {
-          lineups: lineups.length,
+          lineups: totalLineups,
         },
       };
     }),
@@ -48,9 +88,8 @@ export const profileRouter = createTRPCRouter({
   getMe: protectedProcedure.query(async ({ ctx }) => {
     const user = await UserModel.findById(ctx.session.user.id)
       .select(
-        "name username email image bio profileImg bannerImg socialMedia friends",
+        "name username email image bio profileImg bannerImg socialMedia followerCount followingCount",
       )
-      .populate("friends", "username name profileImg")
       .lean();
 
     if (!user) return null;
@@ -126,7 +165,7 @@ export const profileRouter = createTRPCRouter({
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
       return await LineupModel.find({
-        ownerId: input.userId,
+        owner: input.userId,
         featured: true,
       })
         .limit(3)

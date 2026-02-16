@@ -14,7 +14,7 @@ export function LineupCardStatsBar({
     <div className="mb-4 flex items-center gap-4 text-sm">
       <Link
         href={`/lineups/${lineup._id?.toString() ?? ""}/rate`}
-        className={`flex gap-2 text-xs text-white/50 hover:text-white/80 ${isOwner ? "cursor-not-allowed" : ""}`}
+        className={`flex gap-2 text-xs text-foreground/50 hover:text-foreground/80 ${isOwner ? "cursor-not-allowed" : ""}`}
       >
         <div className="flex items-center gap-1">
           <svg
@@ -42,7 +42,7 @@ export function LineupCardStatsBar({
 
       {/* Gambled count */}
       {lineup.timesGambled > 0 && (
-        <div className="flex items-center gap-1 text-white/40">
+        <div className="flex items-center gap-1 text-foreground/40">
           <svg
             className="h-4 w-4"
             viewBox="0 0 640 640"

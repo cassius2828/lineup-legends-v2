@@ -61,7 +61,7 @@ export default function EditPlayerPage() {
   if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="border-t-gold h-12 w-12 animate-spin rounded-full border-4 border-white/20" />
+        <div className="border-t-gold h-12 w-12 animate-spin rounded-full border-4 border-foreground/20" />
       </div>
     );
   }
@@ -70,7 +70,7 @@ export default function EditPlayerPage() {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <div className="text-center">
-          <p className="text-xl text-white">Player not found</p>
+          <p className="text-xl text-foreground">Player not found</p>
           <Link
             href="/admin/players"
             className="text-gold mt-4 inline-block hover:underline"
@@ -88,7 +88,7 @@ export default function EditPlayerPage() {
       <div className="mb-8">
         <Link
           href="/admin/players"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
         >
           <svg
             className="h-4 w-4"
@@ -105,12 +105,12 @@ export default function EditPlayerPage() {
           </svg>
           Back to Players
         </Link>
-        <h1 className="text-3xl font-bold text-white">Edit Player</h1>
-        <p className="mt-1 text-white/50">Update player information</p>
+        <h1 className="text-3xl font-bold text-foreground">Edit Player</h1>
+        <p className="mt-1 text-foreground/50">Update player information</p>
       </div>
 
         {/* Current Player Preview */}
-        <div className="mb-8 flex items-center gap-6 rounded-lg bg-white/5 p-6">
+        <div className="mb-8 flex items-center gap-6 rounded-lg bg-foreground/5 p-6">
           <div className="h-24 w-24 overflow-hidden rounded-lg bg-[#f2f2f2]">
             <img
               src={imgUrl || player.imgUrl}
@@ -122,7 +122,7 @@ export default function EditPlayerPage() {
             />
           </div>
           <div>
-            <p className="text-xl font-semibold text-white">
+            <p className="text-xl font-semibold text-foreground">
               {firstName} {lastName}
             </p>
             <p className="text-gold">${value} Player</p>
@@ -131,7 +131,7 @@ export default function EditPlayerPage() {
 
         {/* Success/Error Messages */}
         {successMessage && (
-          <div className="mb-6 rounded-lg bg-emerald-500/20 p-4 text-emerald-400">
+          <div className="mb-6 rounded-lg bg-gold-500/20 p-4 text-gold-300">
             {successMessage}
           </div>
         )}
@@ -147,7 +147,7 @@ export default function EditPlayerPage() {
           <div>
             <label
               htmlFor="firstName"
-              className="mb-2 block text-sm font-medium text-white/80"
+              className="mb-2 block text-sm font-medium text-foreground/80"
             >
               First Name
             </label>
@@ -157,7 +157,7 @@ export default function EditPlayerPage() {
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
-              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder-white/50 focus:ring-1 focus:outline-none"
+              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-3 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
             />
           </div>
 
@@ -165,7 +165,7 @@ export default function EditPlayerPage() {
           <div>
             <label
               htmlFor="lastName"
-              className="mb-2 block text-sm font-medium text-white/80"
+              className="mb-2 block text-sm font-medium text-foreground/80"
             >
               Last Name
             </label>
@@ -175,7 +175,7 @@ export default function EditPlayerPage() {
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
-              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder-white/50 focus:ring-1 focus:outline-none"
+              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-3 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
             />
           </div>
 
@@ -183,7 +183,7 @@ export default function EditPlayerPage() {
           <div>
             <label
               htmlFor="value"
-              className="mb-2 block text-sm font-medium text-white/80"
+              className="mb-2 block text-sm font-medium text-foreground/80"
             >
               Value ($1-$5)
             </label>
@@ -196,7 +196,7 @@ export default function EditPlayerPage() {
                   className={`flex-1 rounded-lg py-3 text-sm font-medium transition-colors ${
                     value === v
                       ? "bg-gold text-black"
-                      : "bg-white/10 text-white hover:bg-white/20"
+                      : "bg-foreground/10 text-foreground hover:bg-foreground/20"
                   }`}
                 >
                   ${v}
@@ -209,7 +209,7 @@ export default function EditPlayerPage() {
           <div>
             <label
               htmlFor="imgUrl"
-              className="mb-2 block text-sm font-medium text-white/80"
+              className="mb-2 block text-sm font-medium text-foreground/80"
             >
               Image URL
             </label>
@@ -220,7 +220,7 @@ export default function EditPlayerPage() {
               onChange={(e) => setImgUrl(e.target.value)}
               required
               placeholder="https://example.com/player-image.jpg"
-              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-white/20 bg-white/10 px-4 py-3 text-white placeholder-white/50 focus:ring-1 focus:outline-none"
+              className="focus:border-gold focus:ring-gold w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-3 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
             />
           </div>
 
@@ -235,7 +235,7 @@ export default function EditPlayerPage() {
             </button>
             <Link
               href="/admin/players"
-              className="rounded-lg bg-white/10 px-6 py-3 font-medium text-white transition-colors hover:bg-white/20"
+              className="rounded-lg bg-foreground/10 px-6 py-3 font-medium text-foreground transition-colors hover:bg-foreground/20"
             >
               Cancel
             </Link>

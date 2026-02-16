@@ -89,8 +89,8 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
       />
 
       {/* Dark Overlay with gold tint */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-slate-900" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-surface-950" />
+      <div className="absolute inset-0 bg-gradient-to-t from-surface-950/80 via-transparent to-transparent" />
 
       {/* Content */}
       <motion.div
@@ -101,7 +101,7 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
       >
         {/* Animated Title */}
         <motion.h1
-          className="font-stencil text-6xl tracking-wider text-white uppercase sm:text-8xl md:text-9xl"
+          className="font-stencil text-6xl tracking-wider text-foreground uppercase sm:text-8xl md:text-9xl"
           variants={titleVariants}
         >
           Lineup
@@ -115,7 +115,7 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
 
         {/* Tagline */}
         <motion.p
-          className="mt-8 max-w-md text-lg text-white/80 sm:text-xl"
+          className="mt-8 max-w-md text-lg text-foreground/80 sm:text-xl"
           variants={fadeUpVariants}
         >
           Build. Share. Dominate.
@@ -136,7 +136,7 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
             <motion.div variants={buttonVariants}>
               <Link
                 href="/lineups/new"
-                className="group border-gold bg-gold/10 font-stencil hover:bg-gold hover:glow-gold relative inline-block overflow-hidden rounded-none border-2 px-10 py-4 text-lg tracking-wide text-white uppercase transition-all duration-300"
+                className="group border-gold bg-gold/10 font-stencil hover:bg-gold hover:text-black hover:glow-gold relative inline-block overflow-hidden rounded-none border-2 px-10 py-4 text-lg tracking-wide text-foreground uppercase transition-all duration-300"
               >
                 <span className="relative z-10">Create Now</span>
               </Link>
@@ -146,7 +146,7 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
               <motion.div variants={buttonVariants}>
                 <Link
                   href="/api/auth/signin"
-                  className="font-stencil inline-block rounded-none border-2 border-white/60 bg-white/5 px-10 py-4 text-lg tracking-wide text-white uppercase backdrop-blur-sm transition-all duration-300 hover:border-white hover:bg-white hover:text-black"
+                  className="font-stencil inline-block rounded-none border-2 border-foreground/60 bg-foreground/5 px-10 py-4 text-lg tracking-wide text-foreground uppercase backdrop-blur-sm transition-all duration-300 hover:border-foreground hover:bg-foreground hover:text-background"
                 >
                   Sign Up
                 </Link>
@@ -154,7 +154,7 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
               <motion.div variants={buttonVariants}>
                 <Link
                   href="/api/auth/signin"
-                  className="border-gold bg-gold font-stencil hover:glow-gold inline-block rounded-none border-2 px-10 py-4 text-lg tracking-wide text-black uppercase transition-all duration-300 hover:bg-white"
+                  className="border-gold bg-gold font-stencil hover:glow-gold inline-block rounded-none border-2 px-10 py-4 text-lg tracking-wide text-black uppercase transition-all duration-300 hover:bg-foreground hover:text-background"
                 >
                   Sign In
                 </Link>

@@ -20,7 +20,7 @@ export function LineupCardPlayersGrid({ players }: LineupCardPlayersGridProps) {
     <div className="grid grid-cols-5 gap-2">
       {(["pg", "sg", "sf", "pf", "c"] as const).map((position) => (
         <div key={position} className="flex flex-col items-center">
-          <span className="mb-1 text-xs font-bold text-white/50 uppercase">
+          <span className="mb-1 text-xs font-bold text-foreground/50 uppercase">
             {POSITION_LABELS[position]}
           </span>
           <PlayerCard player={players[position]} compact />

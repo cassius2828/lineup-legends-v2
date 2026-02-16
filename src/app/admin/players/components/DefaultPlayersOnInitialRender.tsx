@@ -39,13 +39,13 @@ const DefaultPlayersOnInitialRender = ({
 
           {/* Player Info */}
           <div className="mt-2 text-center">
-            <p className="text-sm font-medium text-white">{player.firstName}</p>
-            <p className="text-sm text-white/80">{player.lastName}</p>
+            <p className="text-sm font-medium text-foreground">{player.firstName}</p>
+            <p className="text-sm text-foreground/80">{player.lastName}</p>
             <p className="text-gold mt-1 text-xs">${player.value}</p>
           </div>
 
           {/* Edit Indicator */}
-          <p className="mt-2 text-xs text-white/40 opacity-0 transition-opacity group-hover:opacity-100">
+          <p className="mt-2 text-xs text-foreground/40 opacity-0 transition-opacity group-hover:opacity-100">
             Click to edit
           </p>
         </Link>

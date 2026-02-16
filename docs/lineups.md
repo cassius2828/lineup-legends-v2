@@ -10,6 +10,7 @@ A lineup consists of:
 - **Budget constraint**: Total player values must not exceed $15
 - **Ownership**: Each lineup belongs to a user
 - **Featured status**: Users can feature up to 3 lineups
+- **Popularity**: Lineups do **not** use upvote/downvote. Popularity is expressed via **average rating** (`avgRating`) and **number of ratings** (`ratingCount`). Users rate lineups (e.g. 1–10); comments and thread replies keep Reddit-style upvote/downvote.
 
 ## Data Model
 
@@ -136,7 +137,7 @@ Gets all lineups for a specific user.
 }
 ```
 
-### `lineup.getAll` (Public)
+### `lineup.getAllLineups` (Public)
 
 Gets all lineups in the system (for the Explore page).
 
@@ -144,11 +145,21 @@ Gets all lineups in the system (for the Explore page).
 
 ```typescript
 {
-  sort?: "newest" | "oldest"; // Default: "newest"
+  sort?: "newest" | "oldest" | "highest-rated" | "most-rated"; // Default: "newest"
 }
 ```
 
-### `lineup.getById` (Public)
+Sort options: **Newest** / **Oldest** (by `createdAt`), **Highest rated** (by `avgRating`), **Most rated** (by `ratingCount`). Lineup popularity is ratings-only (no vote-based sort).
+
+### `lineup.getLineupsByOtherUsers` (Public)
+
+Gets lineups from other users (Explore page), with the same sort options and `userId` for context.
+
+### `lineup.rateLineup` (Protected)
+
+Rate a lineup (e.g. 1–10). One rating per user per lineup; updating overwrites. The lineup’s `avgRating`, `ratingCount`, and `ratingSum` are updated atomically.
+
+### `lineup.getLineupById` (Public)
 
 Gets a single lineup by its ID.
 
@@ -217,10 +228,12 @@ Interactive player selection interface:
 
 ### Explore Lineups (`/lineups/explore`)
 
-Public page showing all lineups from all users:
+Public page showing lineups from other users:
 
-- Shows lineup owner with avatar
-- Links to user profiles
+- Sort by Newest, Oldest, Highest rated, or Most rated (no vote-based sort)
+- Shows lineup owner with avatar and links to profiles
+- Each card shows **average rating** and **rating count** (e.g. “4.2” and “12 ratings”); no upvote/downvote
+- Link to rate a lineup (`/lineups/[id]/rate`) for non-owners
 - Featured lineups are highlighted
 
 ## Components
@@ -246,8 +259,8 @@ Displays a complete lineup with all 5 players:
 - Relative timestamp (e.g., "2 hours ago")
 - Featured badge
 - Owner actions (delete, feature, reorder, gamble)
-- Voting UI (prepared for future feature)
-- Rating display (prepared for future feature)
+- **Rating display**: average rating and rating count (e.g. “4.2”, “12 ratings”). No upvote/downvote for lineups.
+- Link to rate page for non-owners
 
 ### PlayerSelector
 
@@ -275,8 +288,8 @@ The lineup feature is designed to support future additions:
 
 - **Reordering**: Change player positions within a lineup
 - **Gambling**: Trade players for random players of different values
-- **Voting**: Upvote/downvote lineups
-- **Rating**: Rate lineups 1-5 stars
-- **Comments**: Discuss lineups with other users
+- **Comments**: Discuss lineups with other users (comments and thread replies use upvote/downvote for discussion quality)
+
+Lineup **popularity is ratings-only**: we intentionally do not use upvote/downvote for lineups because ratings (avg + count) provide a clearer signal. See [Lineup popularity: ratings only](./lineup-ratings-vs-votes-proposal.md).
 
 

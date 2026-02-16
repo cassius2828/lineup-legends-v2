@@ -8,11 +8,15 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 | ------------------------------------------------------------- | ------------------------------------------------- |
 | [Authentication](./authentication.md)                         | OAuth authentication with NextAuth.js             |
 | [Lineups](./lineups.md)                                       | Creating, managing, and exploring fantasy lineups |
+| [Lineup popularity: ratings only](./lineup-ratings-vs-votes-proposal.md) | Why lineups use ratings (not votes) and current design |
 | [Gambling mechanic](./gambling-mechanic.md)                   | Weighted odds, probability matrix, and API        |
 | [Players](./players.md)                                       | Player data structure, values, and retrieval      |
+| [User Profile](./user-profile.md)                             | Profile pages, image uploads, follow system, lineup stats |
+| [Contact & Feedback](./contact.md)                            | Contact page, feedback form, player requests, email integration |
 | [tRPC API](./trpc-api.md)                                     | End-to-end type-safe API architecture             |
 | [Database](./database.md)                                     | Prisma schema and MongoDB integration             |
 | [Components](./components.md)                                 | Reusable React components and their usage         |
+| [Admin Dashboard](./admin.md)                                | Admin interface, stats, feedback, and player management |
 | [Architecture & Scale Review](./architecture-scale-review.md) | Scalability analysis and migration plans          |
 
 ## Quick Start

@@ -1,14 +1,14 @@
 # Optimistic vote display pattern
 
-Reference for implementing instant UI updates when users upvote/downvote, then syncing with the server. Use this pattern when adding optimistic voting for **comments** and **thread replies**.
+Reference for implementing instant UI updates when users upvote/downvote, then syncing with the server. **Use this pattern for comments and thread replies only.** Lineups do not use upvote/downvote; lineup popularity is ratings-only.
 
-## Where it’s implemented
+## Where to use it
 
-- **Lineup votes (current):** `src/app/lineups/explore/page.tsx` (lines ~25–92), using `api.lineup.lineupVote` and a list from `getLineupsByOtherUsers`.
+- **Comments / thread replies:** When you add or refine optimistic voting for `voteComment` and `voteThread`, follow this pattern. Lineup voting has been removed; lineups use ratings only (see [Lineup popularity: ratings only](./lineup-ratings-vs-votes-proposal.md)).
 
 ## Overview
 
-1. **Client-side vote state:** A `Map<entityId, "upvote" | "downvote">` holds the current user’s vote per entity (e.g. per lineup, or later per comment/thread).
+1. **Client-side vote state:** A `Map<entityId, "upvote" | "downvote">` holds the current user’s vote per entity (e.g. per comment or thread reply).
 2. **onMutate (optimistic update):** Cancel the list query, snapshot previous data, compute vote delta with `getVoteDelta`, update the list cache (new `totalVotes`), update the vote Map, return context for rollback.
 3. **onError:** Restore list cache and remove the entity from the vote Map; show error toast.
 4. **onSettled:** Invalidate the list query (and optionally the single-entity query) so the UI eventually matches the server.
@@ -22,14 +22,13 @@ The **vote delta** is computed with `getVoteDelta(newType, previousType)` from `
 Keep a stable `queryInput` for the list query so you can cancel/setData/invalidate with the same key.
 
 ```ts
-const queryInput = { sort, userId: session?.user.id ?? "" };
-
-const { data: lineups } =
-  api.lineup.getLineupsByOtherUsers.useQuery(queryInput);
+// Example: use a stable queryInput for the list you're mutating (e.g. lineupId for comments)
+const queryInput = { lineupId, userId: session?.user.id ?? "" };
+const { data: comments } = api.lineup.getCommentsByLineup.useQuery(queryInput);
 ```
 
 For comments/threads you’ll have something like `{ lineupId, ... }` or `{ threadId, ... }` as the list query input.
-
+Use a stable `queryInput` that matches how you fetch the list (e.g. `{ lineupId }` for comments, `{ threadId }` for replies).
 ---
 
 ## 2. Client-side vote map
@@ -40,8 +39,7 @@ Track the current user’s vote per entity in a `Map`. This is the source of tru
 const userVotes = new Map<string, "upvote" | "downvote">();
 ```
 
-- **Lineups (current):** Key = lineup id. The list query does **not** return the current user’s vote; the map is only filled when the user votes (optimistically). So on first load, no buttons show as “voted” until they click.
-- **Comments/threads (future):** If your list API returns the current user’s vote per comment/thread, you can **hydrate** this map from the list response on load so the UI shows “you upvoted” without a click. Otherwise, same as lineups: map starts empty and is updated only after a vote.
+- **Comments/threads:** Key = comment id or thread id. If your list API returns the current user's vote per comment/thread, **hydrate** this map from the list response on load so the UI shows "you upvoted" without a click. Otherwise the map starts empty and is updated only after a vote.
 
 ---
 
@@ -191,8 +189,8 @@ The vote UI (e.g. up/down buttons and total count) should:
 
 ## File reference
 
-- **Pattern implementation:** `src/app/lineups/explore/page.tsx` (lines 25–92).
+- **Pattern implementation:** Apply this pattern in the page or component that lists comments or thread replies (e.g. lineup detail page). Lineup explore no longer has vote UI; see [lineup-ratings-vs-votes-proposal.md](./lineup-ratings-vs-votes-proposal.md).
 - **Vote delta:** `src/lib/utils.ts` — `getVoteDelta(newType, existingType)`.
-- **Lineup vote UI:** `src/app/_components/LineupCard/LineupCardStatsBar.tsx` (up/down buttons and total display).
+- **Vote UI:** For comments/threads, use up/down buttons and total display similar to what LineupCardStatsBar used for lineup votes before lineup voting was removed (see [lineup-ratings-vs-votes-proposal.md](./lineup-ratings-vs-votes-proposal.md)).
 
 Use this same flow for comment and thread reply voting: same delta logic, same cancel → setData → rollback on error → invalidate on settled pattern, with the list query and entity id adjusted to comments/threads.

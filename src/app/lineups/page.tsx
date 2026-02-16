@@ -51,7 +51,7 @@ export default function MyLineupsPage() {
   };
   console.log(usersLineups, " <-- lineups");
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <LineupsHeader
@@ -78,8 +78,8 @@ export default function MyLineupsPage() {
               onClick={() => setSort(option.value)}
               className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                 sort === option.value
-                  ? "bg-emerald-600 text-white"
-                  : "bg-white/10 text-white/70 hover:bg-white/20"
+                  ? "bg-gold text-black"
+                  : "bg-foreground/10 text-foreground/70 hover:bg-foreground/20"
               }`}
             >
               {option.label}
@@ -91,8 +91,8 @@ export default function MyLineupsPage() {
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <div className="text-center">
-              <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500" />
-              <p className="text-white/60">Loading lineups...</p>
+              <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-foreground/20 border-t-gold" />
+              <p className="text-foreground/60">Loading lineups...</p>
             </div>
           </div>
         ) : usersLineups && usersLineups.length > 0 ? (
@@ -110,10 +110,10 @@ export default function MyLineupsPage() {
             ))}
           </LineupCardGrid>
         ) : (
-          <div className="rounded-2xl bg-white/5 p-12 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
+          <div className="rounded-2xl bg-foreground/5 p-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-foreground/10">
               <svg
-                className="h-8 w-8 text-white/40"
+                className="h-8 w-8 text-foreground/40"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -126,15 +126,15 @@ export default function MyLineupsPage() {
                 />
               </svg>
             </div>
-            <h3 className="mb-2 text-xl font-semibold text-white">
+            <h3 className="mb-2 text-xl font-semibold text-foreground">
               No lineups yet
             </h3>
-            <p className="mb-6 text-white/60">
+            <p className="mb-6 text-foreground/60">
               Create your first lineup to get started!
             </p>
             <Link
               href="/lineups/new"
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-emerald-500"
+              className="inline-flex items-center gap-2 rounded-lg bg-gold px-6 py-3 font-semibold text-black transition-colors hover:bg-gold-light"
             >
               <svg
                 className="h-5 w-5"

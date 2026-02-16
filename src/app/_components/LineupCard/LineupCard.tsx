@@ -37,7 +37,7 @@ export function LineupCard({
   });
 
   return (
-    <div className="relative rounded-2xl bg-gradient-to-br from-slate-800/90 to-slate-900/90 p-6 shadow-xl backdrop-blur-sm">
+    <div className="relative rounded-2xl bg-gradient-to-br from-surface-800/90 to-surface-950/90 p-6 shadow-xl backdrop-blur-sm">
       <LineupCardHeader
         lineup={lineup}
         showOwner={showOwner}

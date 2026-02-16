@@ -8,7 +8,7 @@ export default function GettingTechnicalPage() {
   const router = useRouter();
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950 px-4">
       <motion.div
         className="w-full max-w-lg text-center"
         initial={{ opacity: 0, y: 20 }}
@@ -43,11 +43,11 @@ export default function GettingTechnicalPage() {
         </h1>
 
         {/* Description */}
-        <p className="mx-auto mb-2 max-w-md text-lg text-white/70">
+        <p className="mx-auto mb-2 max-w-md text-lg text-foreground/70">
           We&apos;re working on a deep dive into the features and technical
           engineering behind Lineup Legends.
         </p>
-        <p className="mx-auto mb-10 max-w-md text-sm text-white/50">
+        <p className="mx-auto mb-10 max-w-md text-sm text-foreground/50">
           This page will break down the app&apos;s architecture, explain how key
           features work under the hood, and highlight the programming and
           engineering decisions that power the experience.
@@ -57,13 +57,13 @@ export default function GettingTechnicalPage() {
         <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
           <button
             onClick={() => router.back()}
-            className="w-full cursor-pointer rounded-lg border border-white/20 bg-transparent px-6 py-3 text-sm font-medium text-white/90 transition-all hover:border-gold/50 hover:bg-gold/10 hover:text-white sm:w-auto"
+            className="w-full cursor-pointer rounded-lg border border-foreground/20 bg-transparent px-6 py-3 text-sm font-medium text-foreground/90 transition-all hover:border-gold/50 hover:bg-gold/10 hover:text-foreground sm:w-auto"
           >
             Go Back
           </button>
           <Link
             href="/"
-            className="w-full rounded-lg border-2 border-gold bg-gold/10 px-6 py-3 text-center text-sm font-medium text-white/90 transition-all hover:bg-gold hover:glow-gold-sm sm:w-auto"
+            className="w-full rounded-lg border-2 border-gold bg-gold/10 px-6 py-3 text-center text-sm font-medium text-foreground/90 transition-all hover:bg-gold hover:glow-gold-sm sm:w-auto"
           >
             Go Home
           </Link>
