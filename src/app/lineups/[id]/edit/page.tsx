@@ -21,6 +21,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getId, type PlayerType } from "~/lib/types";
 import { api } from "~/trpc/react";
+import { PlayerImage } from "~/app/_components/PlayerImage";
 
 const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
 const POSITION_LABELS = {
@@ -83,11 +84,13 @@ function SortablePositionCard({
             {POSITION_LABELS[pos]}
           </span>
           <div className="mt-1 flex items-center gap-3">
-            <img
-              src={player.imgUrl}
-              alt={`${player.firstName} ${player.lastName}`}
-              className="h-12 w-12 rounded-full object-cover"
-            />
+            <div className="relative h-12 w-12 overflow-hidden rounded-full">
+              <PlayerImage
+                imgUrl={player.imgUrl}
+                alt={`${player.firstName} ${player.lastName}`}
+                className="absolute inset-0 h-full w-full rounded-full object-cover"
+              />
+            </div>
             <div>
               <p className="font-semibold text-white">
                 {player.firstName} {player.lastName}

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
 import { type PlayerType } from "~/lib/types";
+import { PlayerImage } from "~/app/_components/PlayerImage";
 
 const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
 
@@ -131,11 +132,15 @@ export default function GambleLineupPage() {
             <div className="flex items-center justify-center gap-8">
               {/* Previous Player */}
               <div className="text-center opacity-50">
-                <img
-                  src={gambleResult.previousPlayer.imgUrl}
-                  alt={`${gambleResult.previousPlayer.firstName} ${gambleResult.previousPlayer.lastName}`}
-                  className={`mx-auto rounded-full object-cover grayscale ${valueShadows[gambleResult.previousPlayer.value] ?? "shadow"}`}
-                />
+                <div
+                  className={`relative mx-auto h-20 w-20 overflow-hidden rounded-full grayscale ${valueShadows[gambleResult.previousPlayer.value] ?? "shadow"}`}
+                >
+                  <PlayerImage
+                    imgUrl={gambleResult.previousPlayer.imgUrl}
+                    alt={`${gambleResult.previousPlayer.firstName} ${gambleResult.previousPlayer.lastName}`}
+                    className="absolute inset-0 h-full w-full rounded-full object-cover"
+                  />
+                </div>
                 <p className="mt-2 font-semibold text-white line-through">
                   {gambleResult.previousPlayer.firstName}
                 </p>
@@ -149,11 +154,13 @@ export default function GambleLineupPage() {
 
               {/* New Player */}
               <div className="text-center">
-                <div className="relative">
-                  <img
-                    src={gambleResult.newPlayer.imgUrl}
+                <div
+                  className={`relative mx-auto h-20 w-20 overflow-hidden rounded-full border-4 border-green-500 ${valueShadows[gambleResult.newPlayer.value] ?? "shadow"}`}
+                >
+                  <PlayerImage
+                    imgUrl={gambleResult.newPlayer.imgUrl}
                     alt={`${gambleResult.newPlayer.firstName} ${gambleResult.newPlayer.lastName}`}
-                    className={`mx-auto rounded-full border-4 border-green-500 object-cover ${valueShadows[gambleResult.newPlayer.value] ?? "shadow"}`}
+                    className="absolute inset-0 h-full w-full rounded-full object-cover"
                   />
                   {gambleResult.newPlayer.value >
                     gambleResult.previousPlayer.value && (
@@ -222,12 +229,15 @@ export default function GambleLineupPage() {
                       <span className="mb-1 block text-xs font-bold text-white/50">
                         {POSITION_LABELS[pos]}
                       </span>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={player.imgUrl ?? ""}
-                        alt={`${player?.firstName} ${player?.lastName}`}
-                        className={`mx-auto h-16 w-16 rounded-full object-cover ${valueShadows[player.value] ?? "shadow"}`}
-                      />
+                      <div
+                        className={`relative mx-auto h-16 w-16 overflow-hidden rounded-full ${valueShadows[player.value] ?? "shadow"}`}
+                      >
+                        <PlayerImage
+                          imgUrl={player.imgUrl ?? undefined}
+                          alt={`${player?.firstName ?? ""} ${player?.lastName ?? ""}`}
+                          className="absolute inset-0 h-full w-full rounded-full object-cover"
+                        />
+                      </div>
                       <p className="mt-2 truncate text-sm font-medium text-white">
                         {player.firstName}
                       </p>

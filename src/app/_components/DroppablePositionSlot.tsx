@@ -2,6 +2,7 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import type { PlayerType } from "~/lib/types";
+import { PlayerImage } from "./PlayerImage";
 
 type Position = "PG" | "SG" | "SF" | "PF" | "C";
 
@@ -54,13 +55,15 @@ export function DroppablePositionSlot({
       >
         {player ? (
           <>
-            <img
-              src={player.imgUrl}
-              alt={player.firstName}
-              className={`h-full w-full rounded-lg object-cover transition-opacity duration-200 ${
-                showSwapIndicator ? "opacity-50" : ""
-              }`}
-            />
+            <div className="absolute inset-0 overflow-hidden rounded-lg">
+              <PlayerImage
+                imgUrl={player.imgUrl}
+                alt={player.firstName}
+                className={`absolute inset-0 h-full w-full rounded-lg object-cover ${
+                  showSwapIndicator ? "opacity-50" : ""
+                }`}
+              />
+            </div>
             {/* Remove Button */}
             <button
               onClick={() => onRemove(player)}

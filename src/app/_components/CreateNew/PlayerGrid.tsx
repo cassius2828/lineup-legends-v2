@@ -25,7 +25,7 @@ const PlayerGrid = ({
           </h2>
 
           {/* Players Row - Fixed 5 columns */}
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-5 gap-5">
             {players.map((player) => (
               <DraggablePlayerCard
                 key={getId(player)}

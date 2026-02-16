@@ -1,6 +1,7 @@
 import type { FuseResult } from "fuse.js";
 import Link from "next/link";
 import type { PlayerType } from "~/lib/types";
+import { PlayerImage } from "~/app/_components/PlayerImage";
 
 const SearchResults = ({
   filteredPlayers,
@@ -29,12 +30,10 @@ const SearchResults = ({
               valueShadows[player.item?.value ?? 0]
             } cursor-pointer group-hover:scale-105`}
           >
-            {/* need a trick to ensure this takes up entire div */}
-            {/* //* remains regular img componet due to how we store our player images */}
-            <img
-              src={player.item.imgUrl ?? ""}
-              alt={`${player.item.firstName} ${player.item.lastName}`}
-              className="h-full w-full object-cover"
+            <PlayerImage
+              imgUrl={player.item.imgUrl ?? undefined}
+              alt={`${player.item.firstName ?? ""} ${player.item.lastName ?? ""}`}
+              className="absolute inset-0 h-full w-full object-cover"
             />
           </div>
 

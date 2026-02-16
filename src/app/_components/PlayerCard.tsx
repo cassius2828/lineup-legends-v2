@@ -1,6 +1,7 @@
 "use client";
 
 import type { PlayerType } from "~/lib/types";
+import { PlayerImage } from "./PlayerImage";
 
 interface PlayerCardProps {
   player: PlayerType;
@@ -43,12 +44,15 @@ export function PlayerCard({
   if (compact) {
     return (
       <div className="flex flex-col items-center gap-2 p-2">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={player?.imgUrl}
-          alt={`${player?.firstName} ${player?.lastName}`}
-          className={`h-24 w-24 rounded-full object-cover ${valueShadows[player?.value]}`}
-        />
+        <div
+          className={`relative h-24 w-24 overflow-hidden rounded-full ${valueShadows[player?.value ?? 0]}`}
+        >
+          <PlayerImage
+            imgUrl={player?.imgUrl}
+            alt={player ? `${player.firstName} ${player.lastName}` : ""}
+            className="absolute inset-0 h-full w-full rounded-full object-cover"
+          />
+        </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-white">
             {player?.firstName} {player?.lastName}
@@ -73,9 +77,8 @@ export function PlayerCard({
           selected ? "ring-2 ring-emerald-400" : ""
         } ${disabled && !selected ? "cursor-not-allowed opacity-50 grayscale" : "cursor-pointer hover:scale-105"}`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={player.imgUrl}
+        <PlayerImage
+          imgUrl={player.imgUrl}
           alt={`${player.firstName} ${player.lastName}`}
           className="absolute inset-0 h-full w-full object-cover"
         />
