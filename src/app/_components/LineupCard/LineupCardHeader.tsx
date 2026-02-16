@@ -48,7 +48,7 @@ export function LineupCardHeader({
       <div className="flex items-center gap-2 text-sm text-white/50">
         <span>{relativeTime}</span>
         <span className="rounded-full bg-white/10 px-2 py-1 font-semibold text-white">
-          ${totalValue}
+          ${totalValue} value
         </span>
       </div>
     </div>

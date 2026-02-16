@@ -4,6 +4,7 @@ import { type Metadata } from "next";
 import { Geist, Stick_No_Bills } from "next/font/google";
 import { Toaster } from "sonner";
 
+import { TooltipProvider } from "~/components/ui/tooltip";
 import { TRPCReactProvider } from "~/trpc/react";
 import Nav from "./_components/Nav";
 import { Footer } from "./_components/landing";
@@ -35,11 +36,13 @@ export default function RootLayout({
       <body>
         <TRPCReactProvider>
           <SessionProvider>
-            <Nav />
-            <div className="mb-24 md:mb-16"></div>
-            <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-            <Footer />
-            <Toaster richColors position="top-center" />
+            <TooltipProvider>
+              <Nav />
+              <div className="mb-24 md:mb-16"></div>
+              <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+              <Footer />
+              <Toaster richColors position="top-center" />
+            </TooltipProvider>
           </SessionProvider>
         </TRPCReactProvider>
       </body>

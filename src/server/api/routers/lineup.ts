@@ -147,7 +147,6 @@ export const lineupRouter = createTRPCRouter({
       const { players } = input;
       const { pg, sg, sf, pf, c } = players;
       const playerIds = [pg._id, sg._id, sf._id, pf._id, c._id];
-      console.log(players, " <-- players");
       // Check for duplicate players
       const uniqueIds = new Set(playerIds);
       if (uniqueIds.size !== playerIds.length) {
@@ -200,7 +199,7 @@ export const lineupRouter = createTRPCRouter({
       z
         .object({
           sort: z
-              .enum(["newest", "oldest", "highest-rated"])
+            .enum(["newest", "oldest", "highest-rated"])
             .optional()
             .default("newest"),
         })
@@ -222,11 +221,11 @@ export const lineupRouter = createTRPCRouter({
         .sort(sortOption)
         .populate(lineupPopulateFields)
         .lean();
-      console.log(data, " <-- data");
       return data;
     }),
 
   // Get a specific user's lineups (public)
+  // look into adding pagination similar to players router
   getLineupsByOtherUsers: publicProcedure
     .input(
       z.object({
@@ -291,9 +290,9 @@ export const lineupRouter = createTRPCRouter({
   getLineupById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      return await LineupModel.findById(input.id).populate(
-        lineupPopulateFields,
-      ).lean();
+      return await LineupModel.findById(input.id)
+        .populate(lineupPopulateFields)
+        .lean();
     }),
 
   // Delete a lineup (protected - only owner can delete)

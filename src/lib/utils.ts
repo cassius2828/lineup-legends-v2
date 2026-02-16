@@ -1,3 +1,10 @@
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 // Population fields for lineup queries
 export const lineupPopulateFields = [
   { path: "players.pg", model: "Player" },
@@ -32,12 +39,10 @@ export function getVoteDelta(
   return newType === "upvote" ? 2 : -2;
 }
 
-// Helper to calculate total votes for lineup votes (uses IVote with type field)
+/** Helper to calculate total votes for lineup votes (uses IVote with type field) */
 export function incrementTotalVotes(
   type: "upvote" | "downvote",
   existingType: "upvote" | "downvote" | null,
 ): number {
-  console.log("[incrementTotalVotes] type", type);
-  console.log("[incrementTotalVotes] existingType", existingType);
   return getVoteDelta(type, existingType ?? null);
 }

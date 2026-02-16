@@ -40,7 +40,6 @@ export function PlayerCard({
       onSelect(player);
     }
   };
-  console.log(player, " <-- player");
   if (compact) {
     return (
       <div className="flex flex-col items-center gap-2 p-2">

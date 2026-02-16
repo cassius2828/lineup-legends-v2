@@ -3,15 +3,18 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useState } from "react";
-import { toast } from "sonner";
 import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
 import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 import { getId } from "~/lib/types";
-import { getVoteDelta } from "~/lib/utils";
 import { api } from "~/trpc/react";
 
-type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
+type SortOption = "newest" | "oldest" | "highest-rated";
 
 export default function ExploreLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
@@ -22,73 +25,19 @@ export default function ExploreLineupsPage() {
       sort,
       userId: session?.user.id ?? "",
     });
-  // figure out simplest way to handle optimistic vote
-  const queryInput = { sort, userId: session?.user.id ?? "" };
+  const handlePreFetchLineups = (sort: SortOption) => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    void utils.lineup.getLineupsByOtherUsers.ensureData(
+      { sort, userId },
+      {
+        staleTime: 1000 * 60 * 5, // 5 minutes
+      },
+    );
+  };
 
-  const voteMutation = api.lineup.lineupVote.useMutation({
-    onMutate: async (input) => {
-      // cancel any outgoing refetches so we don't overwrite the optimistic update
-      await utils.lineup.getLineupsByOtherUsers.cancel(queryInput);
-      // get snapshot of the previous data
-      const previousLineups =
-        utils.lineup.getLineupsByOtherUsers.getData(queryInput);
-      const previousVote = userVotes.get(input.lineupId) ?? null;
-
-      // compute delta + next vote (toggle/switch)
-      const voteDelta = getVoteDelta(input.type, previousVote);
-
-      // optimistically update the list cache
-      utils.lineup.getLineupsByOtherUsers.setData(queryInput, (old) => {
-        if (!old) return old;
-        return old.map((lineup) => {
-          if (getId(lineup) !== input.lineupId) return lineup;
-          return {
-            ...lineup,
-            totalVotes: (lineup.totalVotes ?? 0) + voteDelta,
-          } as (typeof old)[number];
-        }) as typeof old;
-      });
-
-      // optimistically update the vote cache
-      userVotes.set(input.lineupId, input.type);
-
-      return { previousLineups, previousVote, lineupId: input.lineupId };
-    },
-    onSuccess: (lineup) => {
-      // void utils.lineup.getAllLineups.invalidate();
-      // invalidate the lineup based on the lineup id
-      void utils.lineup.getLineupById.invalidate({
-        id: lineup?._id?.toString() ?? "",
-      });
-    },
-    onError: (_err, _input, ctx) => {
-      if (!ctx) return;
-
-      utils.lineup.getLineupsByOtherUsers.setData(
-        queryInput,
-        ctx.previousLineups,
-      );
-      userVotes.delete(ctx.lineupId);
-      (toast as { error: (message: string) => void }).error(
-        "Error voting on lineup",
-      );
-    },
-    onSettled: async (_data, _error, vars) => {
-      await utils.lineup.getLineupsByOtherUsers.invalidate(queryInput);
-      if (vars?.lineupId) {
-        await utils.lineup.getLineupById.invalidate({
-          id: vars.lineupId,
-        });
-      }
-    },
-  });
-
-  // Track user votes per lineup
-  const userVotes = new Map<string, "upvote" | "downvote">();
-
-  const handleVote = (lineupId: string, type: "upvote" | "downvote") => {
-    if (voteMutation.isPending) return;
-    voteMutation.mutate({ lineupId, type });
+  const handleRefreshAllLineups = () => {
+    void utils.lineup.getLineupsByOtherUsers.invalidate();
   };
 
   return (
@@ -111,21 +60,39 @@ export default function ExploreLineupsPage() {
               { value: "newest", label: "Newest" },
               { value: "oldest", label: "Oldest" },
               { value: "highest-rated", label: "Highest Rated" },
-              { value: "most-votes", label: "Most Votes" },
             ] as const
           ).map((option) => (
             <button
               key={option.value}
+              onMouseEnter={() => handlePreFetchLineups(option.value)}
               onClick={() => setSort(option.value)}
-              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                 sort === option.value
-                  ? "bg-emerald-600 text-white"
+                  ? "bg-gold-600 text-white"
                   : "bg-white/10 text-white/70 hover:bg-white/20"
               }`}
             >
               {option.label}
             </button>
           ))}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleRefreshAllLineups}
+                className="flex cursor-pointer items-center justify-center rounded-lg p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white/70"
+              >
+                <svg
+                  className="h-4 w-4"
+                  viewBox="0 0 640 640"
+                  fill="currentColor"
+                >
+                  <path d="M129.9 292.5C143.2 199.5 223.3 128 320 128C373 128 421 149.5 455.8 184.2C456 184.4 456.2 184.6 456.4 184.8L464 192L416.1 192C398.4 192 384.1 206.3 384.1 224C384.1 241.7 398.4 256 416.1 256L544.1 256C561.8 256 576.1 241.7 576.1 224L576.1 96C576.1 78.3 561.8 64 544.1 64C526.4 64 512.1 78.3 512.1 96L512.1 149.4L500.8 138.7C454.5 92.6 390.5 64 320 64C191 64 84.3 159.4 66.6 283.5C64.1 301 76.2 317.2 93.7 319.7C111.2 322.2 127.4 310 129.9 292.6zM573.4 356.5C575.9 339 563.7 322.8 546.3 320.3C528.9 317.8 512.6 330 510.1 347.4C496.8 440.4 416.7 511.9 320 511.9C267 511.9 219 490.4 184.2 455.7C184 455.5 183.8 455.3 183.6 455.1L176 447.9L223.9 447.9C241.6 447.9 255.9 433.6 255.9 415.9C255.9 398.2 241.6 383.9 223.9 383.9L96 384C87.5 384 79.3 387.4 73.3 393.5C67.3 399.6 63.9 407.7 64 416.3L65 543.3C65.1 561 79.6 575.2 97.3 575C115 574.8 129.2 560.4 129 542.7L128.6 491.2L139.3 501.3C185.6 547.4 249.5 576 320 576C449 576 555.7 480.6 573.4 356.5z" />
+                </svg>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>Refresh lineups</TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Lineups Grid */}
@@ -146,8 +113,6 @@ export default function ExploreLineupsPage() {
                 showOwner={true}
                 isOwner={false}
                 currentUserId={session?.user.id ?? ""}
-                onVote={handleVote}
-                userVote={userVotes.get(getId(lineup))}
               />
             ))}
           </LineupCardGrid>
