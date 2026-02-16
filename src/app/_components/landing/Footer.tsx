@@ -83,6 +83,12 @@ export function Footer() {
                 cassius.reynolds.dev@gmail.com
               </a>
             </p>
+            <Link
+              href="/contact"
+              className="mt-3 inline-block text-sm text-gold/80 transition-colors hover:text-gold-light"
+            >
+              Contact Us &rarr;
+            </Link>
           </motion.div>
 
           {/* Right - Developer Credit */}

@@ -58,6 +58,13 @@ section {
   background: #475569;
 }
 
+/* Hide global nav, nav spacer, and footer inside admin dashboard */
+body:has(.admin-layout) #global-nav,
+body:has(.admin-layout) #global-nav-spacer,
+body:has(.admin-layout) #global-footer {
+  display: none;
+}
+
 /* Image loading placeholder */
 img {
   background-color: #1e293b;

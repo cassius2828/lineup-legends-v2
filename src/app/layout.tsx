@@ -37,10 +37,14 @@ export default function RootLayout({
         <TRPCReactProvider>
           <SessionProvider>
             <TooltipProvider>
-              <Nav />
-              <div className="mb-24 md:mb-16"></div>
+              <div id="global-nav">
+                <Nav />
+              </div>
+              <div id="global-nav-spacer" className="mb-24 md:mb-16"></div>
               <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-              <Footer />
+              <div id="global-footer">
+                <Footer />
+              </div>
               <Toaster richColors position="top-center" />
             </TooltipProvider>
           </SessionProvider>

@@ -60,15 +60,15 @@ export default function EditPlayerPage() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#0a0a1a]">
+      <div className="flex h-[60vh] items-center justify-center">
         <div className="border-t-gold h-12 w-12 animate-spin rounded-full border-4 border-white/20" />
-      </main>
+      </div>
     );
   }
 
   if (!player) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#0a0a1a]">
+      <div className="flex h-[60vh] items-center justify-center">
         <div className="text-center">
           <p className="text-xl text-white">Player not found</p>
           <Link
@@ -78,37 +78,36 @@ export default function EditPlayerPage() {
             Back to Players
           </Link>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0a1a] p-8">
-      <div className="mx-auto max-w-2xl">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href="/admin/players"
-            className="mb-4 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
+    <div className="mx-auto max-w-2xl">
+      {/* Header */}
+      <div className="mb-8">
+        <Link
+          href="/admin/players"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
+        >
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back to Players
-          </Link>
-          <h1 className="text-3xl font-bold text-white">Edit Player</h1>
-          <p className="mt-2 text-white/60">Update player information</p>
-        </div>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          Back to Players
+        </Link>
+        <h1 className="text-3xl font-bold text-white">Edit Player</h1>
+        <p className="mt-1 text-white/50">Update player information</p>
+      </div>
 
         {/* Current Player Preview */}
         <div className="mb-8 flex items-center gap-6 rounded-lg bg-white/5 p-6">
@@ -242,7 +241,6 @@ export default function EditPlayerPage() {
             </Link>
           </div>
         </form>
-      </div>
-    </main>
+    </div>
   );
 }

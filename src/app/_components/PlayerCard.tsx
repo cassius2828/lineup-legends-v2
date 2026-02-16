@@ -45,7 +45,7 @@ export function PlayerCard({
     return (
       <div className="flex flex-col items-center gap-2 p-2">
         <div
-          className={`relative h-24 w-24 overflow-hidden rounded-full ${valueShadows[player?.value ?? 0]}`}
+          className={`relative h-16 w-16 overflow-hidden rounded-full md:h-24 md:w-24 ${valueShadows[player?.value ?? 0]}`}
         >
           <PlayerImage
             imgUrl={player?.imgUrl}

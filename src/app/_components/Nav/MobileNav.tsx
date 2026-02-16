@@ -43,6 +43,13 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                 >
                   create a lineup
                 </Link>
+                <Link
+                  href="/contact"
+                  onClick={closeMenu}
+                  className="hover:text-gold text-white/90 capitalize transition-colors"
+                >
+                  Contact
+                </Link>
 
                 {session ? (
                   <>
@@ -60,6 +67,15 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                     >
                       Explore
                     </Link>
+                    {session.user.admin && (
+                      <Link
+                        href="/admin"
+                        onClick={closeMenu}
+                        className="text-gold/80 hover:text-gold font-medium capitalize transition-colors"
+                      >
+                        Admin Dashboard
+                      </Link>
+                    )}
                     <div className="border-t border-white/10 pt-4">
                       <Link
                         href={`/profile/${session.user.id}`}

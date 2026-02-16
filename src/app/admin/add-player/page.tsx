@@ -49,32 +49,31 @@ export default function AddPlayerPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0a1a] p-8">
-      <div className="mx-auto max-w-2xl">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            href="/admin/players"
-            className="mb-4 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
+    <div className="mx-auto max-w-2xl">
+      {/* Header */}
+      <div className="mb-8">
+        <Link
+          href="/admin/players"
+          className="mb-4 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
+        >
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            Back to Players
-          </Link>
-          <h1 className="text-3xl font-bold text-white">Add New Player</h1>
-          <p className="mt-2 text-white/60">Add a new player to the database</p>
-        </div>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+          Back to Players
+        </Link>
+        <h1 className="text-3xl font-bold text-white">Add New Player</h1>
+        <p className="mt-1 text-white/50">Add a new player to the database</p>
+      </div>
 
         {/* Player Preview */}
         {(firstName || lastName || imgUrl) && (
@@ -218,7 +217,6 @@ export default function AddPlayerPage() {
             </Link>
           </div>
         </form>
-      </div>
-    </main>
+    </div>
   );
 }

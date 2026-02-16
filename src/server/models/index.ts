@@ -38,3 +38,9 @@ export {
   type ValueDescription,
   type ValueDescriptionDoc,
 } from "./requestedPlayer";
+export {
+  FeedbackModel,
+  type Feedback,
+  type FeedbackDoc,
+  type FeedbackStatus,
+} from "./feedback";
