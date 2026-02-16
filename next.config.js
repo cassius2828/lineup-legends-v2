@@ -22,6 +22,8 @@ const config = {
     ignoreDuringBuilds: true,
   },
   reactCompiler: true,
+  // Prevent Next.js from bundling pino's worker threads (used by pino-pretty transport)
+  serverExternalPackages: ["pino", "pino-pretty"],
 };
 
 export default config;

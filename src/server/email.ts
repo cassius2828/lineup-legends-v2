@@ -1,5 +1,8 @@
 import { Resend } from "resend";
 import { env } from "~/env";
+import { logger } from "~/lib/logger";
+
+const log = logger.child({ module: "email" });
 
 const resend = new Resend(env.RESEND_API_KEY);
 
@@ -40,7 +43,7 @@ export async function sendFeedbackEmail({
   });
 
   if (error) {
-    console.error("Failed to send feedback email:", error);
+    log.error({ err: error }, "Failed to send feedback email");
     throw new Error("Failed to send feedback email");
   }
 }

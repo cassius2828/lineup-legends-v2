@@ -14,7 +14,7 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 | [User Profile](./user-profile.md)                             | Profile pages, image uploads, follow system, lineup stats |
 | [Contact & Feedback](./contact.md)                            | Contact page, feedback form, player requests, email integration |
 | [tRPC API](./trpc-api.md)                                     | End-to-end type-safe API architecture             |
-| [Database](./database.md)                                     | Prisma schema and MongoDB integration             |
+| [Database](./database.md)                                     | Mongoose models and MongoDB integration           |
 | [Components](./components.md)                                 | Reusable React components and their usage         |
 | [Admin Dashboard](./admin.md)                                | Admin interface, stats, feedback, and player management |
 | [Architecture & Scale Review](./architecture-scale-review.md) | Scalability analysis and migration plans          |
@@ -23,9 +23,8 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 
 1. Install dependencies: `npm install`
 2. Set up environment variables (see [Database](./database.md#environment-variables))
-3. Push database schema: `npm run db:push`
-4. Seed players: `npm run db:seed`
-5. Start development server: `npm run dev`
+3. Seed players: `npm run db:seed`
+4. Start development server: `npm run dev`
 
 ## Architecture Overview
 
@@ -49,7 +48,7 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 │  └───────────────┘  └───────────────┘  └───────────────────────┘│
 └─────────────────────────────────────────────────────────────────┘
                                │
-                               │ Prisma ORM
+                               │ Mongoose ODM
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                          MongoDB                                 │
@@ -66,10 +65,11 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 | Next.js 15   | React framework with App Router | [nextjs.org](https://nextjs.org/docs)             |
 | NextAuth v5  | OAuth authentication            | [authjs.dev](https://authjs.dev)                  |
 | tRPC         | Type-safe API layer             | [trpc.io](https://trpc.io/docs)                   |
-| Prisma       | Database ORM                    | [prisma.io](https://www.prisma.io/docs)           |
+| Mongoose     | MongoDB ODM                     | [mongoosejs.com](https://mongoosejs.com/docs/)    |
 | Tailwind CSS | Utility-first styling           | [tailwindcss.com](https://tailwindcss.com/docs)   |
 | React Query  | Server state management         | [tanstack.com](https://tanstack.com/query/latest) |
 | Zod          | Schema validation               | [zod.dev](https://zod.dev)                        |
+| Pino         | Structured server-side logging  | [getpino.io](https://getpino.io)                  |
 
 ## Contributing
 

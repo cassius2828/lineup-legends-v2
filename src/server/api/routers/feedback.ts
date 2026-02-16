@@ -7,6 +7,9 @@ import {
 } from "~/server/api/trpc";
 import { FeedbackModel } from "~/server/models";
 import { sendFeedbackEmail } from "~/server/email";
+import { logger } from "~/lib/logger";
+
+const log = logger.child({ module: "feedback" });
 
 export const feedbackRouter = createTRPCRouter({
   // Submit feedback (public — no auth required)
@@ -36,7 +39,7 @@ export const feedbackRouter = createTRPCRouter({
           message: input.message.trim(),
         });
       } catch (error) {
-        console.error("Email notification failed, feedback still saved:", error);
+        log.error({ err: error }, "Email notification failed, feedback still saved");
       }
 
       return {

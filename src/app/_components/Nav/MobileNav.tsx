@@ -37,6 +37,13 @@ const MobileNav = ({ session }: { session: Session | null }) => {
 
               <div className="flex flex-col gap-4 pt-4">
                 <Link
+                  href="/players"
+                  onClick={closeMenu}
+                  className="hover:text-gold text-foreground/90 capitalize transition-colors"
+                >
+                  Players
+                </Link>
+                <Link
                   href="/lineups/new"
                   onClick={closeMenu}
                   className="hover:text-gold text-foreground/90 capitalize transition-colors"

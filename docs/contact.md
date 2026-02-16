@@ -13,9 +13,9 @@ The contact system provides:
 
 ## Routes
 
-| Route               | Description                                   | Auth Required |
-| ------------------- | --------------------------------------------- | ------------- |
-| `/contact`          | Contact hub with all sections                 | No            |
+| Route                | Description                                  | Auth Required |
+| -------------------- | -------------------------------------------- | ------------- |
+| `/contact`           | Contact hub with all sections                | No            |
 | `/getting-technical` | Coming soon page for technical documentation | No            |
 
 ## Page Sections
@@ -26,11 +26,11 @@ Allows authenticated users to request players that are missing from the database
 
 **Fields:**
 
-| Field            | Type   | Validation       | Description                    |
-| ---------------- | ------ | ---------------- | ------------------------------ |
-| `firstName`      | string | min 1, max 50    | Player's first name            |
-| `lastName`       | string | min 1, max 50    | Player's last name             |
-| `suggestedValue` | number | min 1, max 5     | Suggested cost tier ($1-$5)    |
+| Field            | Type   | Validation    | Description                 |
+| ---------------- | ------ | ------------- | --------------------------- |
+| `firstName`      | string | min 1, max 50 | Player's first name         |
+| `lastName`       | string | min 1, max 50 | Player's last name          |
+| `suggestedValue` | number | min 1, max 5  | Suggested cost tier ($1-$5) |
 
 **Behavior:**
 
@@ -47,12 +47,12 @@ Allows anyone (authenticated or not) to submit feedback about the app. Feedback 
 
 **Fields:**
 
-| Field     | Type   | Validation        | Description               |
-| --------- | ------ | ----------------- | ------------------------- |
-| `name`    | string | min 1, max 100    | Submitter's name          |
-| `email`   | string | valid email, max 255 | Submitter's email      |
-| `subject` | string | min 1, max 200    | Feedback subject          |
-| `message` | string | min 1, max 2000   | Feedback message body     |
+| Field     | Type   | Validation           | Description           |
+| --------- | ------ | -------------------- | --------------------- |
+| `name`    | string | min 1, max 100       | Submitter's name      |
+| `email`   | string | valid email, max 255 | Submitter's email     |
+| `subject` | string | min 1, max 200       | Feedback subject      |
+| `message` | string | min 1, max 2000      | Feedback message body |
 
 **Behavior:**
 
@@ -69,11 +69,11 @@ Allows anyone (authenticated or not) to submit feedback about the app. Feedback 
 
 Static section with links to the developer's profiles:
 
-| Link      | URL                                              |
-| --------- | ------------------------------------------------ |
-| GitHub    | https://github.com/cassius2828                   |
-| LinkedIn  | https://www.linkedin.com/in/cassius-reynolds/    |
-| Email     | mailto:cassius.reynolds.dev@gmail.com            |
+| Link     | URL                                           |
+| -------- | --------------------------------------------- |
+| GitHub   | https://github.com/cassius2828                |
+| LinkedIn | https://www.linkedin.com/in/cassius-reynolds/ |
+| Email    | mailto:cassius.reynolds.dev@gmail.com         |
 
 Also includes a highlighted "Getting Technical" card that links to `/getting-technical`.
 
@@ -86,10 +86,10 @@ Located at `src/server/models/feedback.ts`:
 ```typescript
 interface Feedback {
   id: string;
-  name: string;         // Submitter's name
-  email: string;        // Submitter's email
-  subject: string;      // Feedback subject
-  message: string;      // Feedback body (max 2000 chars)
+  name: string; // Submitter's name
+  email: string; // Submitter's email
+  subject: string; // Feedback subject
+  message: string; // Feedback body (max 2000 chars)
   status: FeedbackStatus; // "new" | "read" | "resolved"
   createdAt: Date;
   updatedAt: Date;
@@ -129,8 +129,8 @@ Submit feedback. Saves to database and sends email notification.
 
 ```typescript
 {
-  name: string;    // min 1, max 100
-  email: string;   // valid email, max 255
+  name: string; // min 1, max 100
+  email: string; // valid email, max 255
   subject: string; // min 1, max 200
   message: string; // min 1, max 2000
 }

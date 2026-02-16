@@ -16,11 +16,11 @@
 
 ## Current state (implemented)
 
-| Entity      | Signals for popularity                          |
-| ----------- | ----------------------------------------------- |
-| **Lineup**  | `avgRating`, `ratingCount` only (no votes)      |
-| **Comment** | `totalVotes` (upvote/downvote)                  |
-| **Thread**  | `totalVotes` (upvote/downvote)                  |
+| Entity      | Signals for popularity                     |
+| ----------- | ------------------------------------------ |
+| **Lineup**  | `avgRating`, `ratingCount` only (no votes) |
+| **Comment** | `totalVotes` (upvote/downvote)             |
+| **Thread**  | `totalVotes` (upvote/downvote)             |
 
 ## UX (current)
 
@@ -116,4 +116,3 @@ In short: lineup vote procedures and `totalVotes` were removed; lineup cards and
 | Explore/lists | Remove vote mutation and user vote state; update sort to “Most rated”.                         |
 | Types/helpers | Keep comment/thread vote logic; remove lineup-only vote usage.                                 |
 | Docs/tests    | Update lineup and API docs; adjust tests.                                                      |
-

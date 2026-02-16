@@ -29,6 +29,7 @@ const { data: comments } = api.lineup.getCommentsByLineup.useQuery(queryInput);
 
 For comments/threads you’ll have something like `{ lineupId, ... }` or `{ threadId, ... }` as the list query input.
 Use a stable `queryInput` that matches how you fetch the list (e.g. `{ lineupId }` for comments, `{ threadId }` for replies).
+
 ---
 
 ## 2. Client-side vote map

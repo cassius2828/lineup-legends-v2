@@ -79,7 +79,9 @@ Each player can only be used once per lineup:
 const playerIds = [pgId, sgId, sfId, pfId, cId];
 const uniqueIds = new Set(playerIds);
 if (uniqueIds.size !== playerIds.length) {
-  throw new Error("Duplicate players found. Each position must have a unique player.");
+  throw new Error(
+    "Duplicate players found. Each position must have a unique player.",
+  );
 }
 ```
 
@@ -245,8 +247,8 @@ Displays a complete lineup with all 5 players:
 ```tsx
 <LineupCard
   lineup={lineup}
-  showOwner={true}        // Show owner info (for explore page)
-  isOwner={false}         // Enable owner actions
+  showOwner={true} // Show owner info (for explore page)
+  isOwner={false} // Enable owner actions
   onDelete={handleDelete} // Delete callback
   onToggleFeatured={handleToggle}
 />
@@ -291,5 +293,3 @@ The lineup feature is designed to support future additions:
 - **Comments**: Discuss lineups with other users (comments and thread replies use upvote/downvote for discussion quality)
 
 Lineup **popularity is ratings-only**: we intentionally do not use upvote/downvote for lineups because ratings (avg + count) provide a clearer signal. See [Lineup popularity: ratings only](./lineup-ratings-vs-votes-proposal.md).
-
-

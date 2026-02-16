@@ -7,6 +7,12 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
   return (
     <div className="hidden items-center gap-6 md:flex">
       <Link
+        href="/players"
+        className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
+      >
+        Players
+      </Link>
+      <Link
         href="/lineups/new"
         className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
       >
