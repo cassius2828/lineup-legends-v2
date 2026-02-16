@@ -32,7 +32,7 @@ const OrderLIneup = ({
   filledSlots: number;
 }) => {
   return (
-    <div className="flex flex-col items-center lg:ml-8">
+    <div className="flex flex-col items-center ml-8">
       {/* Selected Players with Position Labels - Horizontal */}
       <div className="mb-4 flex justify-center gap-2">
         {POSITIONS.map((position) => (

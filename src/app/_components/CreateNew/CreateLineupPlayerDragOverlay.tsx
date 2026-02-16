@@ -1,10 +1,22 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import type { PlayerType } from "~/lib/types";
+import { getId } from "~/lib/types";
+
+const FALLBACK_PLAYER_IMAGE = "/default-user.jpg";
 
 const CreateLineupPlayerDragOverlay = ({
   activePlayer,
 }: {
   activePlayer: PlayerType;
 }) => {
+  const playerId = getId(activePlayer);
+  const [realImageLoaded, setRealImageLoaded] = useState(false);
+  useEffect(() => {
+    setRealImageLoaded(false);
+  }, [playerId]);
+
   return (
     <div className="relative flex w-[4.5rem] flex-col items-center opacity-90">
       <div
@@ -20,12 +32,27 @@ const CreateLineupPlayerDragOverlay = ({
                   : "shadow-[0px_0px_20px_5px_#804a14]"
         }`}
       >
-        {/*  eslint-disable-next-line @next/next/no-img-element */}
+        {/* Default: visible while the real image loads */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={activePlayer.imgUrl}
-          alt={`${activePlayer.firstName} ${activePlayer.lastName}`}
+          src={FALLBACK_PLAYER_IMAGE}
+          alt=""
+          aria-hidden
           className="absolute inset-0 h-full w-full object-cover"
         />
+        {/* Real image: fades in when loaded */}
+        {activePlayer.imgUrl ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+              src={activePlayer.imgUrl}
+              alt={`${activePlayer.firstName} ${activePlayer.lastName}`}
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${
+                realImageLoaded ? "opacity-100" : "opacity-0"
+              }`}
+              onLoad={() => setRealImageLoaded(true)}
+              onError={() => setRealImageLoaded(false)}
+            />
+        ) : null}
       </div>
       <div className="mt-1 h-10 text-center">
         <p className="text-xs font-medium text-white drop-shadow-lg">

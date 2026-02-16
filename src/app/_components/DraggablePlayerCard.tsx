@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { PlayerType } from "~/lib/types";
@@ -11,6 +12,8 @@ interface DraggablePlayerCardProps {
   disabled?: boolean;
   onSelect?: (player: PlayerType) => void;
 }
+
+const FALLBACK_PLAYER_IMAGE = "/default-user.jpg";
 
 // Value-based box-shadow glow colors matching original design
 const valueShadows: Record<number, string> = {
@@ -33,6 +36,12 @@ export function DraggablePlayerCard({
       data: { player },
       disabled: disabled && !selected,
     });
+
+  const playerId = getId(player);
+  const [realImageLoaded, setRealImageLoaded] = useState(false);
+  useEffect(() => {
+    setRealImageLoaded(false);
+  }, [playerId]);
 
   const style = {
     transform: CSS.Translate.toString(transform),
@@ -72,12 +81,29 @@ export function DraggablePlayerCard({
               : "cursor-grab hover:scale-105 active:cursor-grabbing"
         }`}
       >
+        {/* Default image: always visible so it shows while the real image loads */}
         <img
-          src={player.imgUrl}
-          alt={`${player.firstName} ${player.lastName}`}
+          src={FALLBACK_PLAYER_IMAGE}
+          alt=""
+          aria-hidden
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           draggable={false}
         />
+        {/* Real image: fades in when loaded, or stays hidden on error */}
+        {player.imgUrl ? (
+          <img
+            src={player.imgUrl}
+            alt={`${player.firstName} ${player.lastName}`}
+            className={`pointer-events-none absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${
+              realImageLoaded ? "opacity-100" : "opacity-0"
+            }`}
+            draggable={false}
+            onLoad={() => setRealImageLoaded(true)}
+            onError={() => {
+              setRealImageLoaded(false);
+            }}
+          />
+        ) : null}
         {/* Selected Indicator Overlay */}
         {selected && !isDragging && (
           <div className="absolute inset-0 flex items-center justify-center bg-emerald-600/30">

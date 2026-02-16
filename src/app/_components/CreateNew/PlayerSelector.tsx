@@ -220,7 +220,7 @@ export function PlayerSelector({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-center lg:gap-20">
+      <div className="flex flex-col gap-4 lg:flex-row items-center lg:justify-center lg:gap-20">
         {/* Left Container - Player Grid */}
         <div className="flex-shrink-0">
           {/* Header with Title and Budget */}
