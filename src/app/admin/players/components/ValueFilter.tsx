@@ -12,7 +12,7 @@ const ValueFilter = ({
         className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
           valueFilter === null
             ? "bg-gold text-black"
-            : "bg-white/10 text-white hover:bg-white/20"
+            : "bg-foreground/10 text-foreground hover:bg-foreground/20"
         }`}
       >
         All
@@ -24,7 +24,7 @@ const ValueFilter = ({
           className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
             valueFilter === value
               ? "bg-gold text-black"
-              : "bg-white/10 text-white hover:bg-white/20"
+              : "bg-foreground/10 text-foreground hover:bg-foreground/20"
           }`}
         >
           ${value}

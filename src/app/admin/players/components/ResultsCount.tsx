@@ -11,7 +11,7 @@ const ResultsCount = ({
 }) => {
   return (
     <div className="mb-4">
-      <p className="text-sm text-white/60">
+      <p className="text-sm text-foreground/60">
         {isAllPlayersLoading
           ? "Searching..."
           : `Found ${isInitialRender ? 10 : (filteredPlayers?.length ?? 0)} players`}

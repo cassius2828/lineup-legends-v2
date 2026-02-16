@@ -14,7 +14,7 @@ export default async function Home() {
   const session = await auth();
 
   return (
-    <main className="min-h-screen bg-slate-900">
+    <main className="min-h-screen bg-surface-950">
       <HeroSection isAuthenticated={!!session} />
       <WelcomeSection />
       <RatingSection />

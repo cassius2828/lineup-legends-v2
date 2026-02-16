@@ -8,12 +8,12 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { RequestedPlayer, User } from "~/server/models";
+import { RequestedPlayerModel, UserModel } from "~/server/models";
 
 export const requestedPlayerRouter = createTRPCRouter({
   // Get all requested players with description counts
   getAll: publicProcedure.query(async () => {
-    const requestedPlayers = await RequestedPlayer.find()
+    const requestedPlayers = await RequestedPlayerModel.find()
       .sort({ updatedAt: -1 })
       .lean();
 
@@ -28,7 +28,9 @@ export const requestedPlayerRouter = createTRPCRouter({
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const requestedPlayer = await RequestedPlayer.findById(input.id).lean();
+      const requestedPlayer = await RequestedPlayerModel.findById(
+        input.id,
+      ).lean();
 
       if (!requestedPlayer) {
         throw new TRPCError({
@@ -39,7 +41,7 @@ export const requestedPlayerRouter = createTRPCRouter({
 
       // Populate user info for each description
       const userIds = requestedPlayer.descriptions.map((d) => d.userId);
-      const users = await User.find({ _id: { $in: userIds } }).lean();
+      const users = await UserModel.find({ _id: { $in: userIds } }).lean();
       const userMap = new Map(users.map((u) => [u._id.toHexString(), u]));
 
       const descriptionsWithUsers = requestedPlayer.descriptions.map((d) => {
@@ -80,7 +82,7 @@ export const requestedPlayerRouter = createTRPCRouter({
       const userId = new mongoose.Types.ObjectId(ctx.session.user.id);
 
       // Upsert: find by name or create, then push description
-      const result = await RequestedPlayer.findOneAndUpdate(
+      const result = await RequestedPlayerModel.findOneAndUpdate(
         {
           firstName: { $regex: new RegExp(`^${firstName}$`, "i") },
           lastName: { $regex: new RegExp(`^${lastName}$`, "i") },
@@ -109,7 +111,7 @@ export const requestedPlayerRouter = createTRPCRouter({
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      const requestedPlayer = await RequestedPlayer.findById(input.id);
+      const requestedPlayer = await RequestedPlayerModel.findById(input.id);
 
       if (!requestedPlayer) {
         throw new TRPCError({
@@ -118,7 +120,7 @@ export const requestedPlayerRouter = createTRPCRouter({
         });
       }
 
-      await RequestedPlayer.findByIdAndDelete(input.id);
+      await RequestedPlayerModel.findByIdAndDelete(input.id);
 
       return { success: true, id: input.id };
     }),

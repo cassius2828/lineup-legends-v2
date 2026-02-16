@@ -83,43 +83,43 @@ export default function PlayerImagesTestPage() {
 
   if (isLoading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-900">
+      <main className="flex min-h-screen items-center justify-center bg-surface-950">
         <div className="text-center">
-          <div className="border-t-gold mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20" />
-          <p className="text-white/60">Loading players...</p>
+          <div className="border-t-gold mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-foreground/20" />
+          <p className="text-foreground/60">Loading players...</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-900 p-8">
+    <main className="min-h-screen bg-surface-950 p-8">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white">
+          <h1 className="text-3xl font-bold text-foreground">
             Player Images Test Page
           </h1>
-          <p className="mt-2 text-white/60">
+          <p className="mt-2 text-foreground/60">
             Testing all player images from the database
           </p>
         </div>
 
         {/* Stats */}
         <div className="mb-8 flex flex-wrap gap-4">
-          <div className="rounded-lg bg-white/10 px-6 py-4">
-            <p className="text-sm text-white/60">Total Players</p>
-            <p className="text-2xl font-bold text-white">{totalPlayers}</p>
+          <div className="rounded-lg bg-foreground/10 px-6 py-4">
+            <p className="text-sm text-foreground/60">Total Players</p>
+            <p className="text-2xl font-bold text-foreground">{totalPlayers}</p>
           </div>
-          <div className="rounded-lg bg-white/10 px-6 py-4">
-            <p className="text-sm text-white/60">Processed</p>
-            <p className="text-2xl font-bold text-white">
+          <div className="rounded-lg bg-foreground/10 px-6 py-4">
+            <p className="text-sm text-foreground/60">Processed</p>
+            <p className="text-2xl font-bold text-foreground">
               {processedCount} / {totalPlayers}
             </p>
           </div>
-          <div className="rounded-lg bg-emerald-600/20 px-6 py-4">
-            <p className="text-sm text-emerald-400">Loaded Successfully</p>
-            <p className="text-2xl font-bold text-emerald-400">{loadedCount}</p>
+          <div className="rounded-lg bg-gold-600/20 px-6 py-4">
+            <p className="text-sm text-gold-300">Loaded Successfully</p>
+            <p className="text-2xl font-bold text-gold-300">{loadedCount}</p>
           </div>
           <div className="rounded-lg bg-red-600/20 px-6 py-4">
             <p className="text-sm text-red-400">Broken Images</p>
@@ -143,7 +143,7 @@ export default function PlayerImagesTestPage() {
                 : `Generate Report (${brokenImages.length} broken)`}
           </button>
           {reportGenerated && (
-            <p className="mt-2 text-sm text-emerald-400">
+            <p className="mt-2 text-sm text-gold-300">
               Report saved to docs/broken-player-images.md
             </p>
           )}
@@ -156,9 +156,9 @@ export default function PlayerImagesTestPage() {
               Broken Images ({brokenImages.length})
             </h2>
             <div className="max-h-64 overflow-y-auto rounded-lg bg-red-900/20 p-4">
-              <table className="w-full text-sm text-white">
+              <table className="w-full text-sm text-foreground">
                 <thead>
-                  <tr className="border-b border-white/20">
+                  <tr className="border-b border-foreground/20">
                     <th className="pb-2 text-left">Player Name</th>
                     <th className="pb-2 text-left">Value</th>
                     <th className="pb-2 text-left">URL</th>
@@ -166,10 +166,10 @@ export default function PlayerImagesTestPage() {
                 </thead>
                 <tbody>
                   {brokenImages.map((img, idx) => (
-                    <tr key={idx} className="border-b border-white/10">
+                    <tr key={idx} className="border-b border-foreground/10">
                       <td className="py-2">{img.name}</td>
                       <td className="py-2">${img.value}</td>
-                      <td className="max-w-xs truncate py-2 text-white/60">
+                      <td className="max-w-xs truncate py-2 text-foreground/60">
                         {img.url}
                       </td>
                     </tr>
@@ -181,7 +181,7 @@ export default function PlayerImagesTestPage() {
         )}
 
         {/* Image Grid */}
-        <h2 className="mb-4 text-xl font-semibold text-white">
+        <h2 className="mb-4 text-xl font-semibold text-foreground">
           All Players ({totalPlayers})
         </h2>
         <div className="grid grid-cols-5 gap-4 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">

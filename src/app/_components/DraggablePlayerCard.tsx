@@ -4,6 +4,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { PlayerType } from "~/lib/types";
 import { getId } from "~/lib/types";
+import { PlayerImage } from "./PlayerImage";
 
 interface DraggablePlayerCardProps {
   player: PlayerType;
@@ -62,9 +63,9 @@ export function DraggablePlayerCard({
     >
       {/* Player Cell - Square with off-white background and value-based glow */}
       <div
-        className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden bg-[#f2f2f2] transition-all duration-200 ${
+        className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden bg-[#f2f2f2] transition-all duration-200 rounded-md ${
           valueShadows[player.value]
-        } ${selected ? "ring-2 ring-emerald-400" : ""} ${
+        } ${selected ? "ring-2 ring-gold-300" : ""} ${
           isDragging
             ? "scale-105 opacity-50 shadow-2xl"
             : disabled && !selected
@@ -72,17 +73,16 @@ export function DraggablePlayerCard({
               : "cursor-grab hover:scale-105 active:cursor-grabbing"
         }`}
       >
-        <img
-          src={player.imgUrl}
+        <PlayerImage
+          imgUrl={player.imgUrl}
           alt={`${player.firstName} ${player.lastName}`}
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
-          draggable={false}
         />
         {/* Selected Indicator Overlay */}
         {selected && !isDragging && (
-          <div className="absolute inset-0 flex items-center justify-center bg-emerald-600/30">
+          <div className="absolute inset-0 flex items-center justify-center bg-gold-600/30">
             <svg
-              className="h-6 w-6 text-emerald-400"
+              className="h-6 w-6 text-gold-300"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -98,10 +98,10 @@ export function DraggablePlayerCard({
 
       {/* Player Name - Below the cell */}
       <div className="mt-1 h-10 text-center">
-        <p className="text-xs font-medium text-white">
+        <p className="text-xs font-medium text-foreground">
           {player.firstName.length < 9 ? player.firstName : ""}
         </p>
-        <p className="text-xs text-white/80">
+        <p className="text-xs text-foreground/80">
           {player.lastName.length < 9 ? player.lastName : ""}
         </p>
       </div>

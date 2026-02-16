@@ -1,119 +1,95 @@
 import { z } from "zod";
+import mongoose from "mongoose";
+import { lineupPopulateFields } from "~/lib/utils";
 
 import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { User, Lineup, type ILineup } from "~/server/models";
-import type { Document, Types } from "mongoose";
-
-// Population fields for lineup queries
-const lineupPopulateFields = [
-  { path: "pgId", model: "Player" },
-  { path: "sgId", model: "Player" },
-  { path: "sfId", model: "Player" },
-  { path: "pfId", model: "Player" },
-  { path: "cId", model: "Player" },
-  { path: "ownerId", model: "User" },
-];
-
-// Type for lineup plain object after toObject()
-interface LineupObject {
-  _id?: Types.ObjectId;
-  id?: string;
-  pgId: unknown;
-  sgId: unknown;
-  sfId: unknown;
-  pfId: unknown;
-  cId: unknown;
-  ownerId: unknown;
-  createdAt: Date;
-  updatedAt: Date;
-  featured: boolean;
-  totalVotes: number;
-  avgRating: number;
-  timesGambled: number;
-}
-
-// Helper to transform lineup for API response
-function transformLineup(lineup: (Document & ILineup) | null) {
-  if (!lineup) return null;
-  const obj = lineup.toObject() as LineupObject;
-  return {
-    ...obj,
-    id: obj._id?.toString() ?? obj.id,
-    pg: obj.pgId,
-    sg: obj.sgId,
-    sf: obj.sfId,
-    pf: obj.pfId,
-    c: obj.cId,
-    owner: obj.ownerId,
-  };
-}
+import { LineupModel, UserModel } from "~/server/models";
 
 export const profileRouter = createTRPCRouter({
-  // Get a user's profile by ID
+  // Get a user's profile by ID (includes lineups + stats)
   getById: publicProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
-      const user = await User.findById(input.userId)
+      const user = await UserModel.findById(input.userId)
         .select(
-          "name username image bio profileImg bannerImg socialMedia friends",
+          "name username image bio profileImg bannerImg socialMedia followerCount followingCount",
         )
-        .populate("friends", "username name profileImg")
         .lean();
 
       if (!user) return null;
 
-      // Get user's lineups (limited to 6)
-      const lineups = await Lineup.find({ ownerId: input.userId })
-        .sort({ createdAt: -1 })
-        .limit(6)
-        .populate([
-          { path: "pgId", model: "Player" },
-          { path: "sgId", model: "Player" },
-          { path: "sfId", model: "Player" },
-          { path: "pfId", model: "Player" },
-          { path: "cId", model: "Player" },
+      const ownerId = new mongoose.Types.ObjectId(input.userId);
+
+      // Run lineup queries and stats aggregation in parallel
+      const [lineups, totalLineups, statsAgg, featuredLineups] =
+        await Promise.all([
+          LineupModel.find({ owner: ownerId })
+            .sort({ createdAt: -1 })
+            .limit(6)
+            .populate(lineupPopulateFields)
+            .lean(),
+
+          LineupModel.countDocuments({ owner: ownerId }),
+
+          LineupModel.aggregate([
+            { $match: { owner: ownerId } },
+            {
+              $group: {
+                _id: null,
+                avgRating: { $avg: "$avgRating" },
+                highestRating: { $max: "$avgRating" },
+              },
+            },
+          ]),
+
+          LineupModel.find({ owner: ownerId, featured: true })
+            .limit(3)
+            .populate(lineupPopulateFields)
+            .lean(),
         ]);
 
-      // Get total lineup count
-      const lineupCount = await Lineup.countDocuments({
-        ownerId: input.userId,
-      });
+      // Get the highest rated lineup separately (need full doc)
+      const aggResult = statsAgg[0] as
+        | { avgRating: number; highestRating: number }
+        | undefined;
 
-      // Transform lineups
-      const transformedLineups = lineups.map((lineup) => {
-        const obj = lineup.toObject();
-        return {
-          ...obj,
-          id: obj._id?.toString(),
-          pg: obj.pgId,
-          sg: obj.sgId,
-          sf: obj.sfId,
-          pf: obj.pfId,
-          c: obj.cId,
-        };
-      });
+      let highestRatedLineup = null;
+      if (aggResult?.highestRating && aggResult.highestRating > 0) {
+        highestRatedLineup = await LineupModel.findOne({
+          owner: ownerId,
+          avgRating: aggResult.highestRating,
+        })
+          .populate(lineupPopulateFields)
+          .lean();
+      }
 
       return {
         ...user,
         id: user._id?.toString(),
-        lineups: transformedLineups,
+        lineups,
+        featuredLineups,
+        stats: {
+          totalLineups,
+          avgRating: Math.round((aggResult?.avgRating ?? 0) * 100) / 100,
+          highestRatedLineup,
+          featuredCount: featuredLineups.length,
+        },
         _count: {
-          lineups: lineupCount,
+          lineups: totalLineups,
         },
       };
     }),
 
   // Get current user's profile
   getMe: protectedProcedure.query(async ({ ctx }) => {
-    const user = await User.findById(ctx.session.user.id)
+    const user = await UserModel.findById(ctx.session.user.id)
       .select(
-        "name username email image bio profileImg bannerImg socialMedia friends",
+        "name username email image bio profileImg bannerImg socialMedia followerCount followingCount",
       )
-      .populate("friends", "username name profileImg")
       .lean();
 
     if (!user) return null;
@@ -144,7 +120,9 @@ export const profileRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       // Check if username is taken by another user
       if (input.username) {
-        const existingUser = await User.findOne({ username: input.username });
+        const existingUser = await UserModel.findOne({
+          username: input.username,
+        });
 
         if (
           existingUser &&
@@ -173,26 +151,25 @@ export const profileRouter = createTRPCRouter({
       if (input.socialMedia !== undefined)
         updateData.socialMedia = input.socialMedia;
 
-      const updatedUser = await User.findByIdAndUpdate(
+      const updatedUser = await UserModel.findByIdAndUpdate(
         ctx.session.user.id,
         updateData,
         { new: true },
       );
 
-      return updatedUser ? updatedUser.toObject() : null;
+      return updatedUser ?? null;
     }),
 
   // Get featured lineups for a user
   getFeaturedLineups: publicProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
-      const lineups = await Lineup.find({
-        ownerId: input.userId,
+      return await LineupModel.find({
+        owner: input.userId,
         featured: true,
       })
         .limit(3)
-        .populate(lineupPopulateFields);
-
-      return lineups.map(transformLineup);
+        .populate(lineupPopulateFields)
+        .lean();
     }),
 });

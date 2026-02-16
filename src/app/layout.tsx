@@ -2,10 +2,15 @@ import "~/styles/globals.css";
 
 import { type Metadata } from "next";
 import { Geist, Stick_No_Bills } from "next/font/google";
+import { Toaster } from "sonner";
 
+import { TooltipProvider } from "~/components/ui/tooltip";
 import { TRPCReactProvider } from "~/trpc/react";
 import Nav from "./_components/Nav";
 import { Footer } from "./_components/landing";
+import { SessionProvider } from "next-auth/react";
+import { ThemeProvider } from "next-themes";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Lineup Legends",
@@ -28,14 +33,25 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${stickNoBills.variable}`}>
+    <html lang="en" className={`${geist.variable} ${stickNoBills.variable}`} suppressHydrationWarning>
       <body>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
         <TRPCReactProvider>
-          <Nav />
-          <div className="mb-24 md:mb-16"></div>
-          {children}
-          <Footer />
+          <SessionProvider>
+            <TooltipProvider>
+              <div id="global-nav">
+                <Nav />
+              </div>
+              <div id="global-nav-spacer" className="mb-24 md:mb-16"></div>
+              <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+              <div id="global-footer">
+                <Footer />
+              </div>
+              <Toaster richColors position="top-center" />
+            </TooltipProvider>
+          </SessionProvider>
         </TRPCReactProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

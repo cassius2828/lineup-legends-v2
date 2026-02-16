@@ -35,8 +35,7 @@ const SessionSchema = new Schema<SessionDoc>(
 SessionSchema.virtual("id").get(function (this: SessionDoc) {
   return this._id.toHexString();
 });
-// add indexes
-SessionSchema.index({ sessionToken: 1 }, { unique: true });
+// add indexes (sessionToken index already created via `unique: true` in field def)
 SessionSchema.index({ user: 1 });
 SessionSchema.index({ expires: 1 });
 // Ensure virtuals are included in JSON output

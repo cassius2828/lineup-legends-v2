@@ -2,14 +2,16 @@
 // These types match the Mongoose models and are used across the frontend
 // Note: id and _id are both optional because Mongoose returns _id but we transform to id
 
-import type { IPlayer } from "~/server/models";
 import type mongoose from "mongoose";
 
 type ObjectIdLike = string | { toString(): string };
 
+// Type for fields that can be either an ObjectId or a populated object with _id
+type WithId = { _id?: ObjectIdLike; id?: string };
+
 export type PopulatableField =
   | mongoose.Types.ObjectId
-  | IPlayer
+  | WithId
   | string
   | null
   | undefined;
@@ -41,15 +43,18 @@ export interface LineupType {
   createdAt: Date;
   updatedAt: Date;
   featured: boolean;
-  pg: PlayerType;
-  sg: PlayerType;
-  sf: PlayerType;
-  pf: PlayerType;
-  c: PlayerType;
+  players: {
+    pg: PlayerType;
+    sg: PlayerType;
+    sf: PlayerType;
+    pf: PlayerType;
+    c: PlayerType;
+  };
   owner: UserType;
   totalVotes: number;
   avgRating: number;
   timesGambled: number;
+  ratingCount: number;
 }
 
 export interface VoteType {

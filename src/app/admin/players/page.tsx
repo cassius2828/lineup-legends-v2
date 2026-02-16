@@ -79,71 +79,60 @@ export default function AdminPlayersPage() {
     searchQuery.length > 0;
 
   return (
-    <main className="min-h-screen bg-[#0a0a1a] p-8">
-      <div className="mx-auto max-w-6xl">
-        {/* Header */}
-        <Header />
+    <div>
+      <Header />
 
-        {/* Search and Filter Controls */}
-        <div className="mb-8 flex flex-wrap gap-4">
-          {/* Search Input */}
-          <div className="flex-1">
-            <SearchInput
-              placeholder="Search by player name..."
-              value={searchQuery}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setSearchQuery(e.target.value)
-              }
-            />
-          </div>
-
-          {/* Value Filter */}
-          <ValueFilter
-            valueFilter={valueFilter}
-            setValueFilter={setValueFilter}
+      <div className="mb-8 flex flex-wrap gap-4">
+        <div className="flex-1">
+          <SearchInput
+            placeholder="Search by player name..."
+            value={searchQuery}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setSearchQuery(e.target.value)
+            }
           />
         </div>
 
-        {/* Results Count */}
-        <ResultsCount
-          isAllPlayersLoading={isAllPlayersLoading}
-          isInitialRender={isInitialRender}
-          filteredPlayers={filteredPlayers ?? []}
-        />
-
-        {/* Player Grid */}
-        {isAllPlayersLoading ? (
-          <GoldCirlceSpinnerLoader />
-        ) : (
-          <SearchResults filteredPlayers={filteredPlayers ?? []} />
-        )}
-        {/* initial render -- only show first 10 players */}
-        {isInitialRender && (
-          <DefaultPlayersOnInitialRender
-            allPlayersData={allPlayersData ?? []}
-          />
-        )}
-
-        {/* No Results */}
-        {ifNoResults && <NoResults />}
-
-        {/* Can't Find Player Section */}
-        <CantFindPlayerSection
-          showRequestForm={showRequestForm}
-          setShowRequestForm={setShowRequestForm}
-          requestSuccess={requestSuccess}
-          requestError={requestError}
-          requestFirstName={requestFirstName}
-          setRequestFirstName={setRequestFirstName}
-          requestLastName={requestLastName}
-          setRequestLastName={setRequestLastName}
-          requestValue={requestValue}
-          setRequestValue={setRequestValue}
-          createRequest={createRequest}
-          handleRequestSubmit={handleRequestSubmit}
-          setRequestError={setRequestError}
+        <ValueFilter
+          valueFilter={valueFilter}
+          setValueFilter={setValueFilter}
         />
       </div>
-    </main>
+
+      <ResultsCount
+        isAllPlayersLoading={isAllPlayersLoading}
+        isInitialRender={isInitialRender}
+        filteredPlayers={filteredPlayers ?? []}
+      />
+
+      {isAllPlayersLoading ? (
+        <GoldCirlceSpinnerLoader />
+      ) : (
+        <SearchResults filteredPlayers={filteredPlayers ?? []} />
+      )}
+      {isInitialRender && (
+        <DefaultPlayersOnInitialRender
+          allPlayersData={allPlayersData ?? []}
+        />
+      )}
+
+      {ifNoResults && <NoResults />}
+
+      <CantFindPlayerSection
+        showRequestForm={showRequestForm}
+        setShowRequestForm={setShowRequestForm}
+        requestSuccess={requestSuccess}
+        requestError={requestError}
+        requestFirstName={requestFirstName}
+        setRequestFirstName={setRequestFirstName}
+        requestLastName={requestLastName}
+        setRequestLastName={setRequestLastName}
+        requestValue={requestValue}
+        setRequestValue={setRequestValue}
+        createRequest={createRequest}
+        handleRequestSubmit={handleRequestSubmit}
+        setRequestError={setRequestError}
+      />
+    </div>
   );
 }

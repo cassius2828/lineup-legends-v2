@@ -1,6 +1,9 @@
 import mongoose from "mongoose";
 import { MongoClient } from "mongodb";
 import { env } from "~/env";
+import { logger } from "~/lib/logger";
+
+const log = logger.child({ module: "db" });
 
 const MONGODB_URI = env.MONGODB_URI;
 
@@ -44,9 +47,7 @@ export async function connectDB(): Promise<typeof mongoose> {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      if (env.NODE_ENV === "development") {
-        console.log("Connected to MongoDB via Mongoose");
-      }
+      log.info("Connected to MongoDB via Mongoose");
       return mongoose;
     });
   }

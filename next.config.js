@@ -21,6 +21,9 @@ const config = {
     // This allows the build to succeed during Prisma to Mongoose migration
     ignoreDuringBuilds: true,
   },
+  reactCompiler: true,
+  // Prevent Next.js from bundling pino's worker threads (used by pino-pretty transport)
+  serverExternalPackages: ["pino", "pino-pretty"],
 };
 
 export default config;

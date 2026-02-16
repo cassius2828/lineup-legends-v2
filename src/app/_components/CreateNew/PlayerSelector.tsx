@@ -1,18 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import {
   DndContext,
   DragOverlay,
   PointerSensor,
   useSensor,
   useSensors,
-  type DragStartEvent,
   type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
-import { type PlayerType, getId } from "~/lib/types";
-import { DraggablePlayerCard } from "./DraggablePlayerCard";
-import { DroppablePositionSlot } from "./DroppablePositionSlot";
+import { useState } from "react";
+import { getId, type PlayerType } from "~/lib/types";
+import CreateLineupHeader from "../Header/CreateLineupHeader";
+import OrderLIneup from "./OrderLIneup";
+import PlayerGrid from "./PlayerGrid";
+import CreateLineupPlayerDragOverlay from "./CreateLineupPlayerDragOverlay";
 
 interface PlayersByValue {
   value1Players: PlayerType[];
@@ -218,130 +220,42 @@ export function PlayerSelector({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-center">
+      <div className="flex flex-col gap-4 lg:flex-row items-center lg:justify-center lg:gap-20">
         {/* Left Container - Player Grid */}
         <div className="flex-shrink-0">
           {/* Header with Title and Budget */}
-          <header className="mb-4 flex flex-col items-center justify-center">
-            <h1 className="text-2xl font-bold tracking-wide text-white uppercase">
-              Build Your Starting 5
-            </h1>
-            <span
-              className={`mt-1 text-3xl font-bold transition-colors duration-200 ${
-                remainingBudget < 3
-                  ? "text-red-400"
-                  : remainingBudget < 6
-                    ? "text-gold"
-                    : "text-white"
-              }`}
-            >
-              ${remainingBudget}
-            </span>
-            {activePlayer && (
-              <span className="mt-1 animate-pulse text-sm text-white/60">
-                Drag to a position slot...
-              </span>
-            )}
-          </header>
+          <CreateLineupHeader
+            remainingBudget={remainingBudget}
+            activePlayer={!!activePlayer}
+          />
 
           {/* Player Grid - Rows by Value */}
-          <div className="flex flex-col gap-2">
-            {allPlayers.map(({ label, players }) => (
-              <div key={label} className="flex items-start gap-3">
-                {/* Price Label */}
-                <h2 className="w-8 pt-6 text-right text-xl font-bold text-white">
-                  {label}
-                </h2>
-
-                {/* Players Row - Fixed 5 columns */}
-                <div className="grid grid-cols-5 gap-2">
-                  {players.map((player) => (
-                    <DraggablePlayerCard
-                      key={getId(player)}
-                      player={player}
-                      selected={isPlayerSelected(player)}
-                      onSelect={handlePlayerClick}
-                      disabled={
-                        !canAffordPlayer(player) ||
-                        (filledSlots >= 5 && !isPlayerSelected(player))
-                      }
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
+          <PlayerGrid
+            allPlayers={allPlayers}
+            isPlayerSelected={isPlayerSelected}
+            handlePlayerClick={handlePlayerClick}
+            canAffordPlayer={canAffordPlayer}
+            filledSlots={filledSlots}
+          />
         </div>
 
         {/* Right Container - Selected Players & Buttons */}
-        <div className="flex flex-col items-center lg:ml-8">
-          {/* Selected Players with Position Labels - Horizontal */}
-          <div className="mb-4 flex justify-center gap-2">
-            {POSITIONS.map((position) => (
-              <DroppablePositionSlot
-                key={position}
-                position={position}
-                player={positionSlots[position]}
-                onRemove={handleRemovePlayer}
-                isAnyDragging={activePlayer !== null}
-              />
-            ))}
-          </div>
-
-          {/* Confirm Buttons */}
-          <div className="flex gap-2">
-            <button
-              onClick={handleSubmit}
-              disabled={!canSubmit || isSubmitting}
-              className="bg-gold hover:bg-gold-light rounded-md px-6 py-2 text-sm font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isSubmitting ? "Creating..." : "Confirm Lineup"}
-            </button>
-            <button
-              onClick={clearSelection}
-              disabled={filledSlots === 0}
-              className="bg-gold hover:bg-gold-light rounded-md px-6 py-2 text-sm font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Clear Selection
-            </button>
-          </div>
-        </div>
+        <OrderLIneup
+          positionSlots={positionSlots}
+          handleRemovePlayer={handleRemovePlayer}
+          activePlayer={activePlayer}
+          handleSubmit={handleSubmit}
+          canSubmit={canSubmit}
+          isSubmitting={isSubmitting}
+          clearSelection={clearSelection}
+          filledSlots={filledSlots}
+        />
       </div>
 
       {/* Drag Overlay - Shows the player being dragged */}
       <DragOverlay dropAnimation={null}>
         {activePlayer ? (
-          <div className="relative flex w-[4.5rem] flex-col items-center opacity-90">
-            <div
-              className={`ring-gold relative h-[4.5rem] w-[4.5rem] scale-110 overflow-hidden rounded-lg bg-[#f2f2f2] shadow-2xl ring-2 ${
-                activePlayer.value === 5
-                  ? "shadow-[0px_0px_20px_5px_#99fcff]"
-                  : activePlayer.value === 4
-                    ? "shadow-[0px_0px_20px_5px_#8317e8]"
-                    : activePlayer.value === 3
-                      ? "shadow-[0px_0px_20px_5px_#e3b920]"
-                      : activePlayer.value === 2
-                        ? "shadow-[0px_0px_20px_5px_#c0c0c0]"
-                        : "shadow-[0px_0px_20px_5px_#804a14]"
-              }`}
-            >
-              <img
-                src={activePlayer.imgUrl}
-                alt={`${activePlayer.firstName} ${activePlayer.lastName}`}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
-            </div>
-            <div className="mt-1 h-10 text-center">
-              <p className="text-xs font-medium text-white drop-shadow-lg">
-                {activePlayer.firstName.length < 9
-                  ? activePlayer.firstName
-                  : ""}
-              </p>
-              <p className="text-xs text-white/80 drop-shadow-lg">
-                {activePlayer.lastName.length < 9 ? activePlayer.lastName : ""}
-              </p>
-            </div>
-          </div>
+          <CreateLineupPlayerDragOverlay activePlayer={activePlayer} />
         ) : null}
       </DragOverlay>
     </DndContext>

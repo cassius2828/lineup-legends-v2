@@ -1,8 +1,7 @@
 import mongoose, {
   Schema,
   type Document,
-  type Model,
-  type Types,
+  type Model
 } from "mongoose";
 
 export interface SocialMedia {

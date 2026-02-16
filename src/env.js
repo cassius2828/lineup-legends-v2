@@ -27,6 +27,9 @@ export const env = createEnv({
     AWS_ACCESS_KEY_ID: z.string(),
     AWS_SECRET_ACCESS_KEY: z.string(),
     BUCKET_NAME: z.string(),
+
+    // Resend (email service)
+    RESEND_API_KEY: z.string(),
   },
 
   /**
@@ -58,6 +61,9 @@ export const env = createEnv({
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
     BUCKET_NAME: process.env.BUCKET_NAME,
+
+    // Resend (server-only)
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
 
     // Public (safe for client exposure)
     NEXT_PUBLIC_CLOUDFRONT_URL: process.env.NEXT_PUBLIC_CLOUDFRONT_URL,

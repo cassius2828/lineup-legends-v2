@@ -51,7 +51,7 @@ export function ShareSection() {
       >
         <div className="max-w-xl text-right">
           <motion.h2 
-            className="font-stencil text-4xl uppercase tracking-wide text-white sm:text-5xl lg:text-6xl"
+            className="font-stencil text-4xl uppercase tracking-wide text-foreground sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
             Sharing to
@@ -69,7 +69,7 @@ export function ShareSection() {
           />
 
           <motion.p 
-            className="mt-8 text-lg leading-relaxed text-white/70"
+            className="mt-8 text-lg leading-relaxed text-foreground/70"
             variants={textVariants}
           >
             Showcase your fantasy basketball prowess by sharing your lineups on

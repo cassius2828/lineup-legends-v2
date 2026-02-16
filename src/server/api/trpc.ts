@@ -13,6 +13,9 @@ import { ZodError } from "zod";
 
 import { auth } from "~/server/auth";
 import { connectDB } from "~/server/db";
+import { logger } from "~/lib/logger";
+
+const log = logger.child({ module: "trpc" });
 
 /**
  * 1. CONTEXT
@@ -98,7 +101,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   const result = await next();
 
   const end = Date.now();
-  console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
+  log.info({ path, duration: end - start }, `${path} took ${end - start}ms`);
 
   return result;
 });

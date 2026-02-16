@@ -38,8 +38,8 @@ export function FeaturedSection() {
         }}
       />
       {/* Gradient Overlay with gold tint */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-slate-900" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/60 to-surface-950" />
+      <div className="absolute inset-0 bg-gradient-to-t from-surface-950/90 via-transparent to-transparent" />
 
       {/* Decorative elements */}
       <div className="pointer-events-none absolute left-1/2 top-1/4 h-64 w-64 -translate-x-1/2 rounded-full bg-gold/10 blur-3xl" />
@@ -59,7 +59,7 @@ export function FeaturedSection() {
           <span className="text-gradient-gold">Featured</span>
         </motion.h2>
         <motion.h2 
-          className="font-stencil text-4xl uppercase tracking-wide text-white sm:text-5xl lg:text-7xl"
+          className="font-stencil text-4xl uppercase tracking-wide text-foreground sm:text-5xl lg:text-7xl"
           variants={textVariants}
         >
           Lineups
@@ -71,7 +71,7 @@ export function FeaturedSection() {
         />
 
         <motion.p 
-          className="mt-8 max-w-2xl text-lg leading-relaxed text-white/70"
+          className="mt-8 max-w-2xl text-lg leading-relaxed text-foreground/70"
           variants={textVariants}
         >
           Showcase your fantasy basketball prowess by sharing your lineups on
@@ -86,15 +86,15 @@ export function FeaturedSection() {
         >
           <div className="text-center">
             <p className="font-stencil text-4xl text-gold">500+</p>
-            <p className="mt-1 text-sm uppercase tracking-wide text-white/50">Lineups Created</p>
+            <p className="mt-1 text-sm uppercase tracking-wide text-foreground/50">Lineups Created</p>
           </div>
           <div className="text-center">
             <p className="font-stencil text-4xl text-gold">100+</p>
-            <p className="mt-1 text-sm uppercase tracking-wide text-white/50">Active Users</p>
+            <p className="mt-1 text-sm uppercase tracking-wide text-foreground/50">Active Users</p>
           </div>
           <div className="text-center">
             <p className="font-stencil text-4xl text-gold">50+</p>
-            <p className="mt-1 text-sm uppercase tracking-wide text-white/50">NBA Legends</p>
+            <p className="mt-1 text-sm uppercase tracking-wide text-foreground/50">NBA Legends</p>
           </div>
         </motion.div>
       </motion.div>

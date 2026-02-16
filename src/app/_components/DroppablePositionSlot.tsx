@@ -2,6 +2,7 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import type { PlayerType } from "~/lib/types";
+import { PlayerImage } from "./PlayerImage";
 
 type Position = "PG" | "SG" | "SF" | "PF" | "C";
 
@@ -33,7 +34,7 @@ export function DroppablePositionSlot({
       {/* Position Label */}
       <span
         className={`text-sm font-bold transition-colors duration-200 ${
-          isDraggedOver ? "text-gold" : "text-white/70"
+          isDraggedOver ? "text-gold" : "text-foreground/70"
         }`}
       >
         {position}
@@ -48,23 +49,25 @@ export function DroppablePositionSlot({
             : isValidDropTarget
               ? "border-gold/60 bg-gold/10 scale-105 animate-pulse border-2 border-dashed"
               : player
-                ? "border-2 border-solid border-white/40 bg-white/10"
-                : "border-2 border-dashed border-white/30 bg-white/5"
-        } ${showSwapIndicator ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-[#0a0a1a]" : ""}`}
+                ? "border-2 border-solid border-foreground/40 bg-foreground/10"
+                : "border-2 border-dashed border-foreground/30 bg-foreground/5"
+        } ${showSwapIndicator ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-surface-950" : ""}`}
       >
         {player ? (
           <>
-            <img
-              src={player.imgUrl}
-              alt={player.firstName}
-              className={`h-full w-full rounded-lg object-cover transition-opacity duration-200 ${
-                showSwapIndicator ? "opacity-50" : ""
-              }`}
-            />
+            <div className="absolute inset-0 overflow-hidden rounded-lg">
+              <PlayerImage
+                imgUrl={player.imgUrl}
+                alt={player.firstName}
+                className={`absolute inset-0 h-full w-full rounded-lg object-cover ${
+                  showSwapIndicator ? "opacity-50" : ""
+                }`}
+              />
+            </div>
             {/* Remove Button */}
             <button
               onClick={() => onRemove(player)}
-              className="absolute -top-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-white transition-colors hover:bg-red-500"
+              className="absolute -top-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-foreground transition-colors hover:bg-red-500"
             >
               ×
             </button>
@@ -73,7 +76,7 @@ export function DroppablePositionSlot({
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="rounded-full bg-amber-500 p-1">
                   <svg
-                    className="h-4 w-4 text-white"
+                    className="h-4 w-4 text-foreground"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -112,7 +115,7 @@ export function DroppablePositionSlot({
               </svg>
             ) : (
               <svg
-                className="h-6 w-6 text-white/30"
+                className="h-6 w-6 text-foreground/30"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

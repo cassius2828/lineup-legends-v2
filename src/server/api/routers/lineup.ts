@@ -1,31 +1,38 @@
 import { TRPCError } from "@trpc/server";
 import mongoose, { type SortOrder } from "mongoose";
 import { z } from "zod";
-import {
-  getIdString,
-  lineupPopulateFields,
-  processCommentVote,
-  recalculateAvgRating,
-  incrementTotalVotes,
-  transformLineup,
-} from "~/lib/utils";
+import { getVoteDelta, lineupPopulateFields } from "~/lib/utils";
+import { logger } from "~/lib/logger";
 
 import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
+
+const log = logger.child({ module: "lineup" });
 import {
-  Comment,
-  Lineup,
-  Player,
-  Rating,
-  Vote,
-  type IComment,
-  type ILineup,
-  type IPlayer,
-  type IThread,
+  CommentModel,
+  CommentVoteModel,
+  LineupModel,
+  PlayerModel,
+  RatingModel,
+  type Lineup,
+  type Player,
+  type PlayerDoc,
 } from "~/server/models";
+import { ThreadModel } from "~/server/models/threads";
+import { ThreadVoteModel } from "~/server/models/threadVotes";
+import {
+  BUDGET_LIMIT,
+  DAILY_GAMBLE_LIMIT,
+  GAMBLE_COOLDOWN_MS,
+  selectWeightedValue,
+  getOutcomeTier,
+  calculateStreakChange,
+  shouldResetDailyGambles,
+} from "./lineup-utils";
+
 const playerSchema = z.object({
   _id: z.string(),
   firstName: z.string(),
@@ -33,24 +40,25 @@ const playerSchema = z.object({
   imgUrl: z.string(),
   value: z.number(),
 });
-const BUDGET_LIMIT = 15;
 
 export const lineupRouter = createTRPCRouter({
   // Create a new lineup (protected - requires auth)
   create: protectedProcedure
     .input(
       z.object({
-        pg: playerSchema,
-        sg: playerSchema,
-        sf: playerSchema,
-        pf: playerSchema,
-        c: playerSchema,
+        players: z.object({
+          pg: playerSchema,
+          sg: playerSchema,
+          sf: playerSchema,
+          pf: playerSchema,
+          c: playerSchema,
+        }),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { pg, sg, sf, pf, c } = input;
+      const { players } = input;
+      const { pg, sg, sf, pf, c } = players;
       const playerIds = [pg._id, sg._id, sf._id, pf._id, c._id];
-
       // Check for duplicate players
       const uniqueIds = new Set(playerIds);
       if (uniqueIds.size !== playerIds.length) {
@@ -61,17 +69,14 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      // Fetch all selected players and validate budget
-      const selectedPlayers = await Player.find({ _id: { $in: playerIds } });
-
-      if (selectedPlayers.length !== 5) {
+      if (Object.values(players).length !== 5) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "One or more selected players not found.",
         });
       }
 
-      const totalValue = selectedPlayers.reduce(
+      const totalValue = Object.values(players).reduce(
         (sum, player) => sum + player.value,
         0,
       );
@@ -83,22 +88,21 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Create the lineup
-      const lineup = await Lineup.create({
-        pg: selectedPlayers[0]?._id,
-        sg: selectedPlayers[1]?._id,
-        sf: selectedPlayers[2]?._id,
-        pf: selectedPlayers[3]?._id,
-        c: selectedPlayers[4]?._id,
-        ownerId: ctx.session.user.id,
-        featured: false,
+      const lineup = await LineupModel.create({
+        players: {
+          pg: players.pg._id,
+          sg: players.sg._id,
+          sf: players.sf._id,
+          pf: players.pf._id,
+          c: players.c._id,
+        },
+        owner: ctx.session.user.id,
       });
 
       // Populate and return
-      const populatedLineup = await Lineup.findById(lineup._id).populate(
-        lineupPopulateFields,
-      );
-
-      return transformLineup(populatedLineup);
+      return await LineupModel.findById(lineup._id)
+        .populate(lineupPopulateFields)
+        .lean();
     }),
 
   // Get current user's lineups (protected)
@@ -107,7 +111,7 @@ export const lineupRouter = createTRPCRouter({
       z
         .object({
           sort: z
-            .enum(["newest", "oldest", "highest-rated", "most-votes"])
+            .enum(["newest", "oldest", "highest-rated"])
             .optional()
             .default("newest"),
         })
@@ -123,53 +127,43 @@ export const lineupRouter = createTRPCRouter({
         case "highest-rated":
           sortOption = { avgRating: -1 };
           break;
-        case "most-votes":
-          sortOption = { totalVotes: -1 };
-          break;
       }
 
-      const lineups = await Lineup.find({ ownerId: ctx.session.user.id })
+      const data = await LineupModel.find({ owner: ctx.session.user.id })
         .sort(sortOption)
         .populate(lineupPopulateFields)
         .lean();
-
-      // Get user's votes and ratings for these lineups
-      const lineupIds = lineups.map((l) => l._id);
-      const userVotes = await Vote.find({
-        userId: ctx.session.user.id,
-        lineupId: { $in: lineupIds },
-      });
-      const userRatings = await Rating.find({
-        userId: ctx.session.user.id,
-        lineupId: { $in: lineupIds },
-      });
-
-      // Map votes and ratings to lineups
-      // if this is reused below, then extract this to a helper function
-      const voteMap = new Map(userVotes.map((v) => [v.lineupId.toString(), v]));
-      const ratingMap = new Map(
-        userRatings.map((r) => [r.lineupId.toString(), r]),
-      );
-
-      return lineups.map((lineup) => {
-        const lineupIdStr = lineup._id.toString();
-        return {
-          ...lineup,
-          votes: voteMap.has(lineupIdStr) ? [voteMap.get(lineupIdStr)] : [],
-          ratings: ratingMap.has(lineupIdStr)
-            ? [ratingMap.get(lineupIdStr)]
-            : [],
-        };
-      });
+      return data;
     }),
 
   // Get a specific user's lineups (public)
-  getLineupsByOtherUser: publicProcedure
-    .input(z.object({ userId: z.string() }))
+  // look into adding pagination similar to players router
+  getLineupsByOtherUsers: publicProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        sort: z
+          .enum(["newest", "oldest", "highest-rated"])
+          .optional()
+          .default("newest"),
+      }),
+    )
     .query(async ({ input }) => {
-      // may need to check if we need to map votes and ratings here
-      return await Lineup.find({ ownerId: input.userId })
-        .sort({ createdAt: -1 })
+      let sortOption: Record<string, SortOrder> = { createdAt: -1 };
+
+      switch (input?.sort) {
+        case "oldest":
+          sortOption = { createdAt: 1 };
+          break;
+        case "highest-rated":
+          sortOption = { avgRating: -1 };
+          break;
+      }
+      // may need to check if we need to map ratings here
+      return await LineupModel.find({
+        owner: { $ne: new mongoose.Types.ObjectId(input.userId) },
+      })
+        .sort(sortOption)
         .populate(lineupPopulateFields)
         .lean();
     }),
@@ -180,7 +174,7 @@ export const lineupRouter = createTRPCRouter({
       z
         .object({
           sort: z
-            .enum(["newest", "oldest", "highest-rated", "most-votes"])
+            .enum(["newest", "oldest", "highest-rated"])
             .optional()
             .default("newest"),
         })
@@ -196,12 +190,9 @@ export const lineupRouter = createTRPCRouter({
         case "highest-rated":
           sortOption = { avgRating: -1 };
           break;
-        case "most-votes":
-          sortOption = { totalVotes: -1 };
-          break;
       }
-      // may need to check if we need to map votes and ratings here
-      return await Lineup.find()
+      // may need to check if we need to map ratings here
+      return await LineupModel.find()
         .sort(sortOption)
         .populate(lineupPopulateFields)
         .lean();
@@ -211,46 +202,17 @@ export const lineupRouter = createTRPCRouter({
   getLineupById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      return await Lineup.findById(input.id).populate(lineupPopulateFields);
+      return await LineupModel.findById(input.id)
+        .populate(lineupPopulateFields)
+        .lean();
     }),
 
   // Delete a lineup (protected - only owner can delete)
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.id).select("ownerId").lean();
-
-      if (!lineup) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Lineup not found.",
-        });
-      }
-
-      if (lineup.ownerId.toString() !== ctx.session.user.id) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You do not have permission to delete this lineup.",
-        });
-      }
-
-      // Delete related votes and ratings
-      const [deletedLineup, _deletedVotes, _deletedRatings] = await Promise.all(
-        [
-          Lineup.findByIdAndDelete(input.id).lean(),
-          Vote.deleteMany({ lineupId: input.id }),
-          Rating.deleteMany({ lineupId: input.id }),
-        ],
-      );
-      return deletedLineup;
-    }),
-
-  // Toggle featured status (protected - only owner)
-  toggleFeatured: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.id)
-        .select("ownerId featured")
+      const lineup = await LineupModel.findById(input.id)
+        .select("owner")
         .lean();
 
       if (!lineup) {
@@ -260,7 +222,38 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      if (lineup.ownerId.toString() !== ctx.session.user.id) {
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to delete this lineup.",
+        });
+      }
+
+      // Delete related votes and ratings
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const [deletedLineup, _deletedRatings] = await Promise.all([
+        LineupModel.findByIdAndDelete(input.id).lean(),
+        RatingModel.deleteMany({ lineupId: input.id }),
+      ]);
+      return deletedLineup;
+    }),
+
+  // Toggle featured status (protected - only owner)
+  toggleFeatured: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const lineup = await LineupModel.findById(input.id)
+        .select("owner featured")
+        .lean();
+
+      if (!lineup) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
+      }
+
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You do not have permission to modify this lineup.",
@@ -269,8 +262,8 @@ export const lineupRouter = createTRPCRouter({
 
       // Check if user already has 3 featured lineups
       if (!lineup.featured) {
-        const featuredCount = await Lineup.countDocuments({
-          ownerId: ctx.session.user.id,
+        const featuredCount = await LineupModel.countDocuments({
+          owner: ctx.session.user.id,
           featured: true,
         });
 
@@ -283,7 +276,7 @@ export const lineupRouter = createTRPCRouter({
         }
       }
 
-      return await Lineup.findByIdAndUpdate(
+      return await LineupModel.findByIdAndUpdate(
         input.id,
         { featured: !lineup.featured },
         { new: true },
@@ -293,101 +286,26 @@ export const lineupRouter = createTRPCRouter({
     }),
 
   // ============================================
-  // VOTING SYSTEM
-  // ============================================
-
-  // Vote on a lineup (upvote or downvote)
-  vote: protectedProcedure
-    .input(
-      z.object({
-        lineupId: z.string(),
-        type: z.enum(["upvote", "downvote"]),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const userId = new mongoose.Types.ObjectId(ctx.session.user.id);
-      const lineupId = new mongoose.Types.ObjectId(input.lineupId);
-
-      const lineup = await Lineup.findById(input.lineupId)
-        .select("ownerId totalVotes")
-        .lean();
-
-      if (!lineup) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Lineup not found.",
-        });
-      }
-
-      // Can't vote on your own lineup
-      if (lineup.ownerId === userId) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You cannot vote on your own lineup.",
-        });
-      }
-
-      // Check for existing vote
-      const existingVote = await Vote.findOneAndUpdate(
-        {
-          userId,
-          lineupId,
-        },
-
-        {
-          $setOnInsert: {
-            userId,
-            lineupId,
-            type: input.type,
-            createdAt: new Date(),
-          },
-        },
-        {
-          upsert: true,
-          new: false,
-        },
-      );
-
-      // Calculate vote delta - O(1) instead of scanning all votes
-      const amountToIncrementVotesBy = incrementTotalVotes(
-        input.type,
-        existingVote,
-      );
-
-      return await Lineup.findByIdAndUpdate(
-        input.lineupId,
-        {
-          $inc: { totalVotes: amountToIncrementVotesBy },
-        },
-        { new: true },
-      );
-    }),
-
-  // Get current user's vote on a lineup
-  getUserVote: protectedProcedure
-    .input(z.object({ lineupId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return Vote.findOne({
-        userId: ctx.session.user.id,
-        lineupId: input.lineupId,
-      });
-    }),
-
-  // ============================================
   // RATING SYSTEM
   // ============================================
 
   // Rate a lineup (1-10)
+  // look at the way we handle async and try to use this pattern more
+  // when we have stuff that does not deepend on other things, we can fire without await and use await at the end.
   rate: protectedProcedure
     .input(
       z.object({
         lineupId: z.string(),
-        value: z.number().min(1).max(10),
+        value: z.number().min(0.01).max(10),
       }),
     )
+    // look up the projection to ensure we are not fetching anything extra
+    // can also do a mongodb lookup to get just the field we need
+    // our db is very relationship oriented so it may be better for sql tables and fk
+    // mongo is better when the data coming in can be unpredictable vs knowing exactly what is needed
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId)
-        .select("ownerId")
+      const lineup = await LineupModel.findById(input.lineupId)
+        .select({ owner: 1 })
         .lean();
 
       if (!lineup) {
@@ -398,39 +316,70 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Can't rate your own lineup
-      if (lineup.ownerId.toString() === ctx.session.user.id) {
+      if (lineup.owner.toString() === ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot rate your own lineup.",
         });
       }
-
+      // look into have a .then to consolidate the awaits on the functions
       // Upsert rating
-      await Rating.findOneAndUpdate(
+
+      const newRating = input.value;
+      // upsert the rating, await the values so we can use them to update the lineup
+      const existingRating = await RatingModel.findOneAndUpdate(
         {
-          userId: ctx.session.user.id,
-          lineupId: input.lineupId,
+          user: ctx.session.user.id,
+          lineup: input.lineupId,
         },
         {
-          value: input.value,
+          value: newRating,
         },
-        { upsert: true, new: true },
       );
 
-      // Recalculate average rating
-      const newAvg = await recalculateAvgRating(input.lineupId);
+      const isNewRating = !existingRating;
+      const oldRating = existingRating?.value ?? 0;
+      const sumDelta = newRating - oldRating;
+      const countDelta = isNewRating ? 1 : 0;
 
-      return { avgRating: newAvg };
-    }),
+      // update the lineup with the new rating atomically and in one pass
+      const updatedLineup = await LineupModel.findByIdAndUpdate(
+        lineup._id,
 
-  // Get current user's rating on a lineup
-  getUserRating: protectedProcedure
-    .input(z.object({ lineupId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return Rating.findOne({
-        userId: ctx.session.user.id,
-        lineupId: input.lineupId,
-      });
+        [
+          // step one: update the rating sum and count (treat missing/null as 0)
+          {
+            $set: {
+              ratingSum: {
+                $add: [{ $ifNull: ["$ratingSum", 0] }, sumDelta],
+              },
+              ratingCount: {
+                $add: [{ $ifNull: ["$ratingCount", 0] }, countDelta],
+              },
+            },
+          },
+          // step two: update the average rating
+          {
+            $set: {
+              avgRating: {
+                $cond: {
+                  if: {
+                    $gt: ["$ratingCount", 0],
+                  },
+                  then: {
+                    $divide: ["$ratingSum", "$ratingCount"],
+                  },
+                  else: 0,
+                },
+              },
+            },
+          },
+        ],
+        // { new: true },
+        { updatePipeline: true, new: true },
+      );
+      log.debug({ updatedLineup }, "updatedLineup");
+      return { avgRating: updatedLineup?.avgRating };
     }),
 
   // ============================================
@@ -442,15 +391,17 @@ export const lineupRouter = createTRPCRouter({
     .input(
       z.object({
         lineupId: z.string(),
-        pg: playerSchema,
-        sg: playerSchema,
-        sf: playerSchema,
-        pf: playerSchema,
-        c: playerSchema,
+        players: z.object({
+          pg: playerSchema,
+          sg: playerSchema,
+          sf: playerSchema,
+          pf: playerSchema,
+          c: playerSchema,
+        }),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId)
+      const lineup = await LineupModel.findById(input.lineupId)
         .populate(lineupPopulateFields)
         .lean();
 
@@ -461,7 +412,7 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      if (lineup.ownerId.toString() !== ctx.session.user.id) {
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You do not have permission to edit this lineup.",
@@ -469,18 +420,18 @@ export const lineupRouter = createTRPCRouter({
       }
 
       const originalIds = new Set([
-        getIdString(lineup.pg?._id),
-        getIdString(lineup.sg?._id),
-        getIdString(lineup.sf?._id),
-        getIdString(lineup.pf?._id),
-        getIdString(lineup.c?._id),
+        lineup.players.pg._id.toString(),
+        lineup.players.sg._id.toString(),
+        lineup.players.sf._id.toString(),
+        lineup.players.pf._id.toString(),
+        lineup.players.c._id.toString(),
       ]);
       const newIds = [
-        input.pg?._id,
-        input.sg?._id,
-        input.sf?._id,
-        input.pf?._id,
-        input.c?._id,
+        input.players.pg._id.toString(),
+        input.players.sg._id.toString(),
+        input.players.sf._id.toString(),
+        input.players.pf._id.toString(),
+        input.players.c._id.toString(),
       ];
 
       // Check for duplicates
@@ -503,14 +454,16 @@ export const lineupRouter = createTRPCRouter({
         }
       }
 
-      return await Lineup.findByIdAndUpdate(
+      return await LineupModel.findByIdAndUpdate(
         input.lineupId,
         {
-          pg: input.pg,
-          sg: input.sg,
-          sf: input.sf,
-          pf: input.pf,
-          c: input.c,
+          players: {
+            pg: input.players.pg,
+            sg: input.players.sg,
+            sf: input.players.sf,
+            pf: input.players.pf,
+            c: input.players.c,
+          },
         },
         { new: true },
       )
@@ -522,8 +475,20 @@ export const lineupRouter = createTRPCRouter({
   // GAMBLING MECHANICS
   // ============================================
 
-  // Gamble a player for a random player of similar value
-  // TODO: Create a more robust gambling mechanic that offers a wider range of players to gamble with
+  /**
+   * Gamble a player for a random player with weighted probability.
+   *
+   * Probability system:
+   * - Lower value players have lower chance of upgrade (high risk, high reward potential)
+   * - Higher value players have higher chance of maintaining value (low risk, low reward)
+   *
+   * Features:
+   * - Weighted probability matrix for fair risk/reward
+   * - Daily gamble limit (5 per day per lineup)
+   * - Cooldown between gambles (30 seconds)
+   * - Streak tracking for consecutive upgrades/downgrades
+   * - Outcome tiers for visual feedback (jackpot, upgrade, neutral, downgrade, etc.)
+   */
   gamble: protectedProcedure
     .input(
       z.object({
@@ -532,10 +497,17 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId).populate(
-        lineupPopulateFields,
-      );
+      const lineup = await LineupModel.findById(input.lineupId).populate([
+        { path: "players.pg", model: "Player" },
+        { path: "players.sg", model: "Player" },
+        { path: "players.sf", model: "Player" },
+        { path: "players.pf", model: "Player" },
+        { path: "players.c", model: "Player" },
+        { path: "owner", model: "User", select: "_id" },
+      ]);
 
+      //       const {owner} = await LineupModel.findById(input.lineupId).select("owner").lean();
+      // const ownerId = owner._id.toString();
       if (!lineup) {
         throw new TRPCError({
           code: "NOT_FOUND",
@@ -543,27 +515,59 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      if (lineup.ownerId.toString() !== ctx.session.user.id) {
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You do not have permission to gamble on this lineup.",
         });
       }
 
+      // Check cooldown
+      const now = new Date();
+      const lastGambleAt = lineup.lastGambleAt;
+      if (lastGambleAt) {
+        const timeSinceLastGamble = now.getTime() - lastGambleAt.getTime();
+        if (timeSinceLastGamble < GAMBLE_COOLDOWN_MS) {
+          const remainingSeconds = Math.ceil(
+            (GAMBLE_COOLDOWN_MS - timeSinceLastGamble) / 1000,
+          );
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: `Please wait ${remainingSeconds} seconds before gambling again.`,
+          });
+        }
+      }
+
+      // Check and reset daily gamble limit if needed
+      let dailyGamblesUsed = lineup.dailyGamblesUsed ?? 0;
+      let dailyGamblesResetAt = lineup.dailyGamblesResetAt;
+
+      if (shouldResetDailyGambles(dailyGamblesResetAt)) {
+        dailyGamblesUsed = 0;
+        dailyGamblesResetAt = now;
+      }
+
+      if (dailyGamblesUsed >= DAILY_GAMBLE_LIMIT) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Daily gamble limit reached (${DAILY_GAMBLE_LIMIT}). Try again tomorrow!`,
+        });
+      }
+
       // Get the current player at the position
       const positionFieldMap: Record<
         "pg" | "sg" | "sf" | "pf" | "c",
-        keyof ILineup
+        keyof Lineup["players"]
       > = {
-        pg: "pgId",
-        sg: "sgId",
-        sf: "sfId",
-        pf: "pfId",
-        c: "cId",
+        pg: "pg",
+        sg: "sg",
+        sf: "sf",
+        pf: "pf",
+        c: "c",
       };
       const positionField = positionFieldMap[input.position];
-      // revisit to tighten this type
-      const currentPlayer = lineup[positionField] as IPlayer;
+      // After population, players are Player objects, not ObjectIds
+      const currentPlayer = lineup.players[positionField] as unknown as Player;
 
       if (!currentPlayer?.value) {
         throw new TRPCError({
@@ -574,37 +578,44 @@ export const lineupRouter = createTRPCRouter({
 
       const currentValue = currentPlayer.value;
 
-      // Determine possible values for the new player
-      let possibleValues: number[];
-      if (currentValue === 1) {
-        possibleValues = [1];
-      } else if (currentValue === 5) {
-        possibleValues = [4, 5];
-      } else {
-        possibleValues = [currentValue - 1, currentValue, currentValue + 1];
-      }
+      // Use weighted probability to determine target value
+      const targetValue = selectWeightedValue(currentValue);
 
       // Convert string IDs to ObjectIds for proper MongoDB $nin comparison
       const currentLineupPlayerIds = [
-        getIdString(lineup.pgId),
-        getIdString(lineup.sgId),
-        getIdString(lineup.sfId),
-        getIdString(lineup.pfId),
-        getIdString(lineup.cId),
+        lineup.players.pg._id.toString(),
+        lineup.players.sg._id.toString(),
+        lineup.players.sf._id.toString(),
+        lineup.players.pf._id.toString(),
+        lineup.players.c._id.toString(),
       ]
         .filter((id): id is string => Boolean(id))
         .map((id) => new mongoose.Types.ObjectId(id));
 
-      // Find eligible players (matching value, not already in lineup)
-      const [newPlayer] = await Player.aggregate<IPlayer>([
+      // Find a random player at the target value (not already in lineup)
+      let [newPlayer] = await PlayerModel.aggregate<PlayerDoc>([
         {
           $match: {
-            value: { $in: possibleValues },
+            value: targetValue,
             _id: { $nin: currentLineupPlayerIds },
           },
         },
         { $sample: { size: 1 } },
       ]);
+
+      // Fallback: if no player found at target value, try adjacent values
+      if (!newPlayer) {
+        const fallbackValues = [1, 2, 3, 4, 5].filter((v) => v !== targetValue);
+        [newPlayer] = await PlayerModel.aggregate<PlayerDoc>([
+          {
+            $match: {
+              value: { $in: fallbackValues },
+              _id: { $nin: currentLineupPlayerIds },
+            },
+          },
+          { $sample: { size: 1 } },
+        ]);
+      }
 
       if (!newPlayer) {
         throw new TRPCError({
@@ -613,23 +624,58 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      // Update the lineup with the new player
-      const updateData = {
-        [positionField]: newPlayer._id,
-        $inc: { timesGambled: 1 },
+      // Calculate outcome metrics
+      const newPlayerValue = newPlayer.value;
+      const valueChange = newPlayerValue - currentValue;
+      const outcomeTier = getOutcomeTier(valueChange);
+      const currentStreak = lineup.gambleStreak ?? 0;
+      const newStreak = calculateStreakChange(currentStreak, valueChange);
+
+      // Build the last gamble result
+      const lastGambleResult = {
+        previousValue: currentValue,
+        newValue: newPlayerValue,
+        valueChange,
+        outcomeTier,
+        position: input.position,
+        timestamp: now,
       };
 
-      const updatedLineup = await Lineup.findByIdAndUpdate(
+      // Update the lineup with the new player and gambling stats
+      const updatedLineup = await LineupModel.findByIdAndUpdate(
         input.lineupId,
-        updateData,
+        {
+          [`players.${positionField}`]: newPlayer._id,
+          $inc: { timesGambled: 1 },
+          $set: {
+            lastGambleResult,
+            gambleStreak: newStreak,
+            lastGambleAt: now,
+            dailyGamblesUsed: dailyGamblesUsed + 1,
+            dailyGamblesResetAt,
+          },
+        },
         { new: true },
       ).populate(lineupPopulateFields);
 
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+
+      /* eslint-disable @typescript-eslint/no-unsafe-assignment */
       return {
-        lineup: transformLineup(updatedLineup),
+        lineup: updatedLineup,
         previousPlayer: currentPlayer,
         newPlayer,
+        outcome: {
+          previousValue: currentValue,
+          newValue: newPlayerValue,
+          valueChange,
+          outcomeTier,
+          streak: newStreak,
+          dailyGamblesRemaining: DAILY_GAMBLE_LIMIT - (dailyGamblesUsed + 1),
+          cooldownSeconds: GAMBLE_COOLDOWN_MS / 1000,
+        },
       };
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
     }),
 
   // ============================================
@@ -653,60 +699,7 @@ export const lineupRouter = createTRPCRouter({
       if (input.cursor) {
         matchStage._id = { $lt: new mongoose.Types.ObjectId(input.cursor) };
       }
-      const comments = await Comment.aggregate<IComment>([
-        {
-          $match: matchStage,
-        },
-        {
-          $sort: {
-            createdAt: -1,
-          },
-        },
-        { $limit: (input.limit ?? 10) + 1 },
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            as: "user",
-            pipeline: [
-              {
-                $project: {
-                  username: 1,
-                  profileImg: 1,
-                  name: 1,
-                },
-              },
-            ],
-          },
-        },
-        {
-          $unwind: "$user",
-        },
-        {
-          $project: {
-            id: { $toString: "$_id" },
-            text: 1,
-            user: 1,
-            totalVotes: 1,
-            votes: 1,
-            createdAt: 1,
-            thread: {
-              $map: {
-                input: "$thread",
-                as: "t",
-                in: {
-                  id: { $toString: "$$t._id" },
-                  text: "$$t.text",
-                  userId: "$$t.userId",
-                  votes: "$$t.votes",
-                  totalVotes: "$$t.totalVotes",
-                },
-              },
-            },
-          },
-        },
-      ]);
+      const comments = await CommentModel.find(matchStage).lean();
       const hasMore = comments.length > (input.limit ?? 10);
       if (hasMore) comments.pop();
       return {
@@ -725,30 +718,22 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const lineup = await Lineup.findById(input.lineupId)
-        .select("ownerId")
-        .lean();
-
-      if (!lineup) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Lineup not found.",
-        });
-      }
-
-      const comment = await Comment.create({
+      const comment = await CommentModel.create({
         text: input.text,
-        userId: ctx.session.user.id,
-        lineupId: input.lineupId,
-        votes: [],
-        totalVotes: 0,
-        thread: [],
+        user: ctx.session.user.id,
+        lineup: input.lineupId,
       });
 
-      // Populate and return
-      return await Comment.findById(comment._id)
-        .populate("userId", "username name profileImg")
-        .lean();
+      // return the comment with the user data
+      return {
+        ...comment.toObject(),
+        user: {
+          username: ctx.session.user.username,
+          name: ctx.session.user.name,
+          profileImg: ctx.session.user.profileImg,
+          image: ctx.session.user.image,
+        },
+      };
     }),
 
   // Add a thread reply to a comment
@@ -761,9 +746,9 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const comment = await Comment.findOne({
+      const comment = await CommentModel.findOne({
         _id: input.commentId,
-        lineupId: input.lineupId,
+        lineup: new mongoose.Types.ObjectId(input.lineupId),
       });
 
       if (!comment) {
@@ -772,24 +757,26 @@ export const lineupRouter = createTRPCRouter({
           message: "Comment not found.",
         });
       }
-      const userId = new mongoose.Types.ObjectId(ctx.session.user.id);
-      comment.thread.push({
+      const newThreadReply = await ThreadModel.create({
         text: input.text,
-        userId,
-        votes: [],
-        totalVotes: 0,
-        // _id, userId, createdAt, updatedAt are automatically generated by Mongoose
-      } as unknown as IThread);
+        user: ctx.session.user.id,
+        comment: new mongoose.Types.ObjectId(input.commentId),
+      });
 
-      await comment.save();
-
-      // Populate and return
-      return await Comment.findById(comment._id)
-        .populate("userId", "username name profileImg")
-        .lean();
+      // return the thread reply with the user data
+      return {
+        ...newThreadReply.toObject(),
+        user: {
+          username: ctx.session.user.username,
+          name: ctx.session.user.name,
+          profileImg: ctx.session.user.profileImg,
+          image: ctx.session.user.image,
+        },
+      };
     }),
 
   // Vote on a comment (upvote or downvote)
+  // TODO: must be refactored to use the new comment vote schema
   voteComment: protectedProcedure
     .input(
       z.object({
@@ -799,10 +786,12 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const comment = await Comment.findOne({
+      const comment = await CommentModel.findOne({
         _id: input.commentId,
-        lineupId: input.lineupId,
-      });
+        lineup: input.lineupId,
+      })
+        .select({ user: 1, _id: 0 })
+        .lean();
 
       if (!comment) {
         throw new TRPCError({
@@ -812,25 +801,37 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Can't vote on your own comment
-      if (comment.userId.toString() === ctx.session.user.id) {
+      if (comment.user.toString() === ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot vote on your own comment.",
         });
       }
-
-      // Process vote using shared helper (O(1) delta calculation)
-      const { totalVotes } = processCommentVote(
-        comment.votes,
-        ctx.session.user.id,
-        input.type,
-        comment.totalVotes,
+      // upsert the vote
+      const existingVote = await CommentVoteModel.findOneAndUpdate(
+        {
+          user: ctx.session.user.id,
+          comment: input.commentId,
+        },
+        {
+          type: input.type,
+        },
+        {
+          upsert: true,
+        },
       );
-      comment.totalVotes = totalVotes;
+      // atomically update the total votes by the vote delta
+      const oldVote = existingVote?.type ?? null;
+      const voteDelta = getVoteDelta(input.type, oldVote);
+      const updatedComment = await CommentModel.findByIdAndUpdate(
+        input.commentId,
+        {
+          $inc: { totalVotes: voteDelta },
+        },
+        { new: true, projection: { totalVotes: 1 } },
+      );
 
-      await comment.save();
-
-      return { totalVotes };
+      return { totalVotes: updatedComment?.totalVotes ?? 0 };
     }),
 
   // Vote on a thread reply
@@ -844,7 +845,7 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const comment = await Comment.findOne({
+      const comment = await CommentModel.findOne({
         _id: input.commentId,
         lineupId: input.lineupId,
       });
@@ -856,36 +857,46 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      const thread = comment.thread.find(
-        (t) => t._id.toString() === input.threadId,
-      );
-
-      if (!thread) {
+      const existingThread = await ThreadModel.findById(input.threadId)
+        .select("user votes totalVotes")
+        .lean();
+      if (!existingThread) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Thread reply not found.",
         });
       }
-
       // Can't vote on your own thread
-      if (thread.userId.toString() === ctx.session.user.id) {
+      if (existingThread?.user.toString() === ctx.session.user.id) {
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "You cannot vote on your own reply.",
         });
       }
 
-      // Process vote using shared helper (O(1) delta calculation)
-      const { totalVotes } = processCommentVote(
-        thread.votes,
-        ctx.session.user.id,
-        input.type,
-        thread.totalVotes,
+      const existingVote = await ThreadVoteModel.findOneAndUpdate(
+        {
+          user: ctx.session.user.id,
+          thread: input.threadId,
+        },
+        {
+          type: input.type,
+        },
+        {
+          upsert: true,
+        },
       );
-      thread.totalVotes = totalVotes;
+      const oldVote = existingVote?.type ?? null;
+      const voteDelta = getVoteDelta(input.type, oldVote);
+      const updatedThread = await ThreadModel.findByIdAndUpdate(
+        input.threadId,
+        {
+          $inc: { totalVotes: voteDelta },
+        },
+        { new: true, projection: { totalVotes: 1 } },
+      );
+      // await comment.save();
 
-      await comment.save();
-
-      return { totalVotes };
+      return { totalVotes: updatedThread?.totalVotes ?? 0 };
     }),
 });

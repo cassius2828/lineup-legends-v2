@@ -1,6 +1,7 @@
 import type { FuseResult } from "fuse.js";
 import Link from "next/link";
 import type { PlayerType } from "~/lib/types";
+import { PlayerImage } from "~/app/_components/PlayerImage";
 
 const SearchResults = ({
   filteredPlayers,
@@ -29,21 +30,19 @@ const SearchResults = ({
               valueShadows[player.item?.value ?? 0]
             } cursor-pointer group-hover:scale-105`}
           >
-            {/* need a trick to ensure this takes up entire div */}
-            {/* //* remains regular img componet due to how we store our player images */}
-            <img
-              src={player.item.imgUrl ?? ""}
-              alt={`${player.item.firstName} ${player.item.lastName}`}
-              className="h-full w-full object-cover"
+            <PlayerImage
+              imgUrl={player.item.imgUrl ?? undefined}
+              alt={`${player.item.firstName ?? ""} ${player.item.lastName ?? ""}`}
+              className="absolute inset-0 h-full w-full object-cover"
             />
           </div>
 
           {/* Player Info */}
           <div className="mt-2 text-center">
-            <p className="text-sm font-medium text-white">
+            <p className="text-sm font-medium text-foreground">
               {player?.item?.firstName ?? ""}
             </p>
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-foreground/80">
               {player?.item?.lastName ?? ""}
             </p>
             <p className="text-gold mt-1 text-xs">
@@ -52,7 +51,7 @@ const SearchResults = ({
           </div>
 
           {/* Edit Indicator */}
-          <p className="mt-2 text-xs text-white/40 opacity-0 transition-opacity group-hover:opacity-100">
+          <p className="mt-2 text-xs text-foreground/40 opacity-0 transition-opacity group-hover:opacity-100">
             Click to edit
           </p>
         </Link>
