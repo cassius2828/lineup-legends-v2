@@ -21,9 +21,39 @@ const valueLabels: Record<number, string> = {
   1: "Bronze",
 };
 
+const INITIAL_COUNT = 10;
+const PAGE_SIZE = 50;
+
+function getPaginationRange(
+  current: number,
+  total: number,
+): (number | "...")[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+
+  const pages: (number | "...")[] = [1];
+
+  if (current > 3) pages.push("...");
+
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+
+  for (let i = start; i <= end; i++) {
+    pages.push(i);
+  }
+
+  if (current < total - 2) pages.push("...");
+
+  pages.push(total);
+  return pages;
+}
+
 export default function PlayersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [valueFilter, setValueFilter] = useState<number | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: allPlayers, isLoading } = api.player.getAll.useQuery();
 
@@ -36,8 +66,7 @@ export default function PlayersPage() {
 
   const searchResults = fuse?.search(searchQuery);
 
-  const isInitialRender =
-    searchResults?.length === 0 && searchQuery.length === 0;
+  const isSearching = searchQuery.length > 0;
 
   const filteredResults = valueFilter
     ? searchResults?.filter((p) => p.item.value === valueFilter)
@@ -47,12 +76,45 @@ export default function PlayersPage() {
     ? allPlayers?.filter((p) => p.value === valueFilter)
     : allPlayers;
 
-  const noResults =
-    !isLoading && searchResults?.length === 0 && searchQuery.length > 0;
+  const noResults = !isLoading && searchResults?.length === 0 && isSearching;
 
-  const displayPlayers = isInitialRender
-    ? defaultPlayers?.slice(0, 10)
-    : filteredResults;
+  const allDisplayable = isSearching ? filteredResults : defaultPlayers;
+  const totalCount = allDisplayable?.length ?? 0;
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  const displayPlayers = (() => {
+    if (!allDisplayable) return undefined;
+    if (!isSearching && !expanded) {
+      return allDisplayable.slice(0, INITIAL_COUNT);
+    }
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return allDisplayable.slice(start, start + PAGE_SIZE);
+  })();
+
+  const showShowMore = !isSearching && !expanded && totalCount > INITIAL_COUNT;
+  const showPagination =
+    (isSearching || expanded) && totalPages > 1;
+
+  const handleShowMore = () => {
+    setExpanded(true);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  const handleValueFilterChange = (value: number | null) => {
+    setValueFilter(value);
+    setCurrentPage(1);
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
@@ -83,7 +145,7 @@ export default function PlayersPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Search by player name..."
             className="w-full rounded-xl border border-foreground/10 bg-foreground/5 py-3.5 pl-12 pr-4 text-foreground placeholder-foreground/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
           />
@@ -92,7 +154,7 @@ export default function PlayersPage() {
         {/* Value Filter */}
         <div className="mb-8 flex flex-wrap gap-2">
           <button
-            onClick={() => setValueFilter(null)}
+            onClick={() => handleValueFilterChange(null)}
             className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
               valueFilter === null
                 ? "bg-gold text-black"
@@ -104,7 +166,7 @@ export default function PlayersPage() {
           {[5, 4, 3, 2, 1].map((value) => (
             <button
               key={value}
-              onClick={() => setValueFilter(value)}
+              onClick={() => handleValueFilterChange(value)}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 valueFilter === value
                   ? "bg-gold text-black"
@@ -149,9 +211,11 @@ export default function PlayersPage() {
         ) : displayPlayers && displayPlayers.length > 0 ? (
           <>
             <p className="mb-4 text-sm text-foreground/50">
-              {isInitialRender
-                ? `Showing ${displayPlayers.length} of ${allPlayers?.length ?? 0} players`
-                : `${displayPlayers.length} player${displayPlayers.length !== 1 ? "s" : ""} found`}
+              {!isSearching && !expanded
+                ? `Showing ${displayPlayers.length} of ${totalCount} players`
+                : isSearching
+                  ? `${totalCount} player${totalCount !== 1 ? "s" : ""} found`
+                  : `Showing ${(currentPage - 1) * PAGE_SIZE + 1}–${Math.min(currentPage * PAGE_SIZE, totalCount)} of ${totalCount} players`}
             </p>
             <div className="grid grid-cols-3 gap-6 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
               {displayPlayers.map((result) => {
@@ -187,6 +251,66 @@ export default function PlayersPage() {
                 );
               })}
             </div>
+
+            {/* Show More Button */}
+            {showShowMore && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={handleShowMore}
+                  className="rounded-xl border border-foreground/10 bg-foreground/5 px-8 py-3 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10"
+                >
+                  Show all {totalCount} players
+                </button>
+              </div>
+            )}
+
+            {/* Pagination */}
+            {showPagination && (
+              <div className="mt-8 flex items-center justify-center gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10 disabled:pointer-events-none disabled:opacity-30"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
+                {getPaginationRange(currentPage, totalPages).map((page, i) =>
+                  page === "..." ? (
+                    <span
+                      key={`ellipsis-${i}`}
+                      className="px-2 text-sm text-foreground/40"
+                    >
+                      &hellip;
+                    </span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page as number)}
+                      className={`min-w-[36px] rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? "bg-gold text-black"
+                          : "text-foreground hover:bg-foreground/10"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ),
+                )}
+
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground/10 disabled:pointer-events-none disabled:opacity-30"
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            )}
           </>
         ) : null}
       </div>
