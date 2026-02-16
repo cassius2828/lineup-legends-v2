@@ -1,11 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import mongoose, { type SortOrder } from "mongoose";
 import { z } from "zod";
-import {
-  getVoteDelta,
-  incrementTotalVotes,
-  lineupPopulateFields,
-} from "~/lib/utils";
+import { getVoteDelta, lineupPopulateFields } from "~/lib/utils";
 
 import {
   createTRPCRouter,
@@ -16,7 +12,6 @@ import {
   CommentModel,
   CommentVoteModel,
   LineupModel,
-  VoteModel as LineupVoteModel,
   PlayerModel,
   RatingModel,
   type GambleOutcomeTier,
@@ -205,7 +200,7 @@ export const lineupRouter = createTRPCRouter({
       z
         .object({
           sort: z
-            .enum(["newest", "oldest", "highest-rated", "most-votes"])
+              .enum(["newest", "oldest", "highest-rated"])
             .optional()
             .default("newest"),
         })
@@ -220,9 +215,6 @@ export const lineupRouter = createTRPCRouter({
           break;
         case "highest-rated":
           sortOption = { avgRating: -1 };
-          break;
-        case "most-votes":
-          sortOption = { totalVotes: -1 };
           break;
       }
 
@@ -240,7 +232,7 @@ export const lineupRouter = createTRPCRouter({
       z.object({
         userId: z.string(),
         sort: z
-          .enum(["newest", "oldest", "highest-rated", "most-votes"])
+          .enum(["newest", "oldest", "highest-rated"])
           .optional()
           .default("newest"),
       }),
@@ -255,11 +247,8 @@ export const lineupRouter = createTRPCRouter({
         case "highest-rated":
           sortOption = { avgRating: -1 };
           break;
-        case "most-votes":
-          sortOption = { totalVotes: -1 };
-          break;
       }
-      // may need to check if we need to map votes and ratings here
+      // may need to check if we need to map ratings here
       return await LineupModel.find({
         owner: { $ne: new mongoose.Types.ObjectId(input.userId) },
       })
@@ -274,7 +263,7 @@ export const lineupRouter = createTRPCRouter({
       z
         .object({
           sort: z
-            .enum(["newest", "oldest", "highest-rated", "most-votes"])
+            .enum(["newest", "oldest", "highest-rated"])
             .optional()
             .default("newest"),
         })
@@ -290,11 +279,8 @@ export const lineupRouter = createTRPCRouter({
         case "highest-rated":
           sortOption = { avgRating: -1 };
           break;
-        case "most-votes":
-          sortOption = { totalVotes: -1 };
-          break;
       }
-      // may need to check if we need to map votes and ratings here
+      // may need to check if we need to map ratings here
       return await LineupModel.find()
         .sort(sortOption)
         .populate(lineupPopulateFields)
@@ -307,7 +293,7 @@ export const lineupRouter = createTRPCRouter({
     .query(async ({ input }) => {
       return await LineupModel.findById(input.id).populate(
         lineupPopulateFields,
-      );
+      ).lean();
     }),
 
   // Delete a lineup (protected - only owner can delete)
@@ -334,13 +320,10 @@ export const lineupRouter = createTRPCRouter({
 
       // Delete related votes and ratings
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [deletedLineup, _deletedVotes, _deletedRatings] = await Promise.all(
-        [
-          LineupModel.findByIdAndDelete(input.id).lean(),
-          LineupVoteModel.deleteMany({ lineupId: input.id }),
-          RatingModel.deleteMany({ lineupId: input.id }),
-        ],
-      );
+      const [deletedLineup, _deletedRatings] = await Promise.all([
+        LineupModel.findByIdAndDelete(input.id).lean(),
+        RatingModel.deleteMany({ lineupId: input.id }),
+      ]);
       return deletedLineup;
     }),
 
@@ -389,152 +372,6 @@ export const lineupRouter = createTRPCRouter({
       )
         .populate(lineupPopulateFields)
         .lean();
-    }),
-
-  // ============================================
-  // VOTING SYSTEM
-  // ============================================
-
-  // Vote on a lineup (upvote or downvote)
-  lineupVote: protectedProcedure
-    .input(
-      z.object({
-        lineupId: z.string(),
-        type: z.enum(["upvote", "downvote"]),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      // #region agent log
-      console.log("[lineupVote] entry", {
-        lineupId: input.lineupId,
-        type: input.type,
-        userId: ctx.session.user.id,
-      });
-      // #endregion
-
-      const lineup = await LineupModel.findById(input.lineupId)
-        .select("owner totalVotes")
-        .lean();
-
-      // #region agent log
-      console.log("[lineupVote] lineup fetch", {
-        found: !!lineup,
-        totalVotes: lineup?.totalVotes,
-        ownerId: lineup?.owner
-          ? String((lineup.owner as { _id?: unknown })._id)
-          : undefined,
-      });
-      // #endregion
-
-      if (!lineup) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "Lineup not found.",
-        });
-      }
-
-      // Can't vote on your own lineup
-      const ownerIdStr =
-        (
-          lineup.owner as { _id?: { toString: () => string } }
-        )._id?.toString?.() ?? "";
-      // #region agent log
-      console.log("[lineupVote] owner check", {
-        ownerIdStr,
-        currentUserId: ctx.session.user.id,
-        isOwnLineup: ownerIdStr === ctx.session.user.id,
-      });
-      // #endregion
-
-      if (ownerIdStr === ctx.session.user.id) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You cannot vote on your own lineup.",
-        });
-      }
-
-      // Check for existing vote
-      // #region agent log
-      console.log("[lineupVote] before findOneAndUpdate", {
-        query: { user: ctx.session.user.id, lineup: input.lineupId },
-        upsertType: input.type,
-      });
-      // #endregion
-
-      const existingVote = await LineupVoteModel.findOneAndUpdate(
-        {
-          user: ctx.session.user.id,
-          lineup: input.lineupId,
-        },
-
-        {
-          $setOnInsert: {
-            user: ctx.session.user.id,
-            lineup: input.lineupId,
-            type: input.type,
-            createdAt: new Date(),
-          },
-        },
-        {
-          upsert: true,
-          new: false,
-        },
-      )
-        .select("type")
-        .lean();
-
-      // #region agent log
-      console.log("[lineupVote] after findOneAndUpdate", {
-        existingVote: existingVote ?? null,
-        existingVoteType: existingVote?.type ?? null,
-        wasNewVote: !existingVote,
-      });
-      // #endregion
-
-      // Calculate vote delta - O(1) instead of scanning all votes
-      const amountToIncrementVotesBy = incrementTotalVotes(
-        input.type,
-        existingVote?.type ?? null,
-      );
-
-      // #region agent log
-      console.log("[lineupVote] delta", {
-        inputType: input.type,
-        previousVoteType: existingVote?.type ?? null,
-        amountToIncrementVotesBy,
-        lineupTotalVotesBefore: lineup.totalVotes,
-        lineupTotalVotesAfter:
-          (lineup.totalVotes ?? 0) + amountToIncrementVotesBy,
-      });
-      // #endregion
-
-      const updated = await LineupModel.findByIdAndUpdate(
-        input.lineupId,
-        {
-          $inc: { totalVotes: amountToIncrementVotesBy },
-        },
-        { new: true },
-      );
-
-      // #region agent log
-      console.log("[lineupVote] after findByIdAndUpdate", {
-        updatedLineupId: updated?._id?.toString?.(),
-        newTotalVotes: updated?.totalVotes,
-      });
-      // #endregion
-
-      return updated;
-    }),
-
-  // Get current user's vote on a lineup
-  getUserVote: protectedProcedure
-    .input(z.object({ lineupId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return LineupVoteModel.findOne({
-        user: ctx.session.user.id,
-        lineup: input.lineupId,
-      }).lean();
-      //* chance we only need the type, will review later
     }),
 
   // ============================================

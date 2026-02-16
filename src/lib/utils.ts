@@ -37,5 +37,7 @@ export function incrementTotalVotes(
   type: "upvote" | "downvote",
   existingType: "upvote" | "downvote" | null,
 ): number {
+  console.log("[incrementTotalVotes] type", type);
+  console.log("[incrementTotalVotes] existingType", existingType);
   return getVoteDelta(type, existingType ?? null);
 }

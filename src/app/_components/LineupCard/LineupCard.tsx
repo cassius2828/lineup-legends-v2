@@ -23,10 +23,7 @@ export function LineupCard({
   showOwner = true,
   onDelete,
   onToggleFeatured,
-  onVote,
   isOwner = false,
-  currentUserId,
-  userVote,
 }: LineupCardProps) {
   const totalValue =
     lineup.players.pg?.value +
@@ -39,11 +36,6 @@ export function LineupCard({
     addSuffix: true,
   });
 
-  const canVote =
-    currentUserId && currentUserId !== lineup.owner._id?.toString()
-      ? true
-      : false;
-
   return (
     <div className="relative rounded-2xl bg-gradient-to-br from-slate-800/90 to-slate-900/90 p-6 shadow-xl backdrop-blur-sm">
       <LineupCardHeader
@@ -53,12 +45,7 @@ export function LineupCard({
         relativeTime={relativeTime}
       />
 
-      <LineupCardStatsBar
-        lineup={lineup}
-        onVote={onVote}
-        canVote={canVote}
-        userVote={userVote}
-      />
+      <LineupCardStatsBar lineup={lineup} isOwner={isOwner} />
 
       <LineupCardPlayersGrid players={lineup.players} />
 

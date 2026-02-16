@@ -151,7 +151,8 @@ export default function RateLineupPage() {
           {/* Current stats */}
           <div className="mt-4 flex justify-center gap-6 text-sm text-white/60">
             <span>
-              Votes: <strong className="text-white">{lineup.totalVotes}</strong>
+              Number of ratings:{" "}
+              <strong className="text-white">{lineup.ratingCount}</strong>
             </span>
             <span>
               Avg Rating:{" "}

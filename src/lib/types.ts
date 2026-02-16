@@ -54,6 +54,7 @@ export interface LineupType {
   totalVotes: number;
   avgRating: number;
   timesGambled: number;
+  ratingCount: number;
 }
 
 export interface VoteType {

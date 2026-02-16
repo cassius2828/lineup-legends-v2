@@ -12,23 +12,13 @@ export {
   type LastGambleResult,
   type LastGambleResultDoc,
 } from "./lineup";
-export {
-  LineupVoteModel,
-  LineupVoteModel as VoteModel,
-  type LineupVote,
-  type LineupVote as Vote,
-  type LineupVoteDoc,
-  type LineupVoteDoc as VoteDoc,
-} from "./lineupVote";
+
 export { RatingModel, type Rating, type RatingDoc } from "./rating";
 export { FollowModel, type Follow, type FollowDoc } from "./follow";
-export {
-  CommentModel,
-  type Comment,
-  type CommentDoc,
-  type Thread,
-  type ThreadDoc,
-} from "./comment";
+export { CommentModel, type Comment, type CommentDoc } from "./comment";
+
+export { ThreadModel, type Thread, type ThreadDoc } from "./threads";
+
 export {
   CommentVoteModel,
   type CommentVote,

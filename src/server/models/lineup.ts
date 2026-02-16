@@ -83,7 +83,6 @@ export interface LineupDoc extends Document {
   featured: boolean;
   players: LineupPlayersDoc;
   owner: Types.ObjectId;
-  totalVotes: number;
   avgRating: number;
   ratingCount: number;
   ratingSum: number;
@@ -136,7 +135,6 @@ const LineupSchema = new Schema<LineupDoc>(
       c: { type: Schema.Types.ObjectId, ref: "Player", required: true },
     },
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    totalVotes: { type: Number, default: 0 },
     avgRating: { type: Number, default: 0 },
     timesGambled: { type: Number, default: 0 },
     // Gambling tracking fields
@@ -160,12 +158,11 @@ LineupSchema.virtual("id").get(function (this: LineupDoc) {
 LineupSchema.set("toJSON", { virtuals: true });
 LineupSchema.set("toObject", { virtuals: true });
 
-// add index on owner, avgRating, totalVotes
+// add index on owner, avgRating
 LineupSchema.index({ owner: 1, createdAt: -1 }); // lineups created by a user
 LineupSchema.index({ owner: 1, updatedAt: -1 }); // lineups updated by a user
 LineupSchema.index({ featured: 1, createdAt: -1 }); // featured lineups
 LineupSchema.index({ avgRating: -1 }); // lineups with the highest average rating
-LineupSchema.index({ totalVotes: -1 }); // lineups with the most votes
 LineupSchema.index({ createdAt: -1 }); // lineups created in the last 24 hours
 
 export const LineupModel: Model<LineupDoc> =
