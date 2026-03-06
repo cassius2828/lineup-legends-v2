@@ -48,11 +48,11 @@ export default function GambleLineupPage() {
   );
   const [view, setView] = useState<PageView>("selection");
 
-  const {
-    data: lineup,
-    isLoading,
-    refetch,
-  } = api.lineup.getLineupById.useQuery({ id: lineupId });
+  const utils = api.useUtils();
+
+  const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery({
+    id: lineupId,
+  });
 
   const gambleMutation = api.lineup.gamble.useMutation({
     onSuccess: (data) => {
@@ -63,7 +63,8 @@ export default function GambleLineupPage() {
         valueChange: data.outcome.valueChange,
       });
       setView("animating");
-      void refetch();
+      void utils.lineup.getLineupById.invalidate({ id: lineupId });
+      void utils.lineup.getLineupsByCurrentUser.invalidate();
     },
     onError: (error) => {
       alert(error.message);
