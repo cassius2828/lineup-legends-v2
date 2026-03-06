@@ -43,7 +43,7 @@ export function PlayerCard({
   };
   if (compact) {
     return (
-      <div className="flex flex-col items-center gap-2 p-2">
+      <div className="flex w-full flex-col items-center gap-2 p-2">
         <div
           className={`relative h-16 w-16 overflow-hidden rounded-full md:h-24 md:w-24 ${valueShadows[player?.value ?? 0]}`}
         >
@@ -53,8 +53,8 @@ export function PlayerCard({
             className="absolute inset-0 h-full w-full rounded-full object-cover"
           />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-foreground">
+        <div className="w-full min-w-0">
+          <p className="truncate text-center text-sm font-medium text-foreground">
             {player?.firstName} {player?.lastName}
           </p>
         </div>

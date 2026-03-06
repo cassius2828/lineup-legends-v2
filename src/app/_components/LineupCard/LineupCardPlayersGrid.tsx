@@ -17,9 +17,12 @@ interface LineupCardPlayersGridProps {
 
 export function LineupCardPlayersGrid({ players }: LineupCardPlayersGridProps) {
   return (
-    <div className="grid grid-cols-5 gap-2">
+    <div className="flex gap-12 overflow-x-auto px-6">
       {(["pg", "sg", "sf", "pf", "c"] as const).map((position) => (
-        <div key={position} className="flex flex-col items-center">
+        <div
+          key={position}
+          className="flex min-w-[5rem] shrink-0 grow basis-0 flex-col items-center"
+        >
           <span className="mb-1 text-xs font-bold text-foreground/50 uppercase">
             {POSITION_LABELS[position]}
           </span>

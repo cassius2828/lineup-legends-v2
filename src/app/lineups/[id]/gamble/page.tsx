@@ -210,7 +210,7 @@ export default function GambleLineupPage() {
               <h2 className="mb-4 text-lg font-semibold text-foreground">
                 Select a player to gamble:
               </h2>
-              <div className="grid grid-cols-5 gap-3">
+              <div className="flex gap-3 overflow-x-auto">
                 {POSITIONS.map((pos) => {
                   const player =
                     lineup.players[pos as keyof typeof lineup.players];
@@ -220,7 +220,7 @@ export default function GambleLineupPage() {
                     <button
                       key={pos}
                       onClick={() => setSelectedPosition(pos)}
-                      className={`rounded-xl p-3 transition-all ${
+                      className={`min-w-[5rem] shrink-0 grow basis-0 rounded-xl p-3 transition-all ${
                         isSelected
                           ? "bg-green-500/30 ring-2 ring-green-500"
                           : "bg-surface-800/80 hover:bg-surface-700"

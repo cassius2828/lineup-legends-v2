@@ -1,6 +1,12 @@
 import dotenv from "dotenv";
 import mongoose, { Schema, type Document, type Model } from "mongoose";
-import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  PutObjectCommand,
+  HeadObjectCommand,
+  CopyObjectCommand,
+  DeleteObjectCommand,
+} from "@aws-sdk/client-s3";
 
 dotenv.config();
 
@@ -60,23 +66,40 @@ const s3 = new S3Client({
   },
 });
 
-// --- Helpers ---
+// --- Constants ---
 
 const BATCH_SIZE = 5;
 const FETCH_TIMEOUT_MS = 15_000;
 
-function buildS3Key(player: PlayerDoc): string {
+const S3_PREFIX = "lineup-legends/media/images/players";
+const OLD_S3_PREFIX = "players";
+
+// --- Helpers ---
+
+function buildFileName(player: PlayerDoc): string {
   const first = player.firstName.toLowerCase().replace(/\s+/g, "_");
   const last = player.lastName.toLowerCase().replace(/\s+/g, "_");
   const id = player._id.toHexString();
-  return `players/${first}_${last}_${id}.png`;
+  return `${first}_${last}_${id}.png`;
+}
+
+function buildS3Key(player: PlayerDoc): string {
+  return `${S3_PREFIX}/${buildFileName(player)}`;
+}
+
+function buildOldS3Key(player: PlayerDoc): string {
+  return `${OLD_S3_PREFIX}/${buildFileName(player)}`;
 }
 
 function buildCdnUrl(key: string): string {
-  return `${CLOUDFRONT_URL}/${key}`;
+  return `${CLOUDFRONT_URL}/media/images/players/${key.split("/").pop()}`;
 }
 
 function isAlreadyMigrated(imgUrl: string): boolean {
+  return imgUrl.startsWith(CLOUDFRONT_URL + "/media/images/players/");
+}
+
+function isAtOldLocation(imgUrl: string): boolean {
   return imgUrl.startsWith(CLOUDFRONT_URL + "/players/");
 }
 
@@ -86,6 +109,27 @@ async function s3ObjectExists(key: string): Promise<boolean> {
     return true;
   } catch {
     return false;
+  }
+}
+
+async function copyS3Object(sourceKey: string, destKey: string): Promise<void> {
+  const encodedSource = `${BUCKET_NAME}/${sourceKey.split("/").map(encodeURIComponent).join("/")}`;
+  await s3.send(
+    new CopyObjectCommand({
+      Bucket: BUCKET_NAME,
+      CopySource: encodedSource,
+      Key: destKey,
+      ContentType: "image/png",
+      MetadataDirective: "REPLACE",
+    }),
+  );
+}
+
+async function deleteS3Object(key: string): Promise<void> {
+  try {
+    await s3.send(new DeleteObjectCommand({ Bucket: BUCKET_NAME, Key: key }));
+  } catch {
+    // non-critical, ignore
   }
 }
 
@@ -130,31 +174,44 @@ async function processBatch(players: PlayerDoc[], stats: MigrationStats): Promis
 
 async function processPlayer(player: PlayerDoc, stats: MigrationStats): Promise<void> {
   const name = `${player.firstName} ${player.lastName}`;
-  const s3Key = buildS3Key(player);
-  const cdnUrl = buildCdnUrl(s3Key);
+  const newKey = buildS3Key(player);
+  const oldKey = buildOldS3Key(player);
+  const cdnUrl = buildCdnUrl(newKey);
 
   if (isAlreadyMigrated(player.imgUrl)) {
     stats.skipped++;
     return;
   }
 
-  // Check if the image already exists in S3 (previous partial run)
-  const alreadyInS3 = await s3ObjectExists(s3Key);
+  const alreadyAtNewLocation = await s3ObjectExists(newKey);
 
-  if (!alreadyInS3) {
-    const imageBuffer = await downloadImage(player.imgUrl);
-    if (!imageBuffer) {
-      console.log(`  FAILED  ${name} — could not download from ${player.imgUrl}`);
-      stats.failed.push({ name, url: player.imgUrl });
-      return;
+  if (!alreadyAtNewLocation) {
+    // Check if the image exists at the old (wrong) S3 location from the previous run
+    if (isAtOldLocation(player.imgUrl) || await s3ObjectExists(oldKey)) {
+      await copyS3Object(oldKey, newKey);
+      await deleteS3Object(oldKey);
+      console.log(`  MOVED   ${name}`);
+    } else {
+      // Fresh download from external URL
+      const imageBuffer = await downloadImage(player.imgUrl);
+      if (!imageBuffer) {
+        console.log(`  FAILED  ${name} — could not download from ${player.imgUrl}`);
+        stats.failed.push({ name, url: player.imgUrl });
+        return;
+      }
+      await uploadToS3(imageBuffer, newKey);
+      console.log(`  UPLOAD  ${name}`);
     }
-
-    await uploadToS3(imageBuffer, s3Key);
+  } else {
+    // Already at new location, just need DB update
+    // Clean up old key if it exists
+    if (await s3ObjectExists(oldKey)) {
+      await deleteS3Object(oldKey);
+    }
+    console.log(`  OK      ${name} (already in correct S3 location)`);
   }
 
-  // Update the player's imgUrl in the database
   await PlayerModel.updateOne({ _id: player._id }, { $set: { imgUrl: cdnUrl } });
-  console.log(`  OK      ${name}`);
   stats.migrated++;
 }
 
@@ -168,7 +225,10 @@ interface MigrationStats {
 }
 
 async function main() {
-  console.log("=== Player Image Migration to S3 ===\n");
+  console.log("=== Player Image Migration to S3 ===");
+  console.log(`  Bucket:    ${BUCKET_NAME}`);
+  console.log(`  S3 path:   ${S3_PREFIX}/`);
+  console.log(`  CDN base:  ${CLOUDFRONT_URL}/media/images/players/\n`);
 
   console.log("Connecting to MongoDB...");
   await mongoose.connect(MONGODB_URI, { bufferCommands: false });
@@ -195,7 +255,7 @@ async function main() {
   console.log("\n=== Migration Summary ===");
   console.log(`  Total players:    ${stats.total}`);
   console.log(`  Migrated:         ${stats.migrated}`);
-  console.log(`  Already on S3:    ${stats.skipped}`);
+  console.log(`  Already correct:  ${stats.skipped}`);
   console.log(`  Failed to fetch:  ${stats.failed.length}`);
 
   if (stats.failed.length > 0) {
