@@ -14,6 +14,7 @@ import {
   getTierConfig,
   type AnimationPhase,
 } from "./gamble-reveal-utils";
+import { useGambleSounds } from "./useGambleSounds";
 
 interface GambleRevealProps {
   previousPlayer: PlayerType;
@@ -36,24 +37,30 @@ export function GambleReveal({
   const config = getTierConfig(outcomeTier);
   const category = getOutcomeCategory(outcomeTier);
   const tierColor = VALUE_COLORS[newPlayer.value] ?? "#e3b920";
+  const { playSuspense, stopSuspense, playFlip, playCelebration } =
+    useGambleSounds(outcomeTier);
 
   const skip = useCallback(() => {
+    stopSuspense();
     setPhase("done");
     onComplete();
-  }, [onComplete]);
+  }, [onComplete, stopSuspense]);
 
   useEffect(() => {
     if (phase === "suspense") {
+      playSuspense();
       const timer = setTimeout(
         () => setPhase("reveal"),
         config.suspenseDuration,
       );
       return () => clearTimeout(timer);
     }
-  }, [phase, config.suspenseDuration]);
+  }, [phase, config.suspenseDuration, playSuspense]);
 
   useEffect(() => {
     if (phase === "reveal") {
+      stopSuspense();
+      playFlip();
       const flipMs = config.flipDuration * 1000 + 200;
       const timer = setTimeout(() => {
         setPhase("celebration");
@@ -61,17 +68,18 @@ export function GambleReveal({
       }, flipMs);
       return () => clearTimeout(timer);
     }
-  }, [phase, config.flipDuration]);
+  }, [phase, config.flipDuration, stopSuspense, playFlip]);
 
   useEffect(() => {
     if (phase === "celebration") {
+      playCelebration();
       const timer = setTimeout(() => {
         setPhase("done");
         onComplete();
       }, 2800);
       return () => clearTimeout(timer);
     }
-  }, [phase, onComplete]);
+  }, [phase, onComplete, playCelebration]);
 
   const isFlipped =
     phase === "reveal" || phase === "celebration" || phase === "done";
