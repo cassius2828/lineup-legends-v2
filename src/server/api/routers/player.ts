@@ -31,7 +31,9 @@ export const playerRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const cachedPlayers = await redis.get("players");
       if (cachedPlayers) {
-        return JSON.parse(cachedPlayers).find((player: Player) => player.id === input.id);
+        return JSON.parse(cachedPlayers).find(
+          (player: any) => (player.id ?? player._id?.toString()) === input.id,
+        );
       }
       return await PlayerModel.findById(input.id).lean();
 
