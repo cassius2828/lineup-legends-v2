@@ -26,6 +26,9 @@ MONGODB_URI="mongodb://localhost:27017/lineup-legends"
 
 # For MongoDB Atlas (cloud)
 MONGODB_URI="mongodb+srv://user:password@cluster.mongodb.net/lineup-legends?retryWrites=true&w=majority"
+
+# Redis connection string (used by ioredis for caching)
+REDIS_URL="redis://localhost:6379"
 ```
 
 ### Type-Safe Environment Validation
@@ -39,6 +42,7 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     MONGODB_URI: z.string().url(),
+    REDIS_URL: z.string().url(),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     // ... other variables
   },
@@ -56,6 +60,67 @@ Each model file exports:
 - An **API type** (e.g. `Player`) — used in responses and client-side code
 - A **Doc type** (e.g. `PlayerDoc`) — used in database operations (extends Mongoose `Document`)
 - A **Model** (e.g. `PlayerModel`) — the Mongoose model instance
+
+## Redis Caching Layer
+
+Lineup Legends uses **Redis** as a server-side cache via the `ioredis` client. The cache sits at the tRPC API layer, reducing MongoDB load for shared, rarely-changing data.
+
+### Redis Connection
+
+The Redis client is managed in `src/server/redis.ts` using the same `globalThis` singleton pattern as the Mongoose connection to survive HMR in development:
+
+```typescript
+import { Redis } from "ioredis";
+import { env } from "~/env.js";
+
+export const redis = ((globalThis as unknown as { redis: Redis }).redis ??= new Redis(env.REDIS_URL)) as Redis;
+```
+
+### Caching Strategies
+
+Two caching strategies are used depending on the data characteristics:
+
+#### Cache-Aside (Players)
+
+Used for shared, rarely-changing data with explicit invalidation on writes.
+
+| Cache Key  | Data              | TTL     | Invalidated By                           |
+| ---------- | ----------------- | ------- | ---------------------------------------- |
+| `players`  | All player data   | 24 hrs  | `player.create`, `player.update`, `player.delete` |
+
+- All player read endpoints (`getAll`, `getById`, `search`) pull from the same `players` cache key
+- Filtering and lookups are performed in-memory on the cached data
+- Admin mutations (`create`, `update`, `delete`) call `redis.del("players")` to invalidate
+- The next read after invalidation repopulates the cache from MongoDB
+
+#### TTL-Only (Admin Stats)
+
+Used for expensive aggregations with many write paths where explicit invalidation would be impractical.
+
+| Cache Key     | Data              | TTL     | Invalidated By |
+| ------------- | ----------------- | ------- | -------------- |
+| `admin:stats` | Dashboard counts  | 5 min   | TTL expiry only |
+
+- The admin dashboard runs 13 parallel queries across 8 collections
+- Rather than tracking invalidation across 10+ mutations in 6 routers, the cache simply expires
+- A few minutes of staleness is acceptable for aggregate dashboard counts
+
+### Running Redis Locally
+
+Use Docker to run a local Redis instance:
+
+```bash
+docker run -d --name redis -p 6379:6379 redis:alpine
+```
+
+Verify the connection:
+
+```bash
+docker exec redis redis-cli ping
+# PONG
+```
+
+For production, use a managed service like **Upstash** (serverless, HTTP-based) or **AWS ElastiCache**.
 
 ## Database Connection
 
@@ -445,3 +510,5 @@ MONGODB_URI="mongodb://localhost:27017/lineup-legends"
 3. **Connection pooling**: Mongoose manages this via the cached singleton in `db.ts`
 4. **Index strategy**: All models define indexes for their common query patterns (see individual model sections)
 5. **Denormalized aggregates**: Fields like `avgRating`, `totalVotes`, `followerCount` are stored directly on documents for read performance and updated atomically during writes
+6. **Redis caching**: Shared, rarely-changing data (players) uses cache-aside with explicit invalidation; expensive aggregations (admin stats) use TTL-only caching to avoid complex invalidation across many write paths
+7. **Managed Redis**: Use Upstash or AWS ElastiCache instead of self-hosted Redis in production

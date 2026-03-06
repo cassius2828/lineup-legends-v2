@@ -2,7 +2,7 @@
 
 This document provides a comprehensive analysis of the Lineup Legends v2 database architecture and documents the current scalable design patterns implemented.
 
-> **Last Updated**: January 2026  
+> **Last Updated**: March 2026  
 > **Status**: Implemented
 
 ---
@@ -22,12 +22,13 @@ This document provides a comprehensive analysis of the Lineup Legends v2 databas
 
 ### Technology Stack
 
-| Component | Technology  | Notes                       |
-| --------- | ----------- | --------------------------- |
-| Database  | MongoDB     | Document store              |
-| ODM       | Mongoose    | Schema validation, virtuals |
-| API Layer | tRPC        | Type-safe procedures        |
-| Auth      | NextAuth.js | OAuth + credentials         |
+| Component | Technology  | Notes                                      |
+| --------- | ----------- | ------------------------------------------ |
+| Database  | MongoDB     | Document store                             |
+| ODM       | Mongoose    | Schema validation, virtuals                |
+| Cache     | Redis       | Server-side cache via ioredis              |
+| API Layer | tRPC        | Type-safe procedures                       |
+| Auth      | NextAuth.js | OAuth + credentials                        |
 
 ### Model Summary
 
@@ -277,6 +278,57 @@ LineupSchema.index({ avgRating: -1 }); // Top rated
 LineupSchema.index({ totalVotes: -1 }); // Most popular
 LineupSchema.index({ createdAt: -1 }); // Newest
 ```
+
+---
+
+## Redis Caching Strategy
+
+### Overview
+
+Redis is used as a server-side cache to reduce MongoDB load for data that is shared across all users and changes infrequently. The cache logic lives in the tRPC router layer, making it explicit and easy to reason about alongside the mutations that invalidate it.
+
+The Redis client (`src/server/redis.ts`) uses the same `globalThis` singleton pattern as the Mongoose connection to prevent duplicate connections during HMR in development.
+
+### Cache-Aside Pattern (Players)
+
+Player data is the primary caching target because it satisfies all three criteria for an effective server-side cache:
+
+1. **Shared across all users** — a single cache entry serves every request
+2. **Rarely changes** — only admin mutations (create, update, delete) modify players
+3. **Eliminates repeated DB queries** — client-side search uses the cached data for filtering
+
+```
+User request → Check Redis → Hit? → Return cached data
+                            → Miss? → Query MongoDB → Store in Redis → Return
+```
+
+| Cache Key | Contents         | TTL    | Invalidation                                      |
+| --------- | ---------------- | ------ | ------------------------------------------------- |
+| `players` | All player data  | 24 hrs | `player.create`, `player.update`, `player.delete` |
+
+All read endpoints (`getAll`, `getById`, `search`) pull from the same `players` key and filter in-memory. This avoids managing multiple cache keys while keeping invalidation to a single `redis.del("players")` call.
+
+### TTL-Only Pattern (Admin Stats)
+
+The admin dashboard aggregates counts across 8 collections (13 parallel queries). Explicit invalidation is impractical here because 10+ mutations across 6 routers would each need to invalidate the cache.
+
+Instead, the cache relies solely on TTL expiry:
+
+| Cache Key     | Contents          | TTL   | Invalidation   |
+| ------------- | ----------------- | ----- | -------------- |
+| `admin:stats` | Dashboard counts  | 5 min | TTL expiry only |
+
+This trades a small window of staleness (acceptable for aggregate counts) for dramatically simpler code.
+
+### What's NOT Cached (and Why)
+
+| Data              | Reason                                                                 |
+| ----------------- | ---------------------------------------------------------------------- |
+| User lineups      | Per-user data with frequent mutations; React Query handles the UX well |
+| Comments/votes    | High write frequency would cause constant invalidation                 |
+| Follow lists      | Per-user, paginated, changes on every follow/unfollow                  |
+| Random players    | Intentionally random per-request; caching defeats the purpose          |
+| User profiles     | Candidate for future caching (5 parallel queries, shared, infrequent changes) |
 
 ---
 

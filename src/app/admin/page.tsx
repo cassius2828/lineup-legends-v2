@@ -12,6 +12,7 @@ import {
   Plus,
   ArrowRight,
   Mail,
+  ImageOff,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -253,6 +254,20 @@ export default function AdminDashboardPage() {
               <p className="text-sm font-medium text-foreground">Feedback</p>
               <p className="text-xs text-foreground/40">
                 Manage user feedback and messages
+              </p>
+            </div>
+          </Link>
+          <Link
+            href="/test/player-images"
+            className="flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/3 p-4 transition-colors hover:bg-foreground/6"
+          >
+            <div className="rounded-lg bg-red-400/10 p-2">
+              <ImageOff className="h-5 w-5 text-red-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Test Player Images</p>
+              <p className="text-xs text-foreground/40">
+                Check for broken player images
               </p>
             </div>
           </Link>
