@@ -14,7 +14,7 @@ import {
 import { getId } from "~/lib/types";
 import { api } from "~/trpc/react";
 
-type SortOption = "newest" | "oldest" | "highest-rated";
+type SortOption = "newest" | "oldest" | "highest-rated" | "most-rated";
 
 export default function ExploreLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
@@ -60,6 +60,7 @@ export default function ExploreLineupsPage() {
               { value: "newest", label: "Newest" },
               { value: "oldest", label: "Oldest" },
               { value: "highest-rated", label: "Highest Rated" },
+              { value: "most-rated", label: "Most Rated" },
             ] as const
           ).map((option) => (
             <button

@@ -163,6 +163,7 @@ LineupSchema.index({ owner: 1, createdAt: -1 }); // lineups created by a user
 LineupSchema.index({ owner: 1, updatedAt: -1 }); // lineups updated by a user
 LineupSchema.index({ featured: 1, createdAt: -1 }); // featured lineups
 LineupSchema.index({ avgRating: -1 }); // lineups with the highest average rating
+LineupSchema.index({ ratingCount: -1 }); // lineups with the most ratings
 LineupSchema.index({ createdAt: -1 }); // lineups created in the last 24 hours
 
 export const LineupModel: Model<LineupDoc> =

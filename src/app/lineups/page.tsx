@@ -8,7 +8,7 @@ import { api } from "~/trpc/react";
 import LineupsHeader from "../_components/Header/LineupsHeader";
 import LineupCardGrid from "../_components/common/LineupCardGrid";
 
-type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
+type SortOption = "newest" | "oldest" | "highest-rated" | "most-rated";
 
 export default function MyLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
@@ -70,7 +70,7 @@ export default function MyLineupsPage() {
               { value: "newest", label: "Newest" },
               { value: "oldest", label: "Oldest" },
               { value: "highest-rated", label: "Highest Rated" },
-              { value: "most-votes", label: "Most Votes" },
+              { value: "most-rated", label: "Most Rated" },
             ] as const
           ).map((option) => (
             <button

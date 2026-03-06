@@ -111,7 +111,7 @@ export const lineupRouter = createTRPCRouter({
       z
         .object({
           sort: z
-            .enum(["newest", "oldest", "highest-rated"])
+            .enum(["newest", "oldest", "highest-rated", "most-rated"])
             .optional()
             .default("newest"),
         })
@@ -126,6 +126,9 @@ export const lineupRouter = createTRPCRouter({
           break;
         case "highest-rated":
           sortOption = { avgRating: -1 };
+          break;
+        case "most-rated":
+          sortOption = { ratingCount: -1 };
           break;
       }
 
@@ -143,7 +146,7 @@ export const lineupRouter = createTRPCRouter({
       z.object({
         userId: z.string(),
         sort: z
-          .enum(["newest", "oldest", "highest-rated"])
+          .enum(["newest", "oldest", "highest-rated", "most-rated"])
           .optional()
           .default("newest"),
       }),
@@ -157,6 +160,9 @@ export const lineupRouter = createTRPCRouter({
           break;
         case "highest-rated":
           sortOption = { avgRating: -1 };
+          break;
+        case "most-rated":
+          sortOption = { ratingCount: -1 };
           break;
       }
       // may need to check if we need to map ratings here
