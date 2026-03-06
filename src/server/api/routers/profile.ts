@@ -41,7 +41,7 @@ export const profileRouter = createTRPCRouter({
           LineupModel.countDocuments({ owner: ownerId }),
 
           LineupModel.aggregate([
-            { $match: { owner: ownerId } },
+            { $match: { owner: ownerId, ratingCount: { $gt: 0 } } },
             {
               $group: {
                 _id: null,

@@ -34,9 +34,8 @@ export function PlayerImage({ imgUrl, alt, className }: PlayerImageProps) {
         <img
           src={imgUrl}
           alt={alt}
-          className={`${baseClassName} transition-opacity duration-200 ${
-            realImageLoaded ? "opacity-100" : "opacity-0"
-          }`}
+          className={`${baseClassName} transition-opacity duration-200 ${realImageLoaded ? "opacity-100" : "opacity-0"
+            }`}
           draggable={false}
           onLoad={() => setRealImageLoaded(true)}
           onError={() => setRealImageLoaded(false)}
