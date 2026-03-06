@@ -10,6 +10,7 @@ import {
   RequestedPlayerModel,
   FollowModel,
 } from "~/server/models";
+import { redis } from "~/server/redis";
 
 function objectIdFromDate(date: Date): mongoose.Types.ObjectId {
   const hexSeconds = Math.floor(date.getTime() / 1000)
@@ -20,6 +21,10 @@ function objectIdFromDate(date: Date): mongoose.Types.ObjectId {
 
 export const adminRouter = createTRPCRouter({
   getStats: adminProcedure.query(async () => {
+    const cachedStats = await redis.get("admin:stats");
+    if (cachedStats) {
+      return JSON.parse(cachedStats);
+    }
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);

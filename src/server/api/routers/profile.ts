@@ -8,12 +8,17 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { LineupModel, UserModel } from "~/server/models";
+import { redis } from "~/server/redis";
 
 export const profileRouter = createTRPCRouter({
   // Get a user's profile by ID (includes lineups + stats)
   getById: publicProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
+      const cachedUser = await redis.get(`user:${input.userId}`);
+      if (cachedUser) {
+        return JSON.parse(cachedUser);
+      }
       const user = await UserModel.findById(input.userId)
         .select(
           "name username image bio profileImg bannerImg socialMedia followerCount followingCount",
@@ -86,6 +91,10 @@ export const profileRouter = createTRPCRouter({
 
   // Get current user's profile
   getMe: protectedProcedure.query(async ({ ctx }) => {
+    const cachedUser = await redis.get(`user:${ctx.session.user.id}`);
+    if (cachedUser) {
+      return JSON.parse(cachedUser);
+    }
     const user = await UserModel.findById(ctx.session.user.id)
       .select(
         "name username email image bio profileImg bannerImg socialMedia followerCount followingCount",
@@ -156,7 +165,7 @@ export const profileRouter = createTRPCRouter({
         updateData,
         { new: true },
       );
-
+      await redis.del(`user:${ctx.session.user.id}`);
       return updatedUser ?? null;
     }),
 

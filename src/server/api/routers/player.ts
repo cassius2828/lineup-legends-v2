@@ -6,6 +6,7 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { PlayerModel } from "~/server/models";
+import { redis } from "~/server/redis";
 
 export const playerRouter = createTRPCRouter({
   // Get all players, optionally filtered by value
@@ -13,14 +14,28 @@ export const playerRouter = createTRPCRouter({
     .input(z.object({ value: z.number().min(1).max(5).optional() }).optional())
     .query(async ({ input }) => {
       const filter = input?.value ? { value: input.value } : {};
-      return await PlayerModel.find(filter).sort({ value: -1 }).lean();
+      const cachedPlayers = await redis.get("players");
+      if (cachedPlayers) {
+        return JSON.parse(cachedPlayers);
+      }
+      const players = await PlayerModel.find(filter).sort({ value: -1 }).lean();
+      await redis.set("players", JSON.stringify(players));
+      // ttl 24 hours
+      await redis.expire("players", 84600);
+      return players;
     }),
 
   // Get a single player by ID
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
+      const cachedPlayers = await redis.get("players");
+      if (cachedPlayers) {
+        return JSON.parse(cachedPlayers).find((player: Player) => player.id === input.id);
+      }
       return await PlayerModel.findById(input.id).lean();
+
+
     }),
 
   // Get random players grouped by value tier (for lineup creation)
@@ -48,6 +63,8 @@ export const playerRouter = createTRPCRouter({
   }),
 
   // Search players by name
+  // Are we even using this anymore, since we leverage the client side search and redis? 
+  // we can keep as a fallback for now
   search: publicProcedure
     .input(z.object({ query: z.string() }))
     .query(async ({ input }) => {
@@ -92,7 +109,7 @@ export const playerRouter = createTRPCRouter({
       if (!updatedPlayer) {
         throw new Error("Player not found");
       }
-
+      await redis.del("players");
       return updatedPlayer.toObject();
     }),
 
@@ -131,6 +148,14 @@ export const playerRouter = createTRPCRouter({
         imgUrl: input.imgUrl,
       });
 
+      await redis.del("players");
       return newPlayer.toObject();
+    }),
+  delete: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      await PlayerModel.findByIdAndDelete(input.id);
+      await redis.del("players");
+      return { success: true };
     }),
 });
