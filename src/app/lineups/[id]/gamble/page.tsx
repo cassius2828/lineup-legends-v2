@@ -1,21 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
 import { type PlayerType } from "~/lib/types";
 import { PlayerImage } from "~/app/_components/PlayerImage";
+import type { GambleOutcomeTier } from "~/server/models";
+import { GambleReveal } from "./_components/GambleReveal";
 
 const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
 
-// Value-based box-shadow glow colors matching original design
 const valueShadows: Record<number, string> = {
-  5: "shadow-[0px_0px_10px_3px_#99fcff]", // Light blue diamond
-  4: "shadow-[0px_0px_10px_3px_#8317e8]", // Purple
-  3: "shadow-[0px_0px_10px_3px_#e3b920]", // Gold
-  2: "shadow-[0px_0px_10px_3px_#c0c0c0]", // Silver
-  1: "shadow-[0px_0px_10px_3px_#804a14]", // Bronze
+  5: "shadow-[0px_0px_10px_3px_#99fcff]",
+  4: "shadow-[0px_0px_10px_3px_#8317e8]",
+  3: "shadow-[0px_0px_10px_3px_#e3b920]",
+  2: "shadow-[0px_0px_10px_3px_#c0c0c0]",
+  1: "shadow-[0px_0px_10px_3px_#804a14]",
 };
 
 const POSITION_LABELS = {
@@ -26,6 +27,15 @@ const POSITION_LABELS = {
   c: "C",
 };
 
+interface GambleResultData {
+  previousPlayer: PlayerType;
+  newPlayer: PlayerType;
+  outcomeTier: GambleOutcomeTier;
+  valueChange: number;
+}
+
+type PageView = "selection" | "animating" | "result";
+
 export default function GambleLineupPage() {
   const params = useParams();
   const lineupId = typeof params.id === "string" ? params.id : "";
@@ -33,10 +43,10 @@ export default function GambleLineupPage() {
   const [selectedPosition, setSelectedPosition] = useState<
     (typeof POSITIONS)[number] | null
   >(null);
-  const [gambleResult, setGambleResult] = useState<{
-    previousPlayer: PlayerType;
-    newPlayer: PlayerType;
-  } | null>(null);
+  const [gambleResult, setGambleResult] = useState<GambleResultData | null>(
+    null,
+  );
+  const [view, setView] = useState<PageView>("selection");
 
   const {
     data: lineup,
@@ -47,9 +57,12 @@ export default function GambleLineupPage() {
   const gambleMutation = api.lineup.gamble.useMutation({
     onSuccess: (data) => {
       setGambleResult({
-        previousPlayer: data.previousPlayer,
-        newPlayer: data.newPlayer,
+        previousPlayer: data.previousPlayer as PlayerType,
+        newPlayer: data.newPlayer as PlayerType,
+        outcomeTier: data.outcome.outcomeTier,
+        valueChange: data.outcome.valueChange,
       });
+      setView("animating");
       void refetch();
     },
     onError: (error) => {
@@ -62,9 +75,14 @@ export default function GambleLineupPage() {
     gambleMutation.mutate({ lineupId, position: selectedPosition });
   };
 
+  const handleAnimationComplete = useCallback(() => {
+    setView("result");
+  }, []);
+
   const handleReset = () => {
     setGambleResult(null);
     setSelectedPosition(null);
+    setView("selection");
   };
 
   if (isLoading) {
@@ -81,8 +99,13 @@ export default function GambleLineupPage() {
     return (
       <main className="min-h-screen bg-gradient-to-b from-surface-950 via-green-900/20 to-surface-950">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground">Lineup not found</h1>
-          <Link href="/lineups" className="mt-4 text-green-400 hover:underline">
+          <h1 className="text-2xl font-bold text-foreground">
+            Lineup not found
+          </h1>
+          <Link
+            href="/lineups"
+            className="mt-4 text-green-400 hover:underline"
+          >
             Back to My Lineups
           </Link>
         </div>
@@ -122,8 +145,21 @@ export default function GambleLineupPage() {
           </p>
         </div>
 
-        {/* Gamble Result */}
-        {gambleResult ? (
+        {/* Animation View */}
+        {view === "animating" && gambleResult && (
+          <div className="mb-8 rounded-2xl bg-surface-800/80 p-6">
+            <GambleReveal
+              previousPlayer={gambleResult.previousPlayer}
+              newPlayer={gambleResult.newPlayer}
+              outcomeTier={gambleResult.outcomeTier}
+              valueChange={gambleResult.valueChange}
+              onComplete={handleAnimationComplete}
+            />
+          </div>
+        )}
+
+        {/* Final Result View */}
+        {view === "result" && gambleResult && (
           <div className="mb-8 rounded-2xl bg-surface-800/80 p-6">
             <h2 className="mb-6 text-center text-xl font-bold text-foreground">
               Gamble Result
@@ -162,19 +198,14 @@ export default function GambleLineupPage() {
                     alt={`${gambleResult.newPlayer.firstName} ${gambleResult.newPlayer.lastName}`}
                     className="absolute inset-0 h-full w-full rounded-full object-cover"
                   />
-                  {gambleResult.newPlayer.value >
-                    gambleResult.previousPlayer.value && (
+                  {gambleResult.valueChange > 0 && (
                     <span className="absolute -top-2 -right-2 rounded-full bg-emerald-500 px-2 py-1 text-xs font-bold text-foreground">
-                      +
-                      {gambleResult.newPlayer.value -
-                        gambleResult.previousPlayer.value}
+                      +{gambleResult.valueChange}
                     </span>
                   )}
-                  {gambleResult.newPlayer.value <
-                    gambleResult.previousPlayer.value && (
+                  {gambleResult.valueChange < 0 && (
                     <span className="absolute -top-2 -right-2 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-foreground">
-                      {gambleResult.newPlayer.value -
-                        gambleResult.previousPlayer.value}
+                      {gambleResult.valueChange}
                     </span>
                   )}
                 </div>
@@ -203,7 +234,10 @@ export default function GambleLineupPage() {
               </Link>
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* Selection View */}
+        {view === "selection" && (
           <>
             {/* Select Position */}
             <div className="mb-6">
@@ -241,7 +275,9 @@ export default function GambleLineupPage() {
                       <p className="mt-2 truncate text-sm font-medium text-foreground">
                         {player.firstName}
                       </p>
-                      <p className="text-xs text-green-400">${player.value}</p>
+                      <p className="text-xs text-green-400">
+                        ${player.value}
+                      </p>
                     </button>
                   );
                 })}

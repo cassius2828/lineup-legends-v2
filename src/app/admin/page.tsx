@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Mail,
   ImageOff,
+  Sparkles,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -268,6 +269,20 @@ export default function AdminDashboardPage() {
               <p className="text-sm font-medium text-foreground">Test Player Images</p>
               <p className="text-xs text-foreground/40">
                 Check for broken player images
+              </p>
+            </div>
+          </Link>
+          <Link
+            href="/admin/gamble-animations"
+            className="flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/3 p-4 transition-colors hover:bg-foreground/6"
+          >
+            <div className="rounded-lg bg-green-400/10 p-2">
+              <Sparkles className="h-5 w-5 text-green-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">Gamble Animations</p>
+              <p className="text-xs text-foreground/40">
+                Preview all gamble outcome animations
               </p>
             </div>
           </Link>
