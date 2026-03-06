@@ -16,6 +16,7 @@ interface LineupCardProps {
   isOwner?: boolean;
   currentUserId?: string;
   userVote?: "upvote" | "downvote" | null;
+  featured?: boolean;
 }
 
 export function LineupCard({
@@ -24,6 +25,7 @@ export function LineupCard({
   onDelete,
   onToggleFeatured,
   isOwner = false,
+  featured = false,
 }: LineupCardProps) {
   const totalValue =
     lineup.players.pg?.value +
@@ -37,7 +39,7 @@ export function LineupCard({
   });
 
   return (
-    <div className="relative rounded-2xl bg-gradient-to-br from-surface-800/90 to-surface-950/90 p-6 shadow-xl backdrop-blur-sm">
+    <div className={`relative rounded-2xl bg-gradient-to-br from-surface-800/90 to-surface-950/90 p-6 shadow-xl backdrop-blur-sm ${featured ? "glow-gold" : ""}`}>
       <LineupCardHeader
         lineup={lineup}
         showOwner={showOwner}

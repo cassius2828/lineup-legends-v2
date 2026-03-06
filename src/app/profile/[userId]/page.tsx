@@ -453,10 +453,15 @@ export default function ProfilePage() {
                   } as any}
                   showOwner={false}
                   isOwner={false}
+                  featured
                 />
               ))}
             </div>
           </div>
+        )}
+
+        {profile.featuredLineups && profile.featuredLineups.length > 0 && (
+          <hr className="mb-8 border-t border-gold/40" />
         )}
 
         {/* Recent Lineups Section */}
