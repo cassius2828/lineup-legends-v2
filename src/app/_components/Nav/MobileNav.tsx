@@ -25,7 +25,7 @@ const MobileNav = ({ session }: { session: Session | null }) => {
       {/* Mobile Menu Overlay */}
       {isOpen && (
         <>
-          <div className="fixed z-40" onClick={closeMenu} />
+          <div className="fixed inset-0 z-40" onClick={closeMenu} />
           <div className="border-gold/10 fixed top-0 right-0 z-40 h-full w-full border-l backdrop-blur-xl">
             <div className="flex flex-col gap-4 bg-black/90 p-6">
               {/* Close button */}

@@ -3,16 +3,22 @@
 import { motion } from "framer-motion";
 import { VALUE_COLORS } from "./gamble-reveal-utils";
 
+const NEUTRAL_COLOR = "#9ca3af";
+
 interface MysteryCardProps {
   playerValue: number;
+  suspenseDuration: number;
 }
 
-export function MysteryCard({ playerValue }: MysteryCardProps) {
-  const glowColor = VALUE_COLORS[playerValue] ?? "#e3b920";
+export function MysteryCard({ playerValue, suspenseDuration }: MysteryCardProps) {
+  const tierColor = VALUE_COLORS[playerValue] ?? "#e3b920";
+
+  const colorTransitionDelay = suspenseDuration * 0.45 / 1000;
+  const colorTransitionDuration = suspenseDuration * 0.55 / 1000;
 
   return (
     <div className="relative flex h-full w-full items-center justify-center">
-      {/* Shimmer sweep overlay */}
+      {/* Shimmer sweep overlay — starts neutral, shifts to tier color */}
       <motion.div
         className="absolute inset-0 overflow-hidden rounded-2xl"
         initial={{ opacity: 0 }}
@@ -21,53 +27,88 @@ export function MysteryCard({ playerValue }: MysteryCardProps) {
       >
         <motion.div
           className="absolute -inset-full"
-          style={{
-            background: `linear-gradient(105deg, transparent 40%, ${glowColor}22 45%, ${glowColor}44 50%, ${glowColor}22 55%, transparent 60%)`,
+          initial={{
+            background: `linear-gradient(105deg, transparent 40%, ${NEUTRAL_COLOR}22 45%, ${NEUTRAL_COLOR}44 50%, ${NEUTRAL_COLOR}22 55%, transparent 60%)`,
           }}
-          animate={{ x: ["-100%", "200%"] }}
+          animate={{
+            background: `linear-gradient(105deg, transparent 40%, ${tierColor}22 45%, ${tierColor}44 50%, ${tierColor}22 55%, transparent 60%)`,
+            x: ["-100%", "200%"],
+          }}
           transition={{
-            duration: 2,
-            repeat: Infinity,
-            repeatDelay: 0.5,
-            ease: "easeInOut",
+            background: {
+              delay: colorTransitionDelay,
+              duration: colorTransitionDuration,
+              ease: "easeInOut",
+            },
+            x: {
+              duration: 2,
+              repeat: Infinity,
+              repeatDelay: 0.5,
+              ease: "easeInOut",
+            },
           }}
         />
       </motion.div>
 
       {/* Card face content */}
-      <div
+      <motion.div
         className="relative flex h-full w-full flex-col items-center justify-center rounded-2xl border border-white/10"
-        style={{
-          background: `radial-gradient(ellipse at center, ${glowColor}15 0%, #0a0a0a 70%)`,
+        initial={{
+          background: `radial-gradient(ellipse at center, ${NEUTRAL_COLOR}15 0%, #0a0a0a 70%)`,
+        }}
+        animate={{
+          background: `radial-gradient(ellipse at center, ${tierColor}15 0%, #0a0a0a 70%)`,
+        }}
+        transition={{
+          delay: colorTransitionDelay,
+          duration: colorTransitionDuration,
+          ease: "easeInOut",
         }}
       >
-        {/* Decorative lines */}
-        <div
+        {/* Decorative border — neutral to tier */}
+        <motion.div
           className="absolute inset-4 rounded-xl border"
-          style={{ borderColor: `${glowColor}30` }}
+          initial={{ borderColor: `${NEUTRAL_COLOR}30` }}
+          animate={{ borderColor: `${tierColor}30` }}
+          transition={{
+            delay: colorTransitionDelay,
+            duration: colorTransitionDuration,
+            ease: "easeInOut",
+          }}
         />
 
-        {/* Question mark */}
+        {/* Question mark — neutral to tier color */}
         <motion.span
           className="select-none text-7xl font-black"
-          style={{
-            color: glowColor,
-            textShadow: `0 0 30px ${glowColor}80, 0 0 60px ${glowColor}40`,
+          initial={{
+            color: NEUTRAL_COLOR,
+            textShadow: `0 0 30px ${NEUTRAL_COLOR}80, 0 0 60px ${NEUTRAL_COLOR}40`,
           }}
           animate={{
+            color: tierColor,
+            textShadow: `0 0 30px ${tierColor}80, 0 0 60px ${tierColor}40`,
             scale: [1, 1.05, 1],
             opacity: [0.7, 1, 0.7],
           }}
           transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: "easeInOut",
+            color: {
+              delay: colorTransitionDelay,
+              duration: colorTransitionDuration,
+              ease: "easeInOut",
+            },
+            textShadow: {
+              delay: colorTransitionDelay,
+              duration: colorTransitionDuration,
+              ease: "easeInOut",
+            },
+            scale: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+            opacity: { duration: 2, repeat: Infinity, ease: "easeInOut" },
           }}
         >
           ?
         </motion.span>
 
-        {/* Bottom dice icon */}
+        {/* Dice icon */}
         <motion.span
           className="mt-4 text-2xl opacity-40"
           animate={{ rotate: [0, 10, -10, 0] }}
@@ -75,7 +116,7 @@ export function MysteryCard({ playerValue }: MysteryCardProps) {
         >
           🎲
         </motion.span>
-      </div>
+      </motion.div>
     </div>
   );
 }

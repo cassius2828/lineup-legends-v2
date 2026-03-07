@@ -136,6 +136,8 @@ const LineupSchema = new Schema<LineupDoc>(
     },
     owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
     avgRating: { type: Number, default: 0 },
+    ratingSum: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
     timesGambled: { type: Number, default: 0 },
     // Gambling tracking fields
     lastGambleResult: { type: LastGambleResultSchema, default: undefined },

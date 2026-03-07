@@ -13,9 +13,33 @@ import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "Lineup Legends",
-  description: "Build your dream fantasy basketball lineup with a $15 budget",
+  title: {
+    default: "Lineup Legends",
+    template: "%s | Lineup Legends",
+  },
+  description:
+    "Build your dream fantasy basketball lineup with a $15 budget. Create, rate, gamble, and compete with friends.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://lineuplegends.com",
+  ),
+  openGraph: {
+    type: "website",
+    siteName: "Lineup Legends",
+    title: "Lineup Legends",
+    description:
+      "Build your dream fantasy basketball lineup with a $15 budget. Create, rate, gamble, and compete with friends.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Lineup Legends",
+    description:
+      "Build your dream fantasy basketball lineup with a $15 budget.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 const geist = Geist({

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { PlayerCard } from "~/app/_components/PlayerCard";
 
@@ -61,7 +62,7 @@ export default function RateLineupPage() {
       router.push("/lineups/explore");
     },
     onError: (error) => {
-      alert(error.message);
+      toast.error(error.message);
     },
   });
 

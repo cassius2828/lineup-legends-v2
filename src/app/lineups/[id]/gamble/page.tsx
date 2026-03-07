@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { type PlayerType } from "~/lib/types";
 import { PlayerImage } from "~/app/_components/PlayerImage";
@@ -67,7 +68,7 @@ export default function GambleLineupPage() {
       void utils.lineup.getLineupsByCurrentUser.invalidate();
     },
     onError: (error) => {
-      alert(error.message);
+      toast.error(error.message);
     },
   });
 

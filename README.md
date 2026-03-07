@@ -16,11 +16,19 @@ Welcome to **Lineup Legends v2**, the modernized fantasy basketball lineup creat
 ### Community Engagement
 
 - **Explore Lineups**: Browse lineups created by other users.
-- **Sorting Options**: Sort lineups by newest or oldest to find what you're looking for.
+- **Rate Lineups**: Rate other users' lineups on a scale.
+- **Follow Users**: Follow other users and build your network.
+- **User Profiles**: Customize your profile with images and bio.
+
+### Gamble System
+
+- **Player Gambling**: Gamble a player in your lineup for a random replacement of similar value.
+- **Animated Reveals**: NBA 2K-inspired card reveal animations with tier-based effects and sounds.
 
 ### Authentication
 
-- **OAuth Sign-In**: Secure authentication powered by NextAuth.js with support for various providers.
+- **Google OAuth**: Secure authentication via Google.
+- **Credentials Login**: Sign in with email/username and password.
 - **Protected Routes**: Create and manage your lineups with secure, authenticated endpoints.
 
 ## Tech Stack
@@ -29,36 +37,41 @@ This project is built with the [T3 Stack](https://create.t3.gg/):
 
 - **[Next.js 15](https://nextjs.org)**: React framework with App Router and Turbo mode
 - **[NextAuth.js v5](https://next-auth.js.org)**: Authentication for Next.js
-- **[Prisma](https://prisma.io)**: Type-safe database ORM with MongoDB
+- **[Mongoose](https://mongoosejs.com)**: MongoDB ODM with schema validation
 - **[tRPC](https://trpc.io)**: End-to-end type-safe APIs
 - **[Tailwind CSS v4](https://tailwindcss.com)**: Utility-first CSS framework
 - **[React Query](https://tanstack.com/query)**: Powerful data synchronization for React
 - **[Zod](https://zod.dev)**: TypeScript-first schema validation
 - **[TypeScript](https://www.typescriptlang.org)**: Type-safe JavaScript
+- **[Redis](https://redis.io)**: Caching layer via ioredis
+- **[Framer Motion](https://www.framer.com/motion/)**: Animation library
 
 ## Project Structure
 
 ```
 lineup-legends-v2/
-├── prisma/
-│   ├── schema.prisma      # Database schema (Player, Lineup, User, etc.)
-│   └── seed.ts            # Database seeding script
+├── public/                 # Static assets (images, sounds)
 ├── src/
-│   ├── app/               # Next.js App Router pages
-│   │   ├── _components/   # Shared React components
-│   │   ├── api/           # API routes (auth, tRPC)
-│   │   ├── lineups/       # Lineup pages (list, new, explore)
-│   │   └── page.tsx       # Home page
+│   ├── app/                # Next.js App Router pages
+│   │   ├── _components/    # Shared React components
+│   │   ├── api/            # API routes (auth, tRPC, uploads)
+│   │   ├── admin/          # Admin dashboard pages
+│   │   ├── lineups/        # Lineup pages (list, new, explore, rate, gamble)
+│   │   ├── players/        # Player catalog
+│   │   ├── profile/        # User profile pages
+│   │   └── page.tsx        # Landing page
 │   ├── server/
-│   │   ├── api/           # tRPC routers and procedures
-│   │   │   ├── routers/   # Feature-specific routers (lineup, player)
-│   │   │   ├── root.ts    # Root tRPC router
-│   │   │   └── trpc.ts    # tRPC configuration
-│   │   ├── auth/          # NextAuth.js configuration
-│   │   └── db.ts          # Prisma client instance
-│   ├── trpc/              # tRPC client setup
-│   └── styles/            # Global CSS styles
-└── generated/             # Generated Prisma client
+│   │   ├── api/            # tRPC routers and procedures
+│   │   │   ├── routers/    # Feature-specific routers
+│   │   │   ├── root.ts     # Root tRPC router
+│   │   │   └── trpc.ts     # tRPC configuration
+│   │   ├── auth/           # NextAuth.js configuration
+│   │   ├── models/         # Mongoose schemas and models
+│   │   └── db.ts           # MongoDB connection
+│   ├── lib/                # Shared utilities
+│   ├── trpc/               # tRPC client setup
+│   └── styles/             # Global CSS styles
+└── scripts/                # Migration and utility scripts
 ```
 
 ## Getting Started
@@ -67,12 +80,13 @@ lineup-legends-v2/
 
 - Node.js 18+
 - MongoDB instance (local or cloud)
+- Redis instance (local or cloud)
 - npm 10+
 
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/lineup-legends-v2.git
+git clone https://github.com/cassius2828/lineup-legends-v2.git
 cd lineup-legends-v2
 ```
 
@@ -84,29 +98,21 @@ npm install
 
 ### Set Up Environment Variables
 
-Create a `.env` file in the root directory:
-
-```env
-# Database
-DATABASE_URL="mongodb://localhost:27017/lineup-legends"
-
-# NextAuth
-AUTH_SECRET="your-auth-secret-here"
-
-# OAuth Provider (example: Discord)
-AUTH_GOOGLE_CLIENT_ID="your-discord-client-id"
-AUTH_GOOGLE_CLIENT_SECRET="your-discord-client-secret"
-```
-
-> Generate an auth secret with: `npx auth secret`
-
-### Set Up the Database
+Copy the example environment file and fill in your values:
 
 ```bash
-# Push schema to database
-npm run db:push
+cp .env.example .env
+```
 
-# Seed the database with players
+See `.env.example` for all required variables. Generate an auth secret with:
+
+```bash
+npx auth secret
+```
+
+### Seed the Database
+
+```bash
 npm run db:seed
 ```
 
@@ -120,65 +126,25 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ## Available Scripts
 
-| Script                 | Description                         |
-| ---------------------- | ----------------------------------- |
-| `npm run dev`          | Start development server with Turbo |
-| `npm run build`        | Build for production                |
-| `npm run start`        | Start production server             |
-| `npm run db:push`      | Push Prisma schema to database      |
-| `npm run db:generate`  | Generate Prisma migrations          |
-| `npm run db:studio`    | Open Prisma Studio                  |
-| `npm run db:seed`      | Seed database with player data      |
-| `npm run lint`         | Run ESLint                          |
-| `npm run format:check` | Check code formatting               |
-| `npm run format:write` | Fix code formatting                 |
-| `npm run typecheck`    | Run TypeScript type checking        |
-
-## API Routes
-
-### tRPC Endpoints
-
-**Players**
-
-- `player.getAll` - Get all players (optionally filtered by value)
-- `player.getById` - Get a single player by ID
-- `player.getRandomByValue` - Get random players grouped by value tier
-- `player.search` - Search players by name
-
-**Lineups**
-
-- `lineup.create` - Create a new lineup (protected)
-- `lineup.getByCurrentUser` - Get current user's lineups (protected)
-- `lineup.getByUserId` - Get lineups by user ID
-- `lineup.getAll` - Get all lineups (explore)
-- `lineup.getById` - Get a single lineup
-- `lineup.delete` - Delete a lineup (protected, owner only)
-- `lineup.toggleFeatured` - Toggle featured status (protected, owner only)
-
-## Future Enhancements
-
-- **Rating System**: Rate other users' lineups and receive ratings on yours
-- **Gambling Mechanics**: Gamble players for those of greater, equal, or lesser value
-- **Friend System**: Add friends and interact with their lineups
-- **Comments and Threads**: Engage in discussions through comments
-- **Social Media Sharing**: Share lineups on social media platforms
-- **Earning System**: Earn rewards and achievements
-- **Mobile App**: React Native version for mobile
-
-## External Libraries
-
-- **[date-fns](https://date-fns.org/)**: Modern JavaScript date utility library
-
-## Contributing
-
-We welcome contributions! Please fork the repository and submit pull requests.
-
-Thank you for being part of **Lineup Legends**! Continue building, sharing, and celebrating your love for fantasy basketball with our vibrant community. Your journey as a top fantasy GM starts here!
+| Script                  | Description                          |
+| ----------------------- | ------------------------------------ |
+| `npm run dev`           | Start development server with Turbo  |
+| `npm run build`         | Build for production                 |
+| `npm run start`         | Start production server              |
+| `npm run db:seed`       | Seed database with player data       |
+| `npm run lint`          | Run ESLint                           |
+| `npm run lint:fix`      | Run ESLint with auto-fix             |
+| `npm run format:check`  | Check code formatting                |
+| `npm run format:write`  | Fix code formatting                  |
+| `npm run typecheck`     | Run TypeScript type checking         |
+| `npm run test`          | Run tests                            |
+| `npm run test:watch`    | Run tests in watch mode              |
+| `npm run test:coverage` | Run tests with coverage              |
 
 ## Learn More
 
 - [T3 Stack Documentation](https://create.t3.gg/)
 - [Next.js Documentation](https://nextjs.org/docs)
-- [Prisma Documentation](https://www.prisma.io/docs)
+- [Mongoose Documentation](https://mongoosejs.com/docs/)
 - [tRPC Documentation](https://trpc.io/docs)
 - [NextAuth.js Documentation](https://next-auth.js.org/getting-started/introduction)

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
 
 function ImageUploadField({
@@ -43,7 +44,7 @@ function ImageUploadField({
         onUrlChange(url);
       } catch (error) {
         console.error("Upload error:", error);
-        alert(
+        toast.error(
           error instanceof Error ? error.message : "Failed to upload image",
         );
       } finally {
@@ -144,7 +145,7 @@ export default function EditProfilePage() {
       router.push(`/profile/${profile?.id}`);
     },
     onError: (error) => {
-      alert(error.message);
+      toast.error(error.message);
     },
   });
 

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PlayerSelector } from "~/app/_components/CreateNew/PlayerSelector";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { type PlayerType, getId } from "~/lib/types";
 
@@ -16,7 +17,7 @@ export default function CreateLineupPage() {
       router.push("/lineups");
     },
     onError: (error) => {
-      alert(error.message);
+      toast.error(error.message);
     },
   });
 

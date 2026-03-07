@@ -5,7 +5,6 @@ import MobileNav from "./MobileNav";
 
 const Nav = async () => {
   const session = await auth();
-  console.log(session);
   return (
     <nav className="border-gold/10 fixed top-0 z-50 w-full border-b bg-background backdrop-blur-xl shadow-gold shadow-sm">
       {/* Gold accent line at bottom of nav */}

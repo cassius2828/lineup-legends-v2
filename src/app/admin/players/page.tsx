@@ -3,7 +3,7 @@
 import Fuse from "fuse.js";
 import { useState } from "react";
 import SearchInput from "~/app/_components/Forms/SearchInput";
-import GoldCirlceSpinnerLoader from "~/app/_components/loaders/GoldCirlceSpinnerLoader";
+import GoldCircleSpinnerLoader from "~/app/_components/loaders/GoldCircleSpinnerLoader";
 import { api } from "~/trpc/react";
 import { CantFindPlayerSection } from "./components/CantFindPlayerSection";
 import DefaultPlayersOnInitialRender from "./components/DefaultPlayersOnInitialRender";
@@ -106,7 +106,7 @@ export default function AdminPlayersPage() {
       />
 
       {isAllPlayersLoading ? (
-        <GoldCirlceSpinnerLoader />
+        <GoldCircleSpinnerLoader />
       ) : (
         <SearchResults filteredPlayers={filteredPlayers ?? []} />
       )}

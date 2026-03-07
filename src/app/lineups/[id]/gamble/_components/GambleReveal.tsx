@@ -181,27 +181,34 @@ export function GambleReveal({
               : {}
           }
         >
-          {/* Outer glow ring */}
+          {/* Outer glow ring — starts neutral, transitions to tier color */}
           <motion.div
             className="absolute -inset-3 rounded-3xl"
-            style={{
-              boxShadow: `0 0 ${phase === "suspense" ? 20 : config.glowIntensity * 20}px ${phase === "suspense" ? 8 : config.glowIntensity * 8}px ${category === "negative" && isFlipped ? "#ef444480" : tierColor + "80"}`,
+            initial={{
+              boxShadow: `0 0 15px 5px #9ca3af40`,
             }}
             animate={
               phase === "suspense"
                 ? {
                     boxShadow: [
-                      `0 0 15px 5px ${tierColor}40`,
+                      `0 0 15px 5px #9ca3af40`,
+                      `0 0 30px 12px #9ca3af60`,
+                      `0 0 20px 8px ${tierColor}50`,
                       `0 0 30px 12px ${tierColor}70`,
                       `0 0 15px 5px ${tierColor}40`,
                     ],
                   }
-                : {}
+                : {
+                    boxShadow: `0 0 ${config.glowIntensity * 20}px ${config.glowIntensity * 8}px ${category === "negative" && isFlipped ? "#ef444480" : tierColor + "80"}`,
+                  }
             }
             transition={
               phase === "suspense"
-                ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
-                : {}
+                ? {
+                    duration: config.suspenseDuration / 1000,
+                    ease: "easeInOut",
+                  }
+                : { duration: 0.4 }
             }
           />
 
@@ -229,7 +236,7 @@ export function GambleReveal({
               className="absolute inset-0"
               style={{ backfaceVisibility: "hidden" }}
             >
-              <MysteryCard playerValue={newPlayer.value} />
+              <MysteryCard playerValue={newPlayer.value} suspenseDuration={config.suspenseDuration} />
             </div>
 
             {/* Back face (player reveal) */}

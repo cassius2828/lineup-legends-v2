@@ -134,9 +134,28 @@ export function Footer() {
           </SocialLink>
         </motion.div>
 
+        {/* Legal Links */}
+        <motion.div
+          className="mt-12 flex justify-center gap-6 border-t border-foreground/10 pt-8 pb-4"
+          variants={itemVariants}
+        >
+          <Link
+            href="/terms"
+            className="text-sm text-foreground/50 transition-colors hover:text-gold"
+          >
+            Terms of Service
+          </Link>
+          <Link
+            href="/privacy"
+            className="text-sm text-foreground/50 transition-colors hover:text-gold"
+          >
+            Privacy Policy
+          </Link>
+        </motion.div>
+
         {/* Copyright */}
         <motion.div 
-          className="mt-12 border-t border-foreground/10 pt-8 text-center text-sm text-foreground/40"
+          className="text-center text-sm text-foreground/40"
           variants={itemVariants}
         >
           © {new Date().getFullYear()} Lineup Legends. All rights reserved.

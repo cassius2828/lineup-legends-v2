@@ -79,23 +79,14 @@ export function FeaturedSection() {
           and maybe even recruit some new competitors to join Lineup Legends.
         </motion.p>
 
-        {/* Stats row */}
-        <motion.div 
-          className="mt-12 flex flex-wrap justify-center gap-12"
-          variants={textVariants}
-        >
-          <div className="text-center">
-            <p className="font-stencil text-4xl text-gold">500+</p>
-            <p className="mt-1 text-sm uppercase tracking-wide text-foreground/50">Lineups Created</p>
-          </div>
-          <div className="text-center">
-            <p className="font-stencil text-4xl text-gold">100+</p>
-            <p className="mt-1 text-sm uppercase tracking-wide text-foreground/50">Active Users</p>
-          </div>
-          <div className="text-center">
-            <p className="font-stencil text-4xl text-gold">50+</p>
-            <p className="mt-1 text-sm uppercase tracking-wide text-foreground/50">NBA Legends</p>
-          </div>
+        {/* CTA */}
+        <motion.div className="mt-12" variants={textVariants}>
+          <a
+            href="/lineups/new"
+            className="inline-block border-2 border-gold bg-gold/10 px-8 py-3 font-stencil text-sm uppercase tracking-wider text-foreground/90 transition-all hover:bg-gold hover:text-black hover:glow-gold-sm"
+          >
+            Build Your Lineup
+          </a>
         </motion.div>
       </motion.div>
     </section>

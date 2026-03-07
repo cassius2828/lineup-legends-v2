@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
 
 interface BrokenImage {
@@ -88,11 +89,11 @@ export default function PlayerImagesTestPage() {
       if (response.ok) {
         setReportGenerated(true);
       } else {
-        alert("Failed to generate report");
+        toast.error("Failed to generate report");
       }
     } catch (error) {
       console.error("Error generating report:", error);
-      alert("Error generating report");
+      toast.error("Error generating report");
     } finally {
       setIsGenerating(false);
     }

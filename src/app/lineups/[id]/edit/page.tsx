@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getId, type PlayerType } from "~/lib/types";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 
@@ -196,7 +197,7 @@ export default function EditLineupPage() {
       router.push("/lineups");
     },
     onError: (error) => {
-      alert(error.message);
+      toast.error(error.message);
     },
   });
 

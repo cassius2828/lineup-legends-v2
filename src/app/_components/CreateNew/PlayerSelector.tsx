@@ -12,7 +12,7 @@ import {
 import { useState } from "react";
 import { getId, type PlayerType } from "~/lib/types";
 import CreateLineupHeader from "../Header/CreateLineupHeader";
-import OrderLIneup from "./OrderLIneup";
+import OrderLineup from "./OrderLineup";
 import PlayerGrid from "./PlayerGrid";
 import CreateLineupPlayerDragOverlay from "./CreateLineupPlayerDragOverlay";
 
@@ -240,7 +240,7 @@ export function PlayerSelector({
         </div>
 
         {/* Right Container - Selected Players & Buttons */}
-        <OrderLIneup
+        <OrderLineup
           positionSlots={positionSlots}
           handleRemovePlayer={handleRemovePlayer}
           activePlayer={activePlayer}

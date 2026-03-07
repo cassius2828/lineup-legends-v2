@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { getId } from "~/lib/types";
 
@@ -241,7 +242,7 @@ export default function ProfilePage() {
         }
       } catch (error) {
         console.error("Upload error:", error);
-        alert(error instanceof Error ? error.message : "Failed to upload image");
+        toast.error(error instanceof Error ? error.message : "Failed to upload image");
       } finally {
         setter(false);
       }

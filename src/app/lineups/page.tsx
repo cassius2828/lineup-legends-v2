@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { getId } from "~/lib/types";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import LineupsHeader from "../_components/Header/LineupsHeader";
 import LineupCardGrid from "../_components/common/LineupCardGrid";
@@ -27,7 +28,7 @@ export default function MyLineupsPage() {
       void utils.lineup.getLineupsByCurrentUser.invalidate();
     },
     onError: (error) => {
-      alert(error.message);
+      toast.error(error.message);
     },
   });
 
@@ -36,7 +37,7 @@ export default function MyLineupsPage() {
       void utils.lineup.getLineupsByCurrentUser.invalidate();
     },
     onError: (error) => {
-      alert(error.message);
+      toast.error(error.message);
     },
   });
 
