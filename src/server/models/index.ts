@@ -44,3 +44,9 @@ export {
   type FeedbackDoc,
   type FeedbackStatus,
 } from "./feedback";
+export {
+  VideoModel,
+  type Video,
+  type VideoDoc,
+  type VideoTimestamp,
+} from "./video";

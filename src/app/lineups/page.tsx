@@ -8,11 +8,13 @@ import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import LineupsHeader from "../_components/Header/LineupsHeader";
 import LineupCardGrid from "../_components/common/LineupCardGrid";
+import { ConfirmModal } from "../_components/common/ConfirmModal";
 
 type SortOption = "newest" | "oldest" | "highest-rated" | "most-rated";
 
 export default function MyLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const utils = api.useUtils();
 
   const { data: usersLineups, isLoading } =
@@ -42,15 +44,19 @@ export default function MyLineupsPage() {
   });
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this lineup?")) {
-      deleteLineup.mutate({ id });
+    setDeleteTarget(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      deleteLineup.mutate({ id: deleteTarget });
+      setDeleteTarget(null);
     }
   };
 
   const handleToggleFeatured = (id: string) => {
     toggleFeatured.mutate({ id });
   };
-  console.log(usersLineups, " <-- lineups");
   return (
     <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
       <div className="container mx-auto px-4 py-8">
@@ -155,6 +161,17 @@ export default function MyLineupsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Delete Lineup?"
+        description="Are you sure you want to delete this lineup? This action cannot be undone."
+        confirmLabel={deleteLineup.isPending ? "Deleting..." : "Delete"}
+        variant="danger"
+        loading={deleteLineup.isPending}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </main>
   );
 }

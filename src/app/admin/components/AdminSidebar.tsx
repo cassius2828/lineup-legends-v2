@@ -8,6 +8,7 @@ import {
   Users,
   UserPlus,
   MessageSquare,
+  Video,
   Menu,
   X,
   ChevronLeft,
@@ -34,6 +35,11 @@ const navItems = [
     label: "Feedback",
     href: "/admin/feedback",
     icon: MessageSquare,
+  },
+  {
+    label: "Videos",
+    href: "/getting-technical",
+    icon: Video,
   },
 ];
 

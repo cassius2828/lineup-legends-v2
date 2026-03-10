@@ -6,6 +6,7 @@ import Link from "next/link";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
+import { ConfirmModal } from "~/app/_components/common/ConfirmModal";
 
 export default function RequestedPlayerDetailPage() {
   const params = useParams();
@@ -169,38 +170,16 @@ export default function RequestedPlayerDetailPage() {
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="mx-4 w-full max-w-md rounded-lg bg-surface-700 p-6">
-            <h3 className="text-xl font-semibold text-foreground">
-              Delete Request?
-            </h3>
-            <p className="mt-2 text-foreground/60">
-              This will permanently delete the request for{" "}
-              <span className="font-medium text-foreground">
-                {requestedPlayer.firstName} {requestedPlayer.lastName}
-              </span>{" "}
-              and all associated value suggestions.
-            </p>
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={handleDelete}
-                disabled={deleteRequest.isPending}
-                className="flex-1 rounded-lg bg-red-600 py-2 font-medium text-foreground transition-colors hover:bg-red-500 disabled:opacity-50"
-              >
-                {deleteRequest.isPending ? "Deleting..." : "Delete"}
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 rounded-lg bg-foreground/10 py-2 font-medium text-foreground transition-colors hover:bg-foreground/20"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title="Delete Request?"
+        description={`This will permanently delete the request for ${requestedPlayer.firstName} ${requestedPlayer.lastName} and all associated value suggestions.`}
+        confirmLabel={deleteRequest.isPending ? "Deleting..." : "Delete"}
+        variant="danger"
+        loading={deleteRequest.isPending}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
 
       {/* Value Suggestions List */}
       <div>

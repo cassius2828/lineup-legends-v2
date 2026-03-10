@@ -31,6 +31,8 @@ export const env = createEnv({
     // Resend (email service)
     RESEND_API_KEY: z.string(),
     REDIS_URL: z.string().url(),
+
+    YOUTUBE_API_KEY: z.string(),
   },
 
   /**
@@ -66,6 +68,7 @@ export const env = createEnv({
     // Resend (server-only)
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     REDIS_URL: process.env.REDIS_URL,
+    YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
     // Public (safe for client exposure)
     NEXT_PUBLIC_CLOUDFRONT_URL: process.env.NEXT_PUBLIC_CLOUDFRONT_URL,
   },

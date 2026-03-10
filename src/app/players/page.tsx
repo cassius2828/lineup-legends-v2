@@ -56,7 +56,7 @@ export default function PlayersPage() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const { data: allPlayers, isLoading } = api.player.getAll.useQuery();
-console.log(allPlayers, "allPlayers");
+
   const fuse = allPlayers
     ? new Fuse(allPlayers, {
         keys: ["firstName", "lastName"],
