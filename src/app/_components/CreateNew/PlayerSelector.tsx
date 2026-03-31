@@ -28,6 +28,7 @@ interface PlayerSelectorProps {
   playersByValue: PlayersByValue;
   onSubmit: (selectedPlayers: PlayerType[]) => void;
   isSubmitting?: boolean;
+  isAuthenticated?: boolean;
 }
 
 const BUDGET_LIMIT = 15;
@@ -55,6 +56,7 @@ export function PlayerSelector({
   playersByValue,
   onSubmit,
   isSubmitting = false,
+  isAuthenticated = true,
 }: PlayerSelectorProps) {
   const [positionSlots, setPositionSlots] =
     useState<PositionSlots>(initialPositionSlots);
@@ -249,6 +251,7 @@ export function PlayerSelector({
           isSubmitting={isSubmitting}
           clearSelection={clearSelection}
           filledSlots={filledSlots}
+          isAuthenticated={isAuthenticated}
         />
       </div>
 

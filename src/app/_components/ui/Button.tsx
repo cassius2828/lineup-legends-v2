@@ -2,88 +2,95 @@ import Link from "next/link";
 
 const ButtonColors = {
   gold: {
-    bg: "bg-gold/20",
-    text: "text-gold",
-    hover: "hover:bg-gold/30",
+    subtle: "bg-gold/20 text-gold hover:bg-gold/30",
+    solid: "bg-gold text-black hover:bg-gold-light",
   },
   green: {
-    bg: "bg-green-500/20",
-    text: "text-green-400",
-    hover: "hover:bg-green-500/30",
+    subtle: "bg-green-500/20 text-green-400 hover:bg-green-500/30",
+    solid: "bg-green-500 text-white hover:bg-green-600",
   },
   red: {
-    bg: "bg-red-500/20",
-    text: "text-red-400",
-    hover: "hover:bg-red-500/30",
+    subtle: "bg-red-500/20 text-red-400 hover:bg-red-500/30",
+    solid: "bg-red-500 text-white hover:bg-red-600",
   },
   blue: {
-    bg: "bg-blue-500/20",
-    text: "text-blue-400",
-    hover: "hover:bg-blue-500/30",
+    subtle: "bg-blue-500/20 text-blue-400 hover:bg-blue-500/30",
+    solid: "bg-blue-500 text-white hover:bg-blue-600",
   },
   purple: {
-    bg: "bg-purple-500/20",
-    text: "text-purple-400",
-    hover: "hover:bg-purple-500/30",
+    subtle: "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30",
+    solid: "bg-purple-500 text-white hover:bg-purple-600",
   },
   orange: {
-    bg: "bg-orange-500/20",
-    text: "text-orange-400",
-    hover: "hover:bg-orange-500/30",
+    subtle: "bg-orange-500/20 text-orange-400 hover:bg-orange-500/30",
+    solid: "bg-orange-500 text-white hover:bg-orange-600",
   },
   pink: {
-    bg: "bg-pink-500/20",
-    text: "text-pink-400",
-    hover: "hover:bg-pink-500/30",
+    subtle: "bg-pink-500/20 text-pink-400 hover:bg-pink-500/30",
+    solid: "bg-pink-500 text-white hover:bg-pink-600",
   },
   gray: {
-    bg: "bg-gray-500/20",
-    text: "text-gray-400",
-    hover: "hover:bg-gray-500/30",
+    subtle: "bg-gray-500/20 text-gray-400 hover:bg-gray-500/30",
+    solid: "bg-gray-500 text-white hover:bg-gray-600",
   },
   black: {
-    bg: "bg-black/20",
-    text: "text-black",
-    hover: "hover:bg-black/30",
+    subtle: "bg-black/20 text-black hover:bg-black/30",
+    solid: "bg-black text-white hover:bg-gray-900",
   },
   white: {
-    bg: "bg-foreground/20",
-    text: "text-foreground",
-    hover: "hover:bg-foreground/30",
+    subtle: "bg-foreground/20 text-foreground hover:bg-foreground/30",
+    solid: "bg-foreground text-background hover:bg-foreground/90",
   },
 };
+
+type ButtonColor = keyof typeof ButtonColors;
+type ButtonVariant = "subtle" | "solid";
+
+const baseClasses = "cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors";
+const disabledClasses = "disabled:cursor-not-allowed disabled:opacity-50";
 
 export const Button = ({
   handleClick,
   children,
   color = "white",
+  variant = "subtle",
+  disabled = false,
+  type = "button",
 }: {
   handleClick: () => void;
   children: React.ReactNode;
-  color?: keyof typeof ButtonColors;
+  color?: ButtonColor;
+  variant?: ButtonVariant;
+  disabled?: boolean;
+  type?: "button" | "submit" | "reset";
 }) => {
   return (
     <button
+      type={type}
       onClick={handleClick}
-      className={`${ButtonColors[color].bg} ${ButtonColors[color].text} ${ButtonColors[color].hover} cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors`}
+      disabled={disabled}
+      className={`${ButtonColors[color][variant]} ${baseClasses} ${disabledClasses}`}
     >
       {children}
     </button>
   );
 };
+
 export const ButtonLink = ({
   href,
   children,
   color = "white",
+  variant = "subtle",
 }: {
   href: string;
   children: React.ReactNode;
-  color?: keyof typeof ButtonColors;
+  color?: ButtonColor;
+  variant?: ButtonVariant;
 }) => {
   return (
     <Link
       href={href}
-      className={`${ButtonColors[color].bg} ${ButtonColors[color].text} ${ButtonColors[color].hover} cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors`}
+      className={`${ButtonColors[color][variant]} ${baseClasses}`}
     >
       {children}
     </Link>

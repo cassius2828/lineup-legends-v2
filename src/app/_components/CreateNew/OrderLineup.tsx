@@ -1,4 +1,10 @@
 import { type PlayerType } from "~/lib/types";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "~/components/ui/tooltip";
+import { Button } from "../ui/Button";
 import { DroppablePositionSlot } from "../DroppablePositionSlot";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"] as const;
@@ -20,6 +26,7 @@ export default function OrderLineup({
   isSubmitting,
   clearSelection,
   filledSlots,
+  isAuthenticated = true,
 }: {
   positionSlots: PositionSlots;
   handleRemovePlayer: (player: PlayerType) => void;
@@ -29,7 +36,21 @@ export default function OrderLineup({
   isSubmitting: boolean;
   clearSelection: () => void;
   filledSlots: number;
+  isAuthenticated?: boolean;
 }) {
+  const isDisabled = !canSubmit || isSubmitting || !isAuthenticated;
+
+  const confirmButton = (
+    <Button
+      handleClick={handleSubmit}
+      disabled={isDisabled}
+      color="gold"
+      variant="solid"
+    >
+      {isSubmitting ? "Creating..." : "Confirm Lineup"}
+    </Button>
+  );
+
   return (
     <div className="ml-8 flex flex-col items-center">
       <div className="mb-4 flex justify-center gap-2">
@@ -45,22 +66,28 @@ export default function OrderLineup({
       </div>
 
       <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!canSubmit || isSubmitting}
-          className="rounded-md bg-gold px-6 py-2 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {isSubmitting ? "Creating..." : "Confirm Lineup"}
-        </button>
-        <button
-          type="button"
-          onClick={clearSelection}
+        {!isAuthenticated ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span tabIndex={0} className="inline-block">
+                {confirmButton}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              You must be signed in to an account to save a lineup
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          confirmButton
+        )}
+        <Button
+          handleClick={clearSelection}
           disabled={filledSlots === 0}
-          className="rounded-md bg-gold px-6 py-2 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-50"
+          color="gold"
+          variant="solid"
         >
           Clear Selection
-        </button>
+        </Button>
       </div>
     </div>
   );

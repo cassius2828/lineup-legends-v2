@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { PlayerSelector } from "~/app/_components/CreateNew/PlayerSelector";
 import { toast } from "sonner";
@@ -9,6 +10,8 @@ import { type PlayerType, getId } from "~/lib/types";
 
 export default function CreateLineupPage() {
   const router = useRouter();
+  const { status } = useSession();
+  const isAuthenticated = status === "authenticated";
   const { data: playersByValue, isLoading } =
     api.player.getRandomByValue.useQuery();
 
@@ -72,6 +75,7 @@ export default function CreateLineupPage() {
             playersByValue={playersByValue}
             onSubmit={handleSubmit}
             isSubmitting={createLineup.isPending}
+            isAuthenticated={isAuthenticated}
           />
         ) : (
           <div className="rounded-xl bg-red-500/20 p-6 text-center">
