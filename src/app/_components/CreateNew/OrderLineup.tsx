@@ -4,6 +4,7 @@ import {
   TooltipTrigger,
   TooltipContent,
 } from "~/components/ui/tooltip";
+import { Button } from "../ui/Button";
 import { DroppablePositionSlot } from "../DroppablePositionSlot";
 
 const POSITIONS = ["PG", "SG", "SF", "PF", "C"] as const;
@@ -40,14 +41,14 @@ export default function OrderLineup({
   const isDisabled = !canSubmit || isSubmitting || !isAuthenticated;
 
   const confirmButton = (
-    <button
-      type="button"
-      onClick={handleSubmit}
+    <Button
+      handleClick={handleSubmit}
       disabled={isDisabled}
-      className="rounded-md bg-gold px-6 py-2 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-50"
+      color="gold"
+      variant="solid"
     >
       {isSubmitting ? "Creating..." : "Confirm Lineup"}
-    </button>
+    </Button>
   );
 
   return (
@@ -79,14 +80,14 @@ export default function OrderLineup({
         ) : (
           confirmButton
         )}
-        <button
-          type="button"
-          onClick={clearSelection}
+        <Button
+          handleClick={clearSelection}
           disabled={filledSlots === 0}
-          className="rounded-md bg-gold px-6 py-2 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-50"
+          color="gold"
+          variant="solid"
         >
           Clear Selection
-        </button>
+        </Button>
       </div>
     </div>
   );
