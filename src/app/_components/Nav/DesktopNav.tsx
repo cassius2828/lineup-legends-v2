@@ -84,13 +84,13 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
       ) : (
         <>
           <Link
-            href="/api/auth/signin"
+            href="/sign-in"
             className="hover:text-gold text-foreground/90 capitalize transition-colors"
           >
             Sign up
           </Link>
           <Link
-            href="/api/auth/signin"
+            href="/sign-in"
             className="border-gold bg-gold/10 hover:bg-gold hover:text-black hover:glow-gold-sm rounded-none border-2 px-4 py-2 text-sm font-medium text-foreground/90 capitalize transition-all"
           >
             Sign in

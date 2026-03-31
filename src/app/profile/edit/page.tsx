@@ -178,7 +178,7 @@ export default function EditProfilePage() {
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold text-foreground">Please sign in</h1>
           <Link
-            href="/api/auth/signin"
+            href="/sign-in"
             className="mt-4 inline-block text-gold-300 hover:underline"
           >
             Sign in

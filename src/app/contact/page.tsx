@@ -137,7 +137,7 @@ function PlayerRequestSection() {
             You need to be signed in to request a player.
           </p>
           <Link
-            href="/api/auth/signin"
+            href="/sign-in"
             className="inline-block rounded-lg bg-gold px-6 py-2 text-sm font-semibold text-black transition-colors hover:bg-gold-light"
           >
             Sign In

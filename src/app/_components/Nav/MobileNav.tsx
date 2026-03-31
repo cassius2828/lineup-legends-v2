@@ -121,14 +121,14 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                 ) : (
                   <>
                     <Link
-                      href="/api/auth/signin"
+                      href="/sign-in"
                       onClick={closeMenu}
                       className="hover:text-gold text-foreground/90 capitalize transition-colors"
                     >
                       Sign up
                     </Link>
                     <Link
-                      href="/api/auth/signin"
+                      href="/sign-in"
                       onClick={closeMenu}
                       className="border-gold bg-gold/10 hover:bg-gold hover:text-black hover:glow-gold-sm rounded-none border-2 px-4 py-2 text-center text-sm font-medium text-foreground/90 capitalize transition-all"
                     >

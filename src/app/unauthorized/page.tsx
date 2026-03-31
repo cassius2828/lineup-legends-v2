@@ -41,7 +41,7 @@ const UnauthorizedPage = async () => {
             </form>
           ) : (
             <Link
-              href="/api/auth/signin"
+              href="/sign-in"
               className="hover:border-gold/50 hover:bg-gold/10 w-full cursor-pointer rounded-none border border-foreground/20 bg-transparent px-6 py-3 text-sm font-medium text-foreground/90 capitalize transition-all hover:text-foreground sm:w-auto"
             >
               Sign In

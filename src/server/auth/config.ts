@@ -77,6 +77,9 @@ export const authConfig = {
   session: {
     strategy: "jwt",
   },
+  pages: {
+    signIn: "/sign-in",
+  },
   providers: [
     GoogleProvider({
       clientId: env.AUTH_GOOGLE_CLIENT_ID,
