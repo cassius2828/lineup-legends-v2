@@ -145,7 +145,7 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
             <>
               <motion.div variants={buttonVariants}>
                 <Link
-                  href="/sign-in"
+                  href="/sign-in?mode=signup"
                   className="font-stencil inline-block rounded-none border-2 border-foreground/60 bg-foreground/5 px-10 py-4 text-lg tracking-wide text-foreground uppercase backdrop-blur-sm transition-all duration-300 hover:border-foreground hover:bg-foreground hover:text-background"
                 >
                   Sign Up

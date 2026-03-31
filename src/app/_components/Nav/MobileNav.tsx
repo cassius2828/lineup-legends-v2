@@ -121,7 +121,7 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                 ) : (
                   <>
                     <Link
-                      href="/sign-in"
+                      href="/sign-in?mode=signup"
                       onClick={closeMenu}
                       className="hover:text-gold text-foreground/90 capitalize transition-colors"
                     >
