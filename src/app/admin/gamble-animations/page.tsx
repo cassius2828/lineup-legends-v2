@@ -20,56 +20,56 @@ const OUTCOME_TIERS: {
   prevValue: number;
   newValue: number;
 }[] = [
-  {
-    tier: "jackpot",
-    label: "Jackpot",
-    description: "+4 value jump ($1 → $5 Diamond)",
-    prevValue: 1,
-    newValue: 5,
-  },
-  {
-    tier: "big_win",
-    label: "Big Win",
-    description: "+2 value jump ($3 → $5 Diamond)",
-    prevValue: 3,
-    newValue: 5,
-  },
-  {
-    tier: "upgrade",
-    label: "Upgrade",
-    description: "+1 value jump ($3 → $4 Amethyst)",
-    prevValue: 3,
-    newValue: 4,
-  },
-  {
-    tier: "neutral",
-    label: "Neutral",
-    description: "Same value (e.g. $3 → $3)",
-    prevValue: 3,
-    newValue: 3,
-  },
-  {
-    tier: "downgrade",
-    label: "Downgrade",
-    description: "-1 value drop (e.g. $3 → $2)",
-    prevValue: 3,
-    newValue: 2,
-  },
-  {
-    tier: "big_loss",
-    label: "Big Loss",
-    description: "-2 value drop (e.g. $4 → $2)",
-    prevValue: 4,
-    newValue: 2,
-  },
-  {
-    tier: "disaster",
-    label: "Disaster",
-    description: "-3 value drop (e.g. $5 → $2)",
-    prevValue: 5,
-    newValue: 2,
-  },
-];
+    {
+      tier: "jackpot",
+      label: "Jackpot",
+      description: "+4 value jump ($1 → $5 Diamond)",
+      prevValue: 1,
+      newValue: 5,
+    },
+    {
+      tier: "big_win",
+      label: "Big Win",
+      description: "+2 value jump ($3 → $5 Diamond)",
+      prevValue: 3,
+      newValue: 5,
+    },
+    {
+      tier: "upgrade",
+      label: "Upgrade",
+      description: "+1 value jump ($3 → $4 Amethyst)",
+      prevValue: 3,
+      newValue: 4,
+    },
+    {
+      tier: "neutral",
+      label: "Neutral",
+      description: "Same value (e.g. $3 → $3)",
+      prevValue: 3,
+      newValue: 3,
+    },
+    {
+      tier: "downgrade",
+      label: "Downgrade",
+      description: "-1 value drop (e.g. $3 → $2)",
+      prevValue: 3,
+      newValue: 2,
+    },
+    {
+      tier: "big_loss",
+      label: "Big Loss",
+      description: "-2 value drop (e.g. $4 → $2)",
+      prevValue: 4,
+      newValue: 2,
+    },
+    {
+      tier: "disaster",
+      label: "Disaster",
+      description: "-3 value drop (e.g. $5 → $2)",
+      prevValue: 5,
+      newValue: 2,
+    },
+  ];
 
 function mockPlayer(value: number): PlayerType {
   const label = VALUE_LABELS[value] ?? "Unknown";
@@ -133,11 +133,10 @@ export default function GambleAnimationsTestPage() {
             <button
               key={tier}
               onClick={() => handleSelect(tier)}
-              className={`group relative rounded-xl border p-4 text-left transition-all ${
-                isActive
+              className={`group relative rounded-xl border p-4 text-left transition-all ${isActive
                   ? "border-green-500 bg-green-500/10 ring-1 ring-green-500/50"
                   : "border-foreground/10 bg-foreground/3 hover:border-foreground/20 hover:bg-foreground/5"
-              }`}
+                }`}
             >
               {/* Tier color indicator dot */}
               <div className="mb-2 flex items-center gap-2">

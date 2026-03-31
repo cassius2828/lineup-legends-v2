@@ -122,9 +122,9 @@ export function GambleReveal({
         animate={
           phase === "celebration" && config.screenShake
             ? {
-                x: [0, -4, 5, -3, 4, -2, 0],
-                y: [0, 3, -4, 3, -2, 1, 0],
-              }
+              x: [0, -4, 5, -3, 4, -2, 0],
+              y: [0, 3, -4, 3, -2, 1, 0],
+            }
             : phase === "celebration" && category === "negative"
               ? { x: [0, -2, 2, -1, 0] }
               : {}
@@ -175,9 +175,9 @@ export function GambleReveal({
           transition={
             phase === "suspense"
               ? {
-                  y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-                  x: trembleTransition,
-                }
+                y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                x: trembleTransition,
+              }
               : {}
           }
         >
@@ -190,24 +190,24 @@ export function GambleReveal({
             animate={
               phase === "suspense"
                 ? {
-                    boxShadow: [
-                      `0 0 15px 5px #9ca3af40`,
-                      `0 0 30px 12px #9ca3af60`,
-                      `0 0 20px 8px ${tierColor}50`,
-                      `0 0 30px 12px ${tierColor}70`,
-                      `0 0 15px 5px ${tierColor}40`,
-                    ],
-                  }
+                  boxShadow: [
+                    `0 0 15px 5px #9ca3af40`,
+                    `0 0 30px 12px #9ca3af60`,
+                    `0 0 20px 8px ${tierColor}50`,
+                    `0 0 30px 12px ${tierColor}70`,
+                    `0 0 15px 5px ${tierColor}40`,
+                  ],
+                }
                 : {
-                    boxShadow: `0 0 ${config.glowIntensity * 20}px ${config.glowIntensity * 8}px ${category === "negative" && isFlipped ? "#ef444480" : tierColor + "80"}`,
-                  }
+                  boxShadow: `0 0 ${config.glowIntensity * 20}px ${config.glowIntensity * 8}px ${category === "negative" && isFlipped ? "#ef444480" : tierColor + "80"}`,
+                }
             }
             transition={
               phase === "suspense"
                 ? {
-                    duration: config.suspenseDuration / 1000,
-                    ease: "easeInOut",
-                  }
+                  duration: config.suspenseDuration / 1000,
+                  ease: "easeInOut",
+                }
                 : { duration: 0.4 }
             }
           />
