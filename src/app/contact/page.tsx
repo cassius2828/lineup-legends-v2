@@ -137,7 +137,7 @@ function PlayerRequestSection() {
             You need to be signed in to request a player.
           </p>
           <Link
-            href="/api/auth/signin"
+            href="/sign-in"
             className="inline-block rounded-lg bg-gold px-6 py-2 text-sm font-semibold text-black transition-colors hover:bg-gold-light"
           >
             Sign In
@@ -220,6 +220,9 @@ function PlayerRequestSection() {
 // ─── Feedback Section ────────────────────────────────────────────────────────
 
 function FeedbackSection() {
+  const { data: session } = useSession();
+  const sessionEmail = session?.user?.email;
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
@@ -229,7 +232,7 @@ function FeedbackSection() {
     onSuccess: () => {
       toast.success("Thank you for your feedback!");
       setName("");
-      setEmail("");
+      if (!sessionEmail) setEmail("");
       setSubject("");
       setMessage("");
     },
@@ -242,7 +245,7 @@ function FeedbackSection() {
     e.preventDefault();
     createFeedback.mutate({
       name: name.trim(),
-      email: email.trim(),
+      ...(sessionEmail ? {} : { email: email.trim() }),
       subject: subject.trim(),
       message: message.trim(),
     });
@@ -307,11 +310,12 @@ function FeedbackSection() {
             <input
               type="email"
               id="feedbackEmail"
-              value={email}
+              value={sessionEmail ?? email}
               onChange={(e) => setEmail(e.target.value)}
+              readOnly={!!sessionEmail}
               required
               placeholder="your@email.com"
-              className="w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+              className={`w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold ${sessionEmail ? "cursor-not-allowed opacity-60" : ""}`}
             />
           </div>
         </div>

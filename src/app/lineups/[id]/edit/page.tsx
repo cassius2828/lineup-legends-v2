@@ -154,6 +154,7 @@ function SortablePositionCard({
 export default function EditLineupPage() {
   const params = useParams();
   const router = useRouter();
+  const utils = api.useUtils();
   const lineupId = params.id as string;
 
   const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery(
@@ -194,6 +195,8 @@ export default function EditLineupPage() {
 
   const reorderMutation = api.lineup.reorder.useMutation({
     onSuccess: () => {
+      void utils.lineup.getLineupById.invalidate({ id: lineupId });
+      void utils.lineup.getLineupsByCurrentUser.invalidate();
       router.push("/lineups");
     },
     onError: (error) => {

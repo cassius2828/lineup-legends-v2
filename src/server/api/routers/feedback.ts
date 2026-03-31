@@ -12,29 +12,32 @@ import { logger } from "~/lib/logger";
 const log = logger.child({ module: "feedback" });
 
 export const feedbackRouter = createTRPCRouter({
-  // Submit feedback (public — no auth required)
   create: publicProcedure
     .input(
       z.object({
         name: z.string().min(1).max(100),
-        email: z.string().email().max(255),
+        email: z.string().email().max(255).optional(),
         subject: z.string().min(1).max(200),
         message: z.string().min(1).max(2000),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const email = ctx.session?.user?.email ?? input.email;
+      if (!email) {
+        throw new Error("An email address is required to submit feedback");
+      }
+
       const feedback = await FeedbackModel.create({
         name: input.name.trim(),
-        email: input.email.trim(),
+        email,
         subject: input.subject.trim(),
         message: input.message.trim(),
       });
 
-      // Send email notification (non-blocking — don't fail the request if email fails)
       try {
         await sendFeedbackEmail({
           name: input.name.trim(),
-          email: input.email.trim(),
+          email,
           subject: input.subject.trim(),
           message: input.message.trim(),
         });

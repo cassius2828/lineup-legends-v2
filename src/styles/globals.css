@@ -75,6 +75,13 @@ body:has(.admin-layout) #global-footer {
   display: none;
 }
 
+/* Hide global nav, nav spacer, and footer on sign-in page */
+body:has(.sign-in-layout) #global-nav,
+body:has(.sign-in-layout) #global-nav-spacer,
+body:has(.sign-in-layout) #global-footer {
+  display: none;
+}
+
 /* Image loading placeholder */
 img {
   background-color: var(--color-surface-700);
