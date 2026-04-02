@@ -21,6 +21,7 @@ export default function AdminPlayersPage() {
   const [requestFirstName, setRequestFirstName] = useState("");
   const [requestLastName, setRequestLastName] = useState("");
   const [requestValue, setRequestValue] = useState(3);
+  const [requestNote, setRequestNote] = useState("");
   const [requestSuccess, setRequestSuccess] = useState(false);
   const [requestError, setRequestError] = useState("");
   // trpc data fetching and mutation hooks
@@ -35,6 +36,7 @@ export default function AdminPlayersPage() {
       setRequestFirstName("");
       setRequestLastName("");
       setRequestValue(3);
+      setRequestNote("");
       void utils.requestedPlayer.getAll.invalidate();
       setTimeout(() => {
         setRequestSuccess(false);
@@ -61,6 +63,7 @@ export default function AdminPlayersPage() {
       firstName: requestFirstName,
       lastName: requestLastName,
       suggestedValue: requestValue,
+      note: requestNote.trim() || undefined,
     });
   };
 
@@ -129,6 +132,8 @@ export default function AdminPlayersPage() {
         setRequestLastName={setRequestLastName}
         requestValue={requestValue}
         setRequestValue={setRequestValue}
+        requestNote={requestNote}
+        setRequestNote={setRequestNote}
         createRequest={createRequest}
         handleRequestSubmit={handleRequestSubmit}
         setRequestError={setRequestError}

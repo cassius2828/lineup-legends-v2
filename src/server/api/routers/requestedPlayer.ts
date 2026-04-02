@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import Fuse from "fuse.js";
 import mongoose from "mongoose";
 
 import {
@@ -8,9 +9,64 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { RequestedPlayerModel, UserModel } from "~/server/models";
+import { PlayerModel, RequestedPlayerModel, UserModel } from "~/server/models";
+import { redis } from "~/server/redis";
 
 export const requestedPlayerRouter = createTRPCRouter({
+  searchDuplicates: publicProcedure
+    .input(
+      z.object({
+        firstName: z.string().min(1),
+        lastName: z.string().min(1),
+      }),
+    )
+    .query(async ({ input }) => {
+      const query = `${input.firstName.trim()} ${input.lastName.trim()}`;
+
+      // Load players (prefer Redis cache)
+      let players: Array<{
+        firstName: string;
+        lastName: string;
+        value?: number;
+        imgUrl?: string;
+      }>;
+      const cached = await redis.get("players");
+      if (cached) {
+        players = JSON.parse(cached) as typeof players;
+      } else {
+        players = await PlayerModel.find()
+          .select("firstName lastName value imgUrl")
+          .lean();
+      }
+
+      const poolItems = players.map((p) => ({
+        firstName: p.firstName,
+        lastName: p.lastName,
+        fullName: `${p.firstName} ${p.lastName}`,
+        value: p.value,
+        imgUrl: p.imgUrl,
+      }));
+
+      const fuse = new Fuse(poolItems, {
+        keys: ["fullName"],
+        threshold: 0.4,
+        includeScore: true,
+      });
+
+      const results = fuse.search(query);
+
+      return results
+        .map((r) => ({
+          firstName: r.item.firstName,
+          lastName: r.item.lastName,
+          value: r.item.value,
+          imgUrl: r.item.imgUrl,
+          source: "pool" as const,
+          matchPercent: Math.round((1 - (r.score ?? 1)) * 100),
+        }))
+        .filter((r) => r.matchPercent >= 60);
+    }),
+
   // Get all requested players with description counts
   getAll: publicProcedure.query(async () => {
     const requestedPlayers = await RequestedPlayerModel.find()
@@ -19,7 +75,7 @@ export const requestedPlayerRouter = createTRPCRouter({
 
     return requestedPlayers.map((rp) => ({
       ...rp,
-      id: rp._id.toHexString(),
+      id: rp._id,
       descriptionCount: rp.descriptions.length,
     }));
   }),
@@ -40,18 +96,22 @@ export const requestedPlayerRouter = createTRPCRouter({
       }
 
       // Populate user info for each description
-      const userIds = requestedPlayer.descriptions.map((d) => d.userId);
+      // Support both `user` and legacy `userId` field for pre-migration documents
+      const userIds = requestedPlayer.descriptions.map(
+        (d) => d.user ?? (d as unknown as Record<string, unknown>).userId,
+      );
       const users = await UserModel.find({ _id: { $in: userIds } }).lean();
-      const userMap = new Map(users.map((u) => [u._id.toHexString(), u]));
+      const userMap = new Map(users.map((u) => [u._id.toString(), u]));
 
       const descriptionsWithUsers = requestedPlayer.descriptions.map((d) => {
-        const user = userMap.get(d.userId.toHexString());
+        const uid = d.user ?? (d as unknown as Record<string, unknown>).userId;
+        const user = uid ? userMap.get(uid.toString()) : undefined;
         return {
           ...d,
-          id: d._id.toHexString(),
+          id: d._id,
           user: user
             ? {
-                id: user._id.toHexString(),
+                id: user._id.toString(),
                 name: user.name,
                 email: user.email,
                 image: user.image,
@@ -62,7 +122,7 @@ export const requestedPlayerRouter = createTRPCRouter({
 
       return {
         ...requestedPlayer,
-        id: requestedPlayer._id.toHexString(),
+        id: requestedPlayer._id,
         descriptions: descriptionsWithUsers,
       };
     }),
@@ -74,6 +134,7 @@ export const requestedPlayerRouter = createTRPCRouter({
         firstName: z.string().min(1).max(50),
         lastName: z.string().min(1).max(50),
         suggestedValue: z.number().min(1).max(5),
+        note: z.string().max(500).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -92,8 +153,9 @@ export const requestedPlayerRouter = createTRPCRouter({
           $push: {
             descriptions: {
               _id: new mongoose.Types.ObjectId(),
-              userId,
+              user: userId,
               suggestedValue: input.suggestedValue,
+              note: input.note?.trim() || null,
               createdAt: new Date(),
             },
           },
@@ -103,7 +165,7 @@ export const requestedPlayerRouter = createTRPCRouter({
 
       return {
         ...result.toObject(),
-        id: result._id.toHexString(),
+        id: result._id,
       };
     }),
 
