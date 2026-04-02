@@ -43,7 +43,11 @@ export default function LineupCardFooter({
                 </button>
                 <button
                     type="button"
-                    onClick={() => toast.info("Coming soon")}
+                    onClick={async () => {
+                      const url = `${window.location.origin}/lineups/${lineupId}`;
+                      await navigator.clipboard.writeText(url);
+                      toast.success("Link copied to clipboard");
+                    }}
                     className="group cursor-pointer text-foreground/40 transition-colors hover:text-gold"
                     aria-label="Share lineup"
                 >
