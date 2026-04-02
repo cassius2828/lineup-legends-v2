@@ -24,6 +24,11 @@ const config = {
         hostname: "*.cloudfront.net",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "a.espncdn.com",
+        pathname: "/**",
+      },
     ],
   },
   eslint: {

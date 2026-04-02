@@ -17,6 +17,7 @@ export default function RequestedPlayerDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [playerValue, setPlayerValue] = useState(3);
   const [playerImgUrl, setPlayerImgUrl] = useState("");
+  const [imgPreviewError, setImgPreviewError] = useState(false);
   const [playerCreated, setPlayerCreated] = useState(false);
 
   const { data: requestedPlayer, isLoading } =
@@ -151,12 +152,21 @@ export default function RequestedPlayerDetailPage() {
       <div className="mb-8 rounded-xl border border-foreground/10 bg-foreground/3 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-foreground/10">
-              <span className="text-2xl font-bold text-foreground/60">
-                {requestedPlayer.firstName.charAt(0)}
-                {requestedPlayer.lastName.charAt(0)}
-              </span>
-            </div>
+            {playerImgUrl.trim() && !imgPreviewError ? (
+              <img
+                src={playerImgUrl.trim()}
+                alt={`${requestedPlayer.firstName} ${requestedPlayer.lastName}`}
+                className="h-16 w-16 rounded-lg object-cover"
+                onError={() => setImgPreviewError(true)}
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-foreground/10">
+                <span className="text-2xl font-bold text-foreground/60">
+                  {requestedPlayer.firstName.charAt(0)}
+                  {requestedPlayer.lastName.charAt(0)}
+                </span>
+              </div>
+            )}
             <div>
               <p className="text-2xl font-semibold text-foreground">
                 {requestedPlayer.firstName} {requestedPlayer.lastName}
@@ -198,7 +208,7 @@ export default function RequestedPlayerDetailPage() {
         <div className="space-y-3">
           {requestedPlayer.descriptions.map((desc) => (
             <div
-              key={desc.id}
+              key={String(desc.id)}
               className="rounded-lg border border-foreground/10 bg-foreground/3 p-4"
             >
               <div className="flex items-center justify-between">
@@ -316,7 +326,10 @@ export default function RequestedPlayerDetailPage() {
               <input
                 type="url"
                 value={playerImgUrl}
-                onChange={(e) => setPlayerImgUrl(e.target.value)}
+                onChange={(e) => {
+                  setPlayerImgUrl(e.target.value);
+                  setImgPreviewError(false);
+                }}
                 placeholder="https://example.com/player-image.jpg"
                 required
                 className="w-full rounded-lg border border-foreground/10 bg-foreground/5 px-3 py-2.5 text-sm text-foreground placeholder-foreground/30 outline-none transition-colors focus:border-foreground/30"

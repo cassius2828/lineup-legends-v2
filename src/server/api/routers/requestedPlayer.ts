@@ -39,37 +39,15 @@ export const requestedPlayerRouter = createTRPCRouter({
           .lean();
       }
 
-      const requestedPlayers = await RequestedPlayerModel.find()
-        .select("firstName lastName")
-        .lean();
+      const poolItems = players.map((p) => ({
+        firstName: p.firstName,
+        lastName: p.lastName,
+        fullName: `${p.firstName} ${p.lastName}`,
+        value: p.value,
+        imgUrl: p.imgUrl,
+      }));
 
-      interface FuseItem {
-        firstName: string;
-        lastName: string;
-        fullName: string;
-        value?: number;
-        imgUrl?: string;
-        source: "pool" | "requested";
-      }
-
-      const combined: FuseItem[] = [
-        ...players.map((p) => ({
-          firstName: p.firstName,
-          lastName: p.lastName,
-          fullName: `${p.firstName} ${p.lastName}`,
-          value: p.value,
-          imgUrl: p.imgUrl,
-          source: "pool" as const,
-        })),
-        ...requestedPlayers.map((rp) => ({
-          firstName: rp.firstName,
-          lastName: rp.lastName,
-          fullName: `${rp.firstName} ${rp.lastName}`,
-          source: "requested" as const,
-        })),
-      ];
-
-      const fuse = new Fuse(combined, {
+      const fuse = new Fuse(poolItems, {
         keys: ["fullName"],
         threshold: 0.4,
         includeScore: true,
@@ -83,7 +61,7 @@ export const requestedPlayerRouter = createTRPCRouter({
           lastName: r.item.lastName,
           value: r.item.value,
           imgUrl: r.item.imgUrl,
-          source: r.item.source,
+          source: "pool" as const,
           matchPercent: Math.round((1 - (r.score ?? 1)) * 100),
         }))
         .filter((r) => r.matchPercent >= 60);
@@ -118,18 +96,22 @@ export const requestedPlayerRouter = createTRPCRouter({
       }
 
       // Populate user info for each description
-      const userIds = requestedPlayer.descriptions.map((d) => d.user);
+      // Support both `user` and legacy `userId` field for pre-migration documents
+      const userIds = requestedPlayer.descriptions.map(
+        (d) => d.user ?? (d as unknown as Record<string, unknown>).userId,
+      );
       const users = await UserModel.find({ _id: { $in: userIds } }).lean();
-      const userMap = new Map(users.map((u) => [u._id, u]));
+      const userMap = new Map(users.map((u) => [u._id.toString(), u]));
 
       const descriptionsWithUsers = requestedPlayer.descriptions.map((d) => {
-        const user = userMap.get(d.user);
+        const uid = d.user ?? (d as unknown as Record<string, unknown>).userId;
+        const user = uid ? userMap.get(uid.toString()) : undefined;
         return {
           ...d,
           id: d._id,
           user: user
             ? {
-                id: user._id,
+                id: user._id.toString(),
                 name: user.name,
                 email: user.email,
                 image: user.image,

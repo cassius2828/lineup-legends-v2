@@ -36,7 +36,7 @@ export function DuplicateHints({ duplicates }: { duplicates: DuplicateMatch[] })
                   {d.firstName} {d.lastName}
                 </span>
                 <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-[10px] font-medium uppercase text-foreground/50">
-                  {d.source === "pool" ? "In Pool" : "Requested"}
+                  In Pool
                 </span>
                 {d.value && (
                   <span className="text-xs text-foreground/40">${d.value}</span>
