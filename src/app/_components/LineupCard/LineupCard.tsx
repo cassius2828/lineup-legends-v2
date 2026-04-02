@@ -51,7 +51,6 @@ export function LineupCard({
       <LineupCardStatsBar lineup={lineup} isOwner={isOwner} />
 
       <LineupCardPlayersGrid players={lineup.players} />
-      <LineupCardFooter />
       {isOwner && (
         <LineupCardOwnerActions
           lineup={lineup}
@@ -59,6 +58,7 @@ export function LineupCard({
           onDelete={onDelete}
         />
       )}
+      <LineupCardFooter lineupId={lineup._id?.toString() ?? ""} />
     </div>
   );
 }

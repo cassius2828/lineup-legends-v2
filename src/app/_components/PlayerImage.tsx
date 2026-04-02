@@ -12,9 +12,10 @@ interface PlayerImageProps {
   imgUrl: string | null | undefined;
   alt: string;
   className?: string;
+  onClick?: () => void;
 }
 
-export function PlayerImage({ imgUrl, alt, className }: PlayerImageProps) {
+export function PlayerImage({ imgUrl, alt, className, onClick }: PlayerImageProps) {
   const [retryCount, setRetryCount] = useState(0);
   const [failed, setFailed] = useState(false);
 
@@ -39,6 +40,7 @@ export function PlayerImage({ imgUrl, alt, className }: PlayerImageProps) {
 
   return (
     <Image
+    onClick={onClick}
       key={retryCount}
       src={src}
       alt={alt}

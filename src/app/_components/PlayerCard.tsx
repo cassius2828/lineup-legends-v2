@@ -2,6 +2,7 @@
 
 import type { PlayerType } from "~/lib/types";
 import { PlayerImage } from "./PlayerImage";
+import { useRouter } from "next/navigation";
 
 interface PlayerCardProps {
   player: PlayerType;
@@ -36,10 +37,9 @@ export function PlayerCard({
   disabled = false,
   compact = false,
 }: PlayerCardProps) {
+  const router = useRouter();
   const handleClick = () => {
-    if (!disabled && onSelect) {
-      onSelect(player);
-    }
+    router.push(`/players/${player._id?.toString() ?? ""}`);
   };
   if (compact) {
     return (
@@ -48,9 +48,10 @@ export function PlayerCard({
           className={`relative h-16 w-16 overflow-hidden rounded-full md:h-24 md:w-24 ${valueShadows[player?.value ?? 0]}`}
         >
           <PlayerImage
+            onClick={handleClick}
             imgUrl={player?.imgUrl}
             alt={player ? `${player.firstName} ${player.lastName}` : ""}
-            className="absolute inset-0 h-full w-full rounded-full object-cover"
+            className="absolute inset-0 h-full w-full rounded-full object-cover cursor-pointer"
           />
         </div>
         <div className="w-full min-w-0">
@@ -71,11 +72,9 @@ export function PlayerCard({
     >
       {/* Player Cell - Square with off-white background and value-based glow */}
       <div
-        className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden bg-[#f2f2f2] transition-all duration-200 ${
-          valueShadows[player.value]
-        } ${
-          selected ? "ring-2 ring-gold-300" : ""
-        } ${disabled && !selected ? "cursor-not-allowed opacity-50 grayscale" : "cursor-pointer hover:scale-105"}`}
+        className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden bg-[#f2f2f2] transition-all duration-200 ${valueShadows[player.value]
+          } ${selected ? "ring-2 ring-gold-300" : ""
+          } ${disabled && !selected ? "cursor-not-allowed opacity-50 grayscale" : "cursor-pointer hover:scale-105"}`}
       >
         <PlayerImage
           imgUrl={player.imgUrl}
