@@ -11,6 +11,7 @@ export interface ValueDescription {
   id: string;
   user: User;
   suggestedValue: number; // 1-5
+  note?: string | null;
   createdAt: Date;
 }
 
@@ -18,6 +19,7 @@ export interface ValueDescription {
 export interface ValueDescriptionDoc {
   user: Types.ObjectId;
   suggestedValue: number; // 1-5
+  note?: string | null;
   createdAt: Date;
 }
 
@@ -25,6 +27,7 @@ const ValueDescriptionSchema = new Schema<ValueDescriptionDoc>(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     suggestedValue: { type: Number, required: true, min: 1, max: 5 },
+    note: { type: String, maxlength: 500, default: null },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true },

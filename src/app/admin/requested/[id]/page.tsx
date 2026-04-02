@@ -7,6 +7,7 @@ import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
 import { ConfirmModal } from "~/app/_components/common/ConfirmModal";
+import { DuplicateHints } from "~/app/_components/PlayerRequest/DuplicateHints";
 
 export default function RequestedPlayerDetailPage() {
   const params = useParams();
@@ -23,6 +24,14 @@ export default function RequestedPlayerDetailPage() {
       { id: requestId },
       { enabled: !!requestId },
     );
+
+  const { data: duplicates } = api.requestedPlayer.searchDuplicates.useQuery(
+    {
+      firstName: requestedPlayer?.firstName ?? "",
+      lastName: requestedPlayer?.lastName ?? "",
+    },
+    { enabled: !!requestedPlayer },
+  );
 
   const utils = api.useUtils();
   const deleteRequest = api.requestedPlayer.delete.useMutation({
@@ -221,10 +230,25 @@ export default function RequestedPlayerDetailPage() {
                   ${desc.suggestedValue}
                 </div>
               </div>
+              {desc.note && (
+                <p className="mt-2 rounded-md bg-foreground/5 px-3 py-2 text-sm text-foreground/60 italic">
+                  &ldquo;{desc.note}&rdquo;
+                </p>
+              )}
             </div>
           ))}
         </div>
       </div>
+
+      {/* Potential Duplicates */}
+      {duplicates && duplicates.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-4 text-xl font-semibold text-foreground">
+            Potential Duplicates
+          </h2>
+          <DuplicateHints duplicates={duplicates} />
+        </div>
+      )}
 
       {/* Quick Add Player */}
       <div className="mt-8 rounded-xl border border-foreground/10 bg-foreground/3 p-6">

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import Fuse from "fuse.js";
 import mongoose from "mongoose";
 
 import {
@@ -8,9 +9,83 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { RequestedPlayerModel, UserModel } from "~/server/models";
+import { PlayerModel, RequestedPlayerModel, UserModel } from "~/server/models";
+import { redis } from "~/server/redis";
 
 export const requestedPlayerRouter = createTRPCRouter({
+  searchDuplicates: publicProcedure
+    .input(
+      z.object({
+        firstName: z.string().min(1),
+        lastName: z.string().min(1),
+      }),
+    )
+    .query(async ({ input }) => {
+      const query = `${input.firstName.trim()} ${input.lastName.trim()}`;
+
+      // Load players (prefer Redis cache)
+      let players: Array<{
+        firstName: string;
+        lastName: string;
+        value?: number;
+        imgUrl?: string;
+      }>;
+      const cached = await redis.get("players");
+      if (cached) {
+        players = JSON.parse(cached) as typeof players;
+      } else {
+        players = await PlayerModel.find()
+          .select("firstName lastName value imgUrl")
+          .lean();
+      }
+
+      const requestedPlayers = await RequestedPlayerModel.find()
+        .select("firstName lastName")
+        .lean();
+
+      interface FuseItem {
+        firstName: string;
+        lastName: string;
+        value?: number;
+        imgUrl?: string;
+        source: "pool" | "requested";
+      }
+
+      const combined: FuseItem[] = [
+        ...players.map((p) => ({
+          firstName: p.firstName,
+          lastName: p.lastName,
+          value: p.value,
+          imgUrl: p.imgUrl,
+          source: "pool" as const,
+        })),
+        ...requestedPlayers.map((rp) => ({
+          firstName: rp.firstName,
+          lastName: rp.lastName,
+          source: "requested" as const,
+        })),
+      ];
+
+      const fuse = new Fuse(combined, {
+        keys: ["firstName", "lastName"],
+        threshold: 0.4,
+        includeScore: true,
+      });
+
+      const results = fuse.search(query);
+
+      return results
+        .map((r) => ({
+          firstName: r.item.firstName,
+          lastName: r.item.lastName,
+          value: r.item.value,
+          imgUrl: r.item.imgUrl,
+          source: r.item.source,
+          matchPercent: Math.round((1 - (r.score ?? 1)) * 100),
+        }))
+        .filter((r) => r.matchPercent >= 60);
+    }),
+
   // Get all requested players with description counts
   getAll: publicProcedure.query(async () => {
     const requestedPlayers = await RequestedPlayerModel.find()
@@ -40,12 +115,12 @@ export const requestedPlayerRouter = createTRPCRouter({
       }
 
       // Populate user info for each description
-      const userIds = requestedPlayer.descriptions.map((d) => d.userId);
+      const userIds = requestedPlayer.descriptions.map((d) => d.user);
       const users = await UserModel.find({ _id: { $in: userIds } }).lean();
       const userMap = new Map(users.map((u) => [u._id.toHexString(), u]));
 
       const descriptionsWithUsers = requestedPlayer.descriptions.map((d) => {
-        const user = userMap.get(d.userId.toHexString());
+        const user = userMap.get(d.user.toHexString());
         return {
           ...d,
           id: d._id.toHexString(),
@@ -74,6 +149,7 @@ export const requestedPlayerRouter = createTRPCRouter({
         firstName: z.string().min(1).max(50),
         lastName: z.string().min(1).max(50),
         suggestedValue: z.number().min(1).max(5),
+        note: z.string().max(500).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -92,8 +168,9 @@ export const requestedPlayerRouter = createTRPCRouter({
           $push: {
             descriptions: {
               _id: new mongoose.Types.ObjectId(),
-              userId,
+              user: userId,
               suggestedValue: input.suggestedValue,
+              note: input.note?.trim() || null,
               createdAt: new Date(),
             },
           },
