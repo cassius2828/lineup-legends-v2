@@ -58,7 +58,13 @@ export function LineupCard({
           onDelete={onDelete}
         />
       )}
-      <LineupCardFooter lineupId={lineup._id?.toString() ?? ""} />
+      <LineupCardFooter
+        lineupId={lineup._id?.toString() ?? ""}
+        ownerName={lineup.owner?.name ?? lineup.owner?.username ?? "Anonymous"}
+        ownerImage={lineup.owner?.image ?? lineup.owner?.profileImg}
+        totalValue={totalValue}
+        commentCount={lineup.comments?.length ?? 0}
+      />
     </div>
   );
 }

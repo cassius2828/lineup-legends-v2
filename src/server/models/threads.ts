@@ -9,6 +9,8 @@ export interface Thread {
   text: string;
   user: User;
   comment: Comment;
+  image: string | null;
+  gif: string | null;
   totalVotes: number;
   createdAt: Date;
   updatedAt: Date;
@@ -19,6 +21,8 @@ export interface ThreadDoc extends Document {
   text: string;
   user: Types.ObjectId;
   comment: Types.ObjectId;
+  image: string | null;
+  gif: string | null;
   totalVotes: number;
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +33,8 @@ const ThreadSchema = new Schema<ThreadDoc>(
     text: { type: String, required: true },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     comment: { type: Schema.Types.ObjectId, ref: "Comment", required: true },
+    image: { type: String, default: null },
+    gif: { type: String, default: null },
     totalVotes: { type: Number, default: 0 },
   },
   { timestamps: true },
