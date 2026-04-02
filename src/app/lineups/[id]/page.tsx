@@ -20,15 +20,21 @@ const LineupCardPage = () => {
     const params = useParams();
     const rawId = params?.id;
     const lineupId =
-    typeof rawId === "string" ? rawId : Array.isArray(rawId) ? (rawId[0] ?? "") : "";
+        typeof rawId === "string" ? rawId : Array.isArray(rawId) ? (rawId[0] ?? "") : "";
     const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery({
         id: lineupId,
     });
-    const { data: commentsData } = api.comment.getComments.useQuery({
-        lineupId: lineupId ?? "",
-        limit: 10,
-        cursor: undefined,
-    });
+    const {
+        data: commentData,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+    } = api.comment.getComments.useInfiniteQuery(
+        { lineupId, limit: 10 },
+        { getNextPageParam: (lastPage) => lastPage.cursor },
+    );
+
+    const allComments = commentData?.pages.flatMap((p) => p.comments) ?? [];
     const { submit, isSubmitting } = useSubmitComment({
         lineupId,
         mode: "comment",
@@ -60,14 +66,19 @@ const LineupCardPage = () => {
                     <Image src={session?.user?.image ?? ""} alt={session?.user?.name ?? ""} width={32} height={32} />
 
                     <textarea
-                    onChange={(e) => setText(e.target.value)}
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+
                         className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
                         placeholder="Post your reply"
                     />
                 </div>
                 <button
                     type="button"
-                    onClick={() => submit(text)}
+                    onClick={() => {
+                        submit(text);
+                        setText("");
+                    }}
                     disabled={!text.trim() || isSubmitting || !session}
                     className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
                 >
@@ -76,19 +87,32 @@ const LineupCardPage = () => {
                 <div>
                     image icon, gif icon
                 </div>
-                <br/>
-                <hr className="border-foreground/10"/>
+                <br />
+                <hr className="border-foreground/10" />
             </div>
             {/* Comments list */}
-            {commentsData?.comments?.length > 0 && (
-                <div className="max-h-[40vh] overflow-y-auto border-b border-foreground/10 px-5 py-4">
-                    {commentsData.comments.slice(0, 10).map((comment) => (
-                        <CommentCard key={comment.id} comment={comment} />
+            {allComments.length > 0 && (
+                <div className="border-b border-foreground/10 px-5 py-4">
+                    {allComments.map((comment) => (
+                        <CommentCard key={comment._id?.toString()} comment={comment as unknown as import("~/server/models").Comment} />
                     ))}
+                    {commentData?.pages[commentData.pages.length - 1]?.hasMore && (
+                        <div className="flex justify-center">
+                            <button
+                                className="mt-4 text-sm text-foreground/40 hover:text-foreground/70"
+                                type="button"
+                                disabled={isFetchingNextPage}
+                                onClick={() => fetchNextPage()}
+                            >
+                                {isFetchingNextPage ? "Loading..." : "Load more comments"}
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
     );
 };
+
 
 export default LineupCardPage

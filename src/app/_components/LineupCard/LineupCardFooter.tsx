@@ -22,7 +22,6 @@ export default function LineupCardFooter({
   totalValue,
 }: LineupCardFooterProps) {
   const [commentModalOpen, setCommentModalOpen] = useState(false);
-console.log(comments.length, 'commentCount');
 
   return (
     <>

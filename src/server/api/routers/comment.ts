@@ -26,10 +26,11 @@ export const commentRouter = createTRPCRouter({
         lineup: new mongoose.Types.ObjectId(input.lineupId),
       };
       if (input.cursor) {
-        matchStage._id = { $lt: new mongoose.Types.ObjectId(input.cursor) };
+        matchStage._id = { $gt: new mongoose.Types.ObjectId(input.cursor) };
       }
       const comments = await CommentModel.find(matchStage)
         .sort({ createdAt: 1 })
+        .limit((input.limit ?? 10) + 1)
         .populate({ path: "user", select: "name username image profileImg" })
         .lean();
       const hasMore = comments.length > (input.limit ?? 10);

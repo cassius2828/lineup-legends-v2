@@ -4,7 +4,6 @@ import React from "react";
 import type { Comment } from "~/server/models";
 
 const CommentCard = ({ comment }: { comment: Comment }) => {
-    console.log(comment, 'comment');
   return (
     <div>
       <ul>
