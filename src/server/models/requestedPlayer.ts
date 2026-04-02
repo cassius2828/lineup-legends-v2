@@ -17,6 +17,7 @@ export interface ValueDescription {
 
 // DB Type - Value description subdocument for database
 export interface ValueDescriptionDoc {
+  _id: Types.ObjectId;
   user: Types.ObjectId;
   suggestedValue: number; // 1-5
   note?: string | null;

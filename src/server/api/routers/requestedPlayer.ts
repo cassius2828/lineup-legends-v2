@@ -46,6 +46,7 @@ export const requestedPlayerRouter = createTRPCRouter({
       interface FuseItem {
         firstName: string;
         lastName: string;
+        fullName: string;
         value?: number;
         imgUrl?: string;
         source: "pool" | "requested";
@@ -55,6 +56,7 @@ export const requestedPlayerRouter = createTRPCRouter({
         ...players.map((p) => ({
           firstName: p.firstName,
           lastName: p.lastName,
+          fullName: `${p.firstName} ${p.lastName}`,
           value: p.value,
           imgUrl: p.imgUrl,
           source: "pool" as const,
@@ -62,12 +64,13 @@ export const requestedPlayerRouter = createTRPCRouter({
         ...requestedPlayers.map((rp) => ({
           firstName: rp.firstName,
           lastName: rp.lastName,
+          fullName: `${rp.firstName} ${rp.lastName}`,
           source: "requested" as const,
         })),
       ];
 
       const fuse = new Fuse(combined, {
-        keys: ["firstName", "lastName"],
+        keys: ["fullName"],
         threshold: 0.4,
         includeScore: true,
       });
@@ -94,7 +97,7 @@ export const requestedPlayerRouter = createTRPCRouter({
 
     return requestedPlayers.map((rp) => ({
       ...rp,
-      id: rp._id.toHexString(),
+      id: rp._id,
       descriptionCount: rp.descriptions.length,
     }));
   }),
@@ -117,16 +120,16 @@ export const requestedPlayerRouter = createTRPCRouter({
       // Populate user info for each description
       const userIds = requestedPlayer.descriptions.map((d) => d.user);
       const users = await UserModel.find({ _id: { $in: userIds } }).lean();
-      const userMap = new Map(users.map((u) => [u._id.toHexString(), u]));
+      const userMap = new Map(users.map((u) => [u._id, u]));
 
       const descriptionsWithUsers = requestedPlayer.descriptions.map((d) => {
-        const user = userMap.get(d.user.toHexString());
+        const user = userMap.get(d.user);
         return {
           ...d,
-          id: d._id.toHexString(),
+          id: d._id,
           user: user
             ? {
-                id: user._id.toHexString(),
+                id: user._id,
                 name: user.name,
                 email: user.email,
                 image: user.image,
@@ -137,7 +140,7 @@ export const requestedPlayerRouter = createTRPCRouter({
 
       return {
         ...requestedPlayer,
-        id: requestedPlayer._id.toHexString(),
+        id: requestedPlayer._id,
         descriptions: descriptionsWithUsers,
       };
     }),
@@ -180,7 +183,7 @@ export const requestedPlayerRouter = createTRPCRouter({
 
       return {
         ...result.toObject(),
-        id: result._id.toHexString(),
+        id: result._id,
       };
     }),
 
