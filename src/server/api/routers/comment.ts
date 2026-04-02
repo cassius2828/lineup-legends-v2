@@ -42,6 +42,25 @@ export const commentRouter = createTRPCRouter({
       };
     }),
 
+  getCommentCount: publicProcedure
+    .input(z.object({ lineupId: z.string() }))
+    .query(async ({ input }) => {
+      const lineupOid = new mongoose.Types.ObjectId(input.lineupId);
+
+      const commentIds = await CommentModel.find({ lineup: lineupOid })
+        .select("_id")
+        .lean();
+
+      const [commentCount, threadCount] = await Promise.all([
+        Promise.resolve(commentIds.length),
+        ThreadModel.countDocuments({
+          comment: { $in: commentIds.map((c) => c._id) },
+        }),
+      ]);
+
+      return { total: commentCount + threadCount, comments: commentCount, threads: threadCount };
+    }),
+
   getMyCommentVotes: protectedProcedure
     .input(z.object({ lineupId: z.string() }))
     .query(async ({ ctx, input }) => {

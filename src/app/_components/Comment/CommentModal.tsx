@@ -10,8 +10,7 @@ import { api } from "~/trpc/react";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
 import { LineupCard } from "../LineupCard/LineupCard";
 import type { LineupType } from "~/lib/types";
-import CommentCard from "./CommentCard";
-import type { Comment as CommentType } from "~/server/models";
+
 
 interface ParentComment {
   _id: string;
@@ -36,7 +35,6 @@ type CommentModalProps = {
   open: boolean;
   onClose: () => void;
   lineupId: string;
-  comments: CommentType[];
 } & (
   | { mode: "comment"; lineup: LineupContext; parentComment?: never }
   | { mode: "reply"; parentComment: ParentComment; lineup?: never }
@@ -47,7 +45,6 @@ export default function CommentModal({
   onClose,
   lineupId,
   mode,
-  comments,
   ...rest
 }: CommentModalProps) {
   const { data: session } = useSession();
@@ -150,15 +147,6 @@ export default function CommentModal({
               <ParentCommentPreview comment={parentComment!} />
             ) : null}
           </div>
-
-          {/* Comments list
-          {comments.length > 0 && (
-            <div className="max-h-[40vh] overflow-y-auto border-b border-foreground/10 px-5 py-4">
-              {comments.slice(0, 10).map((comment) => (
-                <CommentCard key={comment.id} comment={comment} />
-              ))}
-            </div>
-          )} */}
 
           {/* Reply input */}
           <div className="px-5 py-4">

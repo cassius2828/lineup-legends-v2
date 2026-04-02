@@ -39,7 +39,11 @@ export function LineupCard({
   const relativeTime = formatDistanceToNow(new Date(lineup.createdAt), {
     addSuffix: true,
   });
-  const { data: commentsData } = api.comment.getComments.useQuery({ lineupId: lineup._id?.toString() ?? "" }, { enabled: !!lineup._id });
+  const lineupId = lineup._id?.toString() ?? "";
+  const { data: countData } = api.comment.getCommentCount.useQuery(
+    { lineupId },
+    { enabled: !!lineupId },
+  );
 
   return (
     <div className={`relative rounded-2xl bg-gradient-to-br from-surface-800/90 to-surface-950/90 p-6 shadow-xl backdrop-blur-sm ${featured ? "glow-gold" : ""}`}>
@@ -61,11 +65,11 @@ export function LineupCard({
         />
       )}
       <LineupCardFooter
-        lineupId={lineup._id?.toString() ?? ""}
+        lineupId={lineupId}
         ownerName={lineup.owner?.name ?? lineup.owner?.username ?? "Anonymous"}
         ownerImage={lineup.owner?.image ?? lineup.owner?.profileImg}
         totalValue={totalValue}
-        comments={commentsData?.comments ?? []}
+        commentCount={countData?.total ?? 0}
       />
     </div>
   );
