@@ -66,10 +66,10 @@ const LineupCardPage = () => {
             {/* Composer */}
             <div className="mt-4 rounded-xl border border-foreground/10 p-4">
                 <div className="flex gap-3">
-                    {session?.user?.image ? (
+                    {(session?.image ?? session?.profileImg) ? (
                         <Image
-                            src={session.user.image}
-                            alt={session.user.name ?? "You"}
+                            src={(session.image ?? session.profileImg)!}
+                            alt={session.name ?? "You"}
                             width={36}
                             height={36}
                             className="h-9 w-9 shrink-0 rounded-full"

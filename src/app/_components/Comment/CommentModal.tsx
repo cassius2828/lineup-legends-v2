@@ -104,7 +104,7 @@ export default function CommentModal({
       submit(text);
     }
   };
-
+console.log(session)
   const userImage = session?.user?.image;
 
   return createPortal(
