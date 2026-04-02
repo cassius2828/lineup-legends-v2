@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
-import { toast } from "sonner";
+import { useSubmitComment } from "~/hooks/useSubmitComment";
 import { LineupCard } from "../LineupCard/LineupCard";
 import type { LineupType } from "~/lib/types";
 import CommentCard from "./CommentCard";
@@ -54,34 +54,26 @@ export default function CommentModal({
   const [text, setText] = useState("");
   const [mounted, setMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const utils = api.useUtils();
+
+  const parentComment =
+    mode === "reply"
+      ? (rest as { parentComment: ParentComment }).parentComment
+      : undefined;
+
+  const { submit, isSubmitting } = useSubmitComment({
+    lineupId,
+    mode,
+    commentId: parentComment?._id,
+    onSuccess: () => {
+      setText("");
+      onClose();
+    },
+  });
 
   const { data: lineup } = api.lineup.getLineupById.useQuery(
     { id: lineupId },
     { enabled: !!lineupId },
   );
-
-  const addComment = api.comment.addComment.useMutation({
-    onSuccess: () => {
-      toast.success("Comment posted");
-      void utils.comment.getComments.invalidate({ lineupId });
-      setText("");
-      onClose();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
-  const addReply = api.comment.addThreadReply.useMutation({
-    onSuccess: () => {
-      toast.success("Reply posted");
-      void utils.comment.getComments.invalidate({ lineupId });
-      setText("");
-      onClose();
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
-  const isSubmitting = addComment.isPending || addReply.isPending;
 
   useEffect(() => setMounted(true), []);
 
@@ -109,27 +101,10 @@ export default function CommentModal({
 
   if (!open || !mounted) return null;
 
-  const handleSubmit = () => {
-    const trimmed = text.trim();
-    if (!trimmed) return;
-
-    if (mode === "comment") {
-      addComment.mutate({ lineupId, text: trimmed });
-    } else {
-      const parentComment = (rest as { parentComment: ParentComment })
-        .parentComment;
-      addReply.mutate({
-        lineupId,
-        commentId: parentComment._id,
-        text: trimmed,
-      });
-    }
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      handleSubmit();
+      submit(text);
     }
   };
 
@@ -172,22 +147,18 @@ export default function CommentModal({
             {mode === "comment" && lineup ? (
               <LineupCard lineup={lineup as unknown as LineupType} />
             ) : mode === "reply" ? (
-              <ParentCommentPreview
-                comment={
-                  (rest as { parentComment: ParentComment }).parentComment
-                }
-              />
+              <ParentCommentPreview comment={parentComment!} />
             ) : null}
           </div>
 
-          {/* Comments list */}
+          {/* Comments list
           {comments.length > 0 && (
             <div className="max-h-[40vh] overflow-y-auto border-b border-foreground/10 px-5 py-4">
               {comments.slice(0, 10).map((comment) => (
                 <CommentCard key={comment.id} comment={comment} />
               ))}
             </div>
-          )}
+          )} */}
 
           {/* Reply input */}
           <div className="px-5 py-4">
@@ -225,7 +196,7 @@ export default function CommentModal({
             </span>
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => submit(text)}
               disabled={!text.trim() || isSubmitting || !session}
               className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
             >

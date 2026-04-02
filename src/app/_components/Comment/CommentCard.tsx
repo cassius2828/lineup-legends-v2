@@ -1,3 +1,4 @@
+import { MessageCircle } from "lucide-react";
 import Image from "next/image";
 import React from "react";
 import type { Comment } from "~/server/models";
@@ -26,6 +27,18 @@ const CommentCard = ({ comment }: { comment: Comment }) => {
         <li>{comment.lineup.owner.image}</li>
         <li>{comment.lineup.owner.profileImg}</li> */}
       </ul>
+      <footer>
+              <button
+                  type="button"
+                  onClick={() => null}
+                  className="group flex cursor-pointer items-center gap-1.5 text-foreground/40 transition-colors hover:text-gold"
+              >
+                  <MessageCircle className="h-4 w-4" />
+                  {/* {threads.length > 0 && (
+                      <span className="text-xs">{comments.length}</span>
+                  )} */}
+              </button>
+      </footer>
     </div>
   );
 };
