@@ -6,6 +6,7 @@ import { LineupCardHeader } from "./LineupCardHeader";
 import { LineupCardStatsBar } from "./LineupCardStatsBar";
 import { LineupCardPlayersGrid } from "./LineupCardPlayersGrid";
 import { LineupCardOwnerActions } from "./LineupCardOwnerActions";
+import LineupCardFooter from "./LineupCardFooter";
 
 interface LineupCardProps {
   lineup: LineupType;
@@ -50,7 +51,7 @@ export function LineupCard({
       <LineupCardStatsBar lineup={lineup} isOwner={isOwner} />
 
       <LineupCardPlayersGrid players={lineup.players} />
-
+      <LineupCardFooter />
       {isOwner && (
         <LineupCardOwnerActions
           lineup={lineup}
