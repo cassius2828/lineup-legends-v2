@@ -58,53 +58,58 @@ const LineupCardPage = () => {
                 isOwner={false}
                 currentUserId={session?.id ?? ""}
             />
-            {/* post your reply here */}
-            <div className="px-5 py-4">
-                <hr className="border-foreground/10 mb-5" />
-
-                <div className="flex gap-3 items-end">
-                    <Image src={session?.user?.image ?? ""} alt={session?.user?.name ?? ""} width={32} height={32} />
-
+            {/* Composer */}
+            <div className="mt-4 rounded-xl border border-foreground/10 p-4">
+                <div className="flex gap-3">
+                    {session?.user?.image ? (
+                        <Image
+                            src={session.user.image}
+                            alt={session.user.name ?? "You"}
+                            width={36}
+                            height={36}
+                            className="h-9 w-9 shrink-0 rounded-full"
+                        />
+                    ) : (
+                        <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+                    )}
                     <textarea
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-
+                        rows={2}
+                        maxLength={1000}
                         className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
                         placeholder="Post your reply"
                     />
                 </div>
-                <button
-                    type="button"
-                    onClick={() => {
-                        submit(text);
-                        setText("");
-                    }}
-                    disabled={!text.trim() || isSubmitting || !session}
-                    className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                    {isSubmitting ? "Posting..." : "Reply"}
-                </button>
-                <div>
-                    image icon, gif icon
+                <div className="mt-3 flex items-center justify-end">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            submit(text);
+                            setText("");
+                        }}
+                        disabled={!text.trim() || isSubmitting || !session}
+                        className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                        {isSubmitting ? "Posting..." : "Reply"}
+                    </button>
                 </div>
-                <br />
-                <hr className="border-foreground/10" />
             </div>
             {/* Comments list */}
             {allComments.length > 0 && (
-                <div className="border-b border-foreground/10 px-5 py-4">
+                <div className="mt-2 px-1">
                     {allComments.map((comment) => (
                         <CommentCard key={comment._id?.toString()} comment={comment as unknown as import("~/server/models").Comment} />
                     ))}
-                    {commentData?.pages[commentData.pages.length - 1]?.hasMore && (
-                        <div className="flex justify-center">
+                    {hasNextPage && (
+                        <div className="flex justify-center py-4">
                             <button
-                                className="mt-4 text-sm text-foreground/40 hover:text-foreground/70"
+                                className="text-sm text-foreground/40 transition-colors hover:text-foreground/70"
                                 type="button"
                                 disabled={isFetchingNextPage}
                                 onClick={() => fetchNextPage()}
                             >
-                                {isFetchingNextPage ? "Loading..." : "Load more comments"}
+                                {isFetchingNextPage ? "Loading..." : "Show more replies"}
                             </button>
                         </div>
                     )}
