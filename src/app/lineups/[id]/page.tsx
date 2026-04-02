@@ -34,6 +34,11 @@ const LineupCardPage = () => {
         { getNextPageParam: (lastPage) => lastPage.cursor },
     );
 
+    const { data: myVotes } = api.comment.getMyCommentVotes.useQuery(
+        { lineupId },
+        { enabled: !!lineupId && !!session },
+    );
+
     const allComments = commentData?.pages.flatMap((p) => p.comments) ?? [];
     const { submit, isSubmitting } = useSubmitComment({
         lineupId,
@@ -98,9 +103,18 @@ const LineupCardPage = () => {
             {/* Comments list */}
             {allComments.length > 0 && (
                 <div className="mt-2 px-1">
-                    {allComments.map((comment) => (
-                        <CommentCard key={comment._id?.toString()} comment={comment as unknown as import("~/server/models").Comment} />
-                    ))}
+                    {allComments.map((comment) => {
+                        const cid = comment._id?.toString() ?? "";
+                        return (
+                            <CommentCard
+                                key={cid}
+                                comment={comment as unknown as import("~/server/models").Comment}
+                                lineupId={lineupId}
+                                currentUserId={session?.id}
+                                userVote={myVotes?.[cid] ?? null}
+                            />
+                        );
+                    })}
                     {hasNextPage && (
                         <div className="flex justify-center py-4">
                             <button

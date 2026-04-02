@@ -42,6 +42,29 @@ export const commentRouter = createTRPCRouter({
       };
     }),
 
+  getMyCommentVotes: protectedProcedure
+    .input(z.object({ lineupId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const commentIds = await CommentModel.find({
+        lineup: new mongoose.Types.ObjectId(input.lineupId),
+      })
+        .select("_id")
+        .lean();
+
+      const votes = await CommentVoteModel.find({
+        user: ctx.session.user.id,
+        comment: { $in: commentIds.map((c) => c._id) },
+      })
+        .select("comment type")
+        .lean();
+
+      const voteMap: Record<string, "upvote" | "downvote"> = {};
+      for (const v of votes) {
+        voteMap[v.comment.toString()] = v.type;
+      }
+      return voteMap;
+    }),
+
   addComment: protectedProcedure
     .input(
       z.object({
