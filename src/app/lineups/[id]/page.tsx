@@ -8,16 +8,19 @@ import { useParams, useRouter } from "next/navigation";
 import Loading from "./loading";
 import CommentCard from "~/app/_components/Comment/CommentCard";
 import Image from "next/image";
+import { useSubmitComment } from "~/hooks/useSubmitComment";
+import { useState } from "react";
 
 const LineupCardPage = () => {
     const router = useRouter();
+    const [text, setText] = useState("");
     const { data: session } = api.profile.getMe.useQuery(undefined, {
         retry: false,
     });
     const params = useParams();
     const rawId = params?.id;
     const lineupId =
-        typeof rawId === "string" ? rawId : Array.isArray(rawId) ? (rawId[0] ?? "") : "";
+    typeof rawId === "string" ? rawId : Array.isArray(rawId) ? (rawId[0] ?? "") : "";
     const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery({
         id: lineupId,
     });
@@ -25,6 +28,11 @@ const LineupCardPage = () => {
         lineupId: lineupId ?? "",
         limit: 10,
         cursor: undefined,
+    });
+    const { submit, isSubmitting } = useSubmitComment({
+        lineupId,
+        mode: "comment",
+        commentId: undefined,
     });
     if (isLoading) return <Loading />;
     if (!lineup) return <div className="p-12 text-center text-foreground/50">Lineup not found</div>;
@@ -52,10 +60,19 @@ const LineupCardPage = () => {
                     <Image src={session?.user?.image ?? ""} alt={session?.user?.name ?? ""} width={32} height={32} />
 
                     <textarea
+                    onChange={(e) => setText(e.target.value)}
                         className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
                         placeholder="Post your reply"
                     />
                 </div>
+                <button
+                    type="button"
+                    onClick={() => submit(text)}
+                    disabled={!text.trim() || isSubmitting || !session}
+                    className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                    {isSubmitting ? "Posting..." : "Reply"}
+                </button>
                 <div>
                     image icon, gif icon
                 </div>
