@@ -23,12 +23,14 @@ export const commentRouter = createTRPCRouter({
     )
     .query(async ({ input }) => {
       const matchStage: Record<string, unknown> = {
-        lineupId: new mongoose.Types.ObjectId(input.lineupId),
+        lineup: new mongoose.Types.ObjectId(input.lineupId),
       };
       if (input.cursor) {
         matchStage._id = { $lt: new mongoose.Types.ObjectId(input.cursor) };
       }
-      const comments = await CommentModel.find(matchStage).lean();
+      const comments = await CommentModel.find(matchStage)
+        .populate({ path: "user", select: "name username image profileImg" })
+        .lean();
       const hasMore = comments.length > (input.limit ?? 10);
       if (hasMore) comments.pop();
       return {

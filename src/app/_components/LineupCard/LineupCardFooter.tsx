@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import CommentModal from "~/app/_components/Comment/CommentModal";
 
 interface LineupCardFooterProps {
-  commentCount?: number;
+  comments: Comment[];
   lineupId: string;
   ownerName: string;
   ownerImage?: string | null;
@@ -15,13 +15,14 @@ interface LineupCardFooterProps {
 }
 
 export default function LineupCardFooter({
-  commentCount = 0,
+  comments,
   lineupId,
   ownerName,
   ownerImage,
   totalValue,
 }: LineupCardFooterProps) {
   const [commentModalOpen, setCommentModalOpen] = useState(false);
+console.log(comments.length, 'commentCount');
 
   return (
     <>
@@ -29,12 +30,12 @@ export default function LineupCardFooter({
         {/* Comments */}
         <button
           type="button"
-          onClick={() => setCommentModalOpen(true)}
+          onClick={() => setCommentModalOpen(prev => !prev)}
           className="group flex cursor-pointer items-center gap-1.5 text-foreground/40 transition-colors hover:text-gold"
         >
           <MessageCircle className="h-4 w-4" />
-          {commentCount > 0 && (
-            <span className="text-xs">{commentCount}</span>
+          {comments.length > 0 && (
+            <span className="text-xs">{comments.length}</span>
           )}
         </button>
 
@@ -76,6 +77,7 @@ export default function LineupCardFooter({
         lineupId={lineupId}
         mode="comment"
         lineup={{ lineupId, ownerName, ownerImage, totalValue }}
+        comments={comments}
       />
     </>
   );

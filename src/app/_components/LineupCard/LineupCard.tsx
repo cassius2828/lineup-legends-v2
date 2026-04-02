@@ -7,6 +7,7 @@ import { LineupCardStatsBar } from "./LineupCardStatsBar";
 import { LineupCardPlayersGrid } from "./LineupCardPlayersGrid";
 import { LineupCardOwnerActions } from "./LineupCardOwnerActions";
 import LineupCardFooter from "./LineupCardFooter";
+import { api } from "~/trpc/react";
 
 interface LineupCardProps {
   lineup: LineupType;
@@ -38,7 +39,9 @@ export function LineupCard({
   const relativeTime = formatDistanceToNow(new Date(lineup.createdAt), {
     addSuffix: true,
   });
-
+  const { data: commentsData } = api.comment.getComments.useQuery({ lineupId: lineup._id?.toString() ?? "" }, { enabled: !!lineup._id });
+  console.log(commentsData, 'commentsData');
+  console.log(lineup._id, 'lineup._id');
   return (
     <div className={`relative rounded-2xl bg-gradient-to-br from-surface-800/90 to-surface-950/90 p-6 shadow-xl backdrop-blur-sm ${featured ? "glow-gold" : ""}`}>
       <LineupCardHeader
@@ -63,7 +66,7 @@ export function LineupCard({
         ownerName={lineup.owner?.name ?? lineup.owner?.username ?? "Anonymous"}
         ownerImage={lineup.owner?.image ?? lineup.owner?.profileImg}
         totalValue={totalValue}
-        commentCount={lineup.comments?.length ?? 0}
+        comments={commentsData?.comments ?? []}
       />
     </div>
   );
