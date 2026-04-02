@@ -1,5 +1,6 @@
 import { playerRouter } from "~/server/api/routers/player";
 import { lineupRouter } from "~/server/api/routers/lineup";
+import { commentRouter } from "~/server/api/routers/comment";
 import { profileRouter } from "~/server/api/routers/profile";
 import { followRouter } from "~/server/api/routers/follow";
 import { requestedPlayerRouter } from "~/server/api/routers/requestedPlayer";
@@ -16,6 +17,7 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 export const appRouter = createTRPCRouter({
   player: playerRouter,
   lineup: lineupRouter,
+  comment: commentRouter,
   profile: profileRouter,
   follow: followRouter,
   requestedPlayer: requestedPlayerRouter,
