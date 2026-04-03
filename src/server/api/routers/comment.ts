@@ -28,17 +28,66 @@ export const commentRouter = createTRPCRouter({
       if (input.cursor) {
         matchStage._id = { $gt: new mongoose.Types.ObjectId(input.cursor) };
       }
+      const limit = input.limit ?? 10;
       const comments = await CommentModel.find(matchStage)
         .sort({ createdAt: 1 })
-        .limit((input.limit ?? 10) + 1)
+        .limit(limit + 1)
         .populate({ path: "user", select: "name username image profileImg" })
         .lean();
-      const hasMore = comments.length > (input.limit ?? 10);
+      const hasMore = comments.length > limit;
       if (hasMore) comments.pop();
+
+      const commentIds = comments.map((c) => c._id);
+      const threadCounts = await ThreadModel.aggregate<{
+        _id: mongoose.Types.ObjectId;
+        count: number;
+      }>([
+        { $match: { comment: { $in: commentIds } } },
+        { $group: { _id: "$comment", count: { $sum: 1 } } },
+      ]);
+      const threadCountMap = new Map(
+        threadCounts.map((tc) => [tc._id.toString(), tc.count]),
+      );
+
+      const commentsWithThreadCount = comments.map((c) => ({
+        ...c,
+        threadCount: threadCountMap.get(c._id.toString()) ?? 0,
+      }));
+
       return {
-        comments,
+        comments: commentsWithThreadCount,
         hasMore,
         cursor: comments[comments.length - 1]?._id?.toString(),
+      };
+    }),
+
+  getThreads: publicProcedure
+    .input(
+      z.object({
+        commentId: z.string(),
+        limit: z.number().optional(),
+        cursor: z.string().optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const matchStage: Record<string, unknown> = {
+        comment: new mongoose.Types.ObjectId(input.commentId),
+      };
+      if (input.cursor) {
+        matchStage._id = { $gt: new mongoose.Types.ObjectId(input.cursor) };
+      }
+      const limit = input.limit ?? 10;
+      const threads = await ThreadModel.find(matchStage)
+        .sort({ createdAt: 1 })
+        .limit(limit + 1)
+        .populate({ path: "user", select: "name username image profileImg" })
+        .lean();
+      const hasMore = threads.length > limit;
+      if (hasMore) threads.pop();
+      return {
+        threads,
+        hasMore,
+        cursor: threads[threads.length - 1]?._id?.toString(),
       };
     }),
 
@@ -80,6 +129,29 @@ export const commentRouter = createTRPCRouter({
       const voteMap: Record<string, "upvote" | "downvote"> = {};
       for (const v of votes) {
         voteMap[v.comment.toString()] = v.type;
+      }
+      return voteMap;
+    }),
+
+  getMyThreadVotes: protectedProcedure
+    .input(z.object({ commentId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const threadIds = await ThreadModel.find({
+        comment: new mongoose.Types.ObjectId(input.commentId),
+      })
+        .select("_id")
+        .lean();
+
+      const votes = await ThreadVoteModel.find({
+        user: ctx.session.user.id,
+        thread: { $in: threadIds.map((t) => t._id) },
+      })
+        .select("thread type")
+        .lean();
+
+      const voteMap: Record<string, "upvote" | "downvote"> = {};
+      for (const v of votes) {
+        voteMap[v.thread.toString()] = v.type;
       }
       return voteMap;
     }),
@@ -215,7 +287,7 @@ export const commentRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const comment = await CommentModel.findOne({
         _id: input.commentId,
-        lineupId: input.lineupId,
+        lineup: new mongoose.Types.ObjectId(input.lineupId),
       });
 
       if (!comment) {

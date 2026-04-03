@@ -19,6 +19,7 @@ interface LineupCardProps {
   currentUserId?: string;
   userVote?: "upvote" | "downvote" | null;
   featured?: boolean;
+  hideFooter?: boolean;
 }
 
 export function LineupCard({
@@ -28,6 +29,7 @@ export function LineupCard({
   onToggleFeatured,
   isOwner = false,
   featured = false,
+  hideFooter = false,
 }: LineupCardProps) {
   const totalValue =
     lineup.players.pg?.value +
@@ -42,7 +44,7 @@ export function LineupCard({
   const lineupId = lineup._id?.toString() ?? "";
   const { data: countData } = api.comment.getCommentCount.useQuery(
     { lineupId },
-    { enabled: !!lineupId },
+    { enabled: !!lineupId && !hideFooter },
   );
 
   return (
@@ -64,13 +66,15 @@ export function LineupCard({
           onDelete={onDelete}
         />
       )}
-      <LineupCardFooter
-        lineupId={lineupId}
-        ownerName={lineup.owner?.name ?? lineup.owner?.username ?? "Anonymous"}
-        ownerImage={lineup.owner?.image ?? lineup.owner?.profileImg}
-        totalValue={totalValue}
-        commentCount={countData?.total ?? 0}
-      />
+      {!hideFooter && (
+        <LineupCardFooter
+          lineupId={lineupId}
+          ownerName={lineup.owner?.name ?? lineup.owner?.username ?? "Anonymous"}
+          ownerImage={lineup.owner?.image ?? lineup.owner?.profileImg}
+          totalValue={totalValue}
+          commentCount={countData?.total ?? 0}
+        />
+      )}
     </div>
   );
 }

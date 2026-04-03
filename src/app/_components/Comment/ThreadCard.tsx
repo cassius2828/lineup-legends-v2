@@ -1,68 +1,78 @@
 "use client";
 
-import { ChevronUp, ChevronDown, MessageCircle } from "lucide-react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { api } from "~/trpc/react";
-import type { Comment } from "~/server/models";
+import type { Thread } from "~/server/models/threads";
 
-interface CommentCardProps {
-  comment: Comment & { threadCount?: number };
+interface ThreadCardProps {
+  thread: Thread;
   lineupId: string;
+  commentId: string;
   currentUserId: string | undefined;
   userVote: "upvote" | "downvote" | null;
-  onReplyClick?: () => void;
 }
 
-export default function CommentCard({
-  comment,
+export default function ThreadCard({
+  thread,
   lineupId,
+  commentId,
   currentUserId,
   userVote,
-  onReplyClick,
-}: CommentCardProps) {
+}: ThreadCardProps) {
   const utils = api.useUtils();
-  const commentId = (comment as unknown as { _id: string })._id?.toString() ?? comment.id;
-  const commentOwnerId =
-    typeof comment.user === "object" && comment.user !== null
-      ? ((comment.user as unknown as { _id?: string })._id ?? "")
-      : String(comment.user);
-  const isOwnComment = !!currentUserId && currentUserId === commentOwnerId;
+  const threadId =
+    (thread as unknown as { _id: string })._id?.toString() ?? thread.id;
+  const threadOwnerId =
+    typeof thread.user === "object" && thread.user !== null
+      ? ((thread.user as unknown as { _id?: string })._id ?? "")
+      : String(thread.user);
+  const isOwnThread = !!currentUserId && currentUserId === threadOwnerId;
 
   const [optimisticVote, setOptimisticVote] = useState(userVote);
-  const [optimisticTotal, setOptimisticTotal] = useState(comment.totalVotes ?? 0);
+  const [optimisticTotal, setOptimisticTotal] = useState(
+    thread.totalVotes ?? 0,
+  );
 
-  const voteMutation = api.comment.voteComment.useMutation({
+  const voteMutation = api.comment.voteThread.useMutation({
     onSuccess: (data) => {
       setOptimisticTotal(data.totalVotes);
-      void utils.comment.getMyCommentVotes.invalidate({ lineupId });
+      void utils.comment.getMyThreadVotes.invalidate({ commentId });
     },
     onError: () => {
       setOptimisticVote(userVote);
-      setOptimisticTotal(comment.totalVotes ?? 0);
+      setOptimisticTotal(thread.totalVotes ?? 0);
     },
   });
 
   const handleVote = (type: "upvote" | "downvote") => {
-    if (isOwnComment || !currentUserId) return;
+    if (isOwnThread || !currentUserId) return;
 
     const newVote = optimisticVote === type ? null : type;
     const delta =
       optimisticVote === null
-        ? type === "upvote" ? 1 : -1
+        ? type === "upvote"
+          ? 1
+          : -1
         : optimisticVote === type
-          ? type === "upvote" ? -1 : 1
-          : type === "upvote" ? 2 : -2;
+          ? type === "upvote"
+            ? -1
+            : 1
+          : type === "upvote"
+            ? 2
+            : -2;
 
     setOptimisticVote(newVote);
     setOptimisticTotal((prev) => prev + delta);
-    voteMutation.mutate({ lineupId, commentId, type });
+    voteMutation.mutate({ lineupId, commentId, threadId, type });
   };
 
-  const displayName = comment.user.name ?? comment.user.username ?? "Anonymous";
-  const avatar = comment.user.image ?? comment.user.profileImg;
-  const relativeTime = formatDistanceToNow(new Date(comment.createdAt), {
+  const displayName =
+    thread.user.name ?? thread.user.username ?? "Anonymous";
+  const avatar = thread.user.image ?? thread.user.profileImg;
+  const relativeTime = formatDistanceToNow(new Date(thread.createdAt), {
     addSuffix: true,
   });
 
@@ -75,7 +85,6 @@ export default function CommentCard({
 
   return (
     <div className="flex gap-3 border-b border-foreground/10 py-4 last:border-b-0">
-      {/* Avatar */}
       {avatar ? (
         <Image
           src={avatar}
@@ -88,9 +97,7 @@ export default function CommentCard({
         <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
       )}
 
-      {/* Content */}
       <div className="min-w-0 flex-1">
-        {/* Name + time */}
         <div className="flex items-center gap-1.5">
           <span className="truncate text-sm font-medium text-foreground">
             {displayName}
@@ -101,30 +108,15 @@ export default function CommentCard({
           </span>
         </div>
 
-        {/* Body */}
         <p className="mt-1 text-sm leading-relaxed text-foreground/80">
-          {comment.text}
+          {thread.text}
         </p>
 
-        {/* Actions */}
-        <div className="mt-2 flex items-center gap-6">
-          {/* Reply */}
-          <button
-            type="button"
-            onClick={onReplyClick}
-            className="flex cursor-pointer items-center gap-1.5 text-foreground/30 transition-colors hover:text-gold"
-          >
-            <MessageCircle className="h-3.5 w-3.5" />
-            {(comment.threadCount ?? 0) > 0 && (
-              <span className="text-xs">{comment.threadCount}</span>
-            )}
-          </button>
-
-          {/* Votes */}
+        <div className="mt-2 flex items-center">
           <div className="flex items-center gap-1">
             <button
               type="button"
-              disabled={isOwnComment || !currentUserId}
+              disabled={isOwnThread || !currentUserId}
               onClick={() => handleVote("upvote")}
               className={`transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
                 optimisticVote === "upvote"
@@ -136,13 +128,15 @@ export default function CommentCard({
               <ChevronUp className="h-4 w-4" />
             </button>
 
-            <span className={`min-w-[1.25rem] text-center text-xs font-medium ${voteColor}`}>
+            <span
+              className={`min-w-[1.25rem] text-center text-xs font-medium ${voteColor}`}
+            >
               {optimisticTotal}
             </span>
 
             <button
               type="button"
-              disabled={isOwnComment || !currentUserId}
+              disabled={isOwnThread || !currentUserId}
               onClick={() => handleVote("downvote")}
               className={`transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
                 optimisticVote === "downvote"

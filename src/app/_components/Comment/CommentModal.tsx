@@ -5,14 +5,15 @@ import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
 import Image from "next/image";
-import { useSession } from "next-auth/react";
+import { formatDistanceToNow } from "date-fns";
 import { api } from "~/trpc/react";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
 import { LineupCard } from "../LineupCard/LineupCard";
+import ThreadCard from "./ThreadCard";
 import type { LineupType } from "~/lib/types";
+import type { Thread } from "~/server/models/threads";
 
-
-interface ParentComment {
+export interface ParentComment {
   _id: string;
   text: string;
   user: {
@@ -35,6 +36,7 @@ type CommentModalProps = {
   open: boolean;
   onClose: () => void;
   lineupId: string;
+  currentUserId?: string;
 } & (
   | { mode: "comment"; lineup: LineupContext; parentComment?: never }
   | { mode: "reply"; parentComment: ParentComment; lineup?: never }
@@ -44,10 +46,13 @@ export default function CommentModal({
   open,
   onClose,
   lineupId,
+  currentUserId,
   mode,
   ...rest
 }: CommentModalProps) {
-  const { data: session } = useSession();
+  const { data: session } = api.profile.getMe.useQuery(undefined, {
+    retry: false,
+  });
   const [text, setText] = useState("");
   const [mounted, setMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -63,14 +68,38 @@ export default function CommentModal({
     commentId: parentComment?._id,
     onSuccess: () => {
       setText("");
-      onClose();
+      if (mode === "comment") onClose();
     },
   });
 
   const { data: lineup } = api.lineup.getLineupById.useQuery(
     { id: lineupId },
-    { enabled: !!lineupId },
+    { enabled: !!lineupId && mode === "comment" },
   );
+
+  const {
+    data: threadData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = api.comment.getThreads.useInfiniteQuery(
+    { commentId: parentComment?._id ?? "", limit: 10 },
+    {
+      getNextPageParam: (lastPage) =>
+        lastPage.hasMore ? lastPage.cursor : undefined,
+      enabled: mode === "reply" && !!parentComment?._id && open,
+    },
+  );
+
+  const { data: myThreadVotes } = api.comment.getMyThreadVotes.useQuery(
+    { commentId: parentComment?._id ?? "" },
+    {
+      enabled:
+        mode === "reply" && !!parentComment?._id && !!currentUserId && open,
+    },
+  );
+
+  const allThreads = threadData?.pages.flatMap((p) => p.threads) ?? [];
 
   useEffect(() => setMounted(true), []);
 
@@ -104,8 +133,10 @@ export default function CommentModal({
       submit(text);
     }
   };
-console.log(session)
-  const userImage = session?.user?.image;
+
+  const userImage = session?.image ?? session?.profileImg;
+  const parentDisplayName =
+    parentComment?.user.name ?? parentComment?.user.username ?? "Anonymous";
 
   return createPortal(
     <motion.div
@@ -142,19 +173,29 @@ console.log(session)
           {/* Parent context */}
           <div className="border-b border-foreground/10 px-5 py-4">
             {mode === "comment" && lineup ? (
-              <LineupCard lineup={lineup as unknown as LineupType} />
-            ) : mode === "reply" ? (
-              <ParentCommentPreview comment={parentComment!} />
+              <LineupCard lineup={lineup as unknown as LineupType} hideFooter />
+            ) : mode === "reply" && parentComment ? (
+              <ParentCommentPreview comment={parentComment} />
             ) : null}
           </div>
 
-          {/* Reply input */}
+          {/* Replying to @name */}
+          {mode === "reply" && parentComment && (
+            <div className="px-5 pt-3">
+              <span className="text-xs text-foreground/40">
+                Replying to{" "}
+                <span className="text-gold">@{parentDisplayName}</span>
+              </span>
+            </div>
+          )}
+
+          {/* Composer */}
           <div className="px-5 py-4">
             <div className="flex gap-3">
               {userImage ? (
                 <Image
                   src={userImage}
-                  alt="You"
+                  alt={session?.name ?? "You"}
                   width={36}
                   height={36}
                   className="h-9 w-9 shrink-0 rounded-full"
@@ -175,22 +216,52 @@ console.log(session)
                 />
               </div>
             </div>
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-xs text-foreground/30">
+                {text.length}/1000
+              </span>
+              <button
+                type="button"
+                onClick={() => submit(text)}
+                disabled={!text.trim() || isSubmitting || !session}
+                className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {isSubmitting ? "Posting..." : "Reply"}
+              </button>
+            </div>
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between border-t border-foreground/10 px-5 py-3">
-            <span className="text-xs text-foreground/30">
-              {text.length}/1000
-            </span>
-            <button
-              type="button"
-              onClick={() => submit(text)}
-              disabled={!text.trim() || isSubmitting || !session}
-              className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {isSubmitting ? "Posting..." : "Reply"}
-            </button>
-          </div>
+          {/* Thread replies */}
+          {mode === "reply" && allThreads.length > 0 && (
+            <div className="border-t border-foreground/10 px-5">
+              {allThreads.map((thread) => {
+                const tid =
+                  (thread as unknown as { _id: string })._id?.toString() ?? "";
+                return (
+                  <ThreadCard
+                    key={tid}
+                    thread={thread as unknown as Thread}
+                    lineupId={lineupId}
+                    commentId={parentComment!._id}
+                    currentUserId={currentUserId}
+                    userVote={myThreadVotes?.[tid] ?? null}
+                  />
+                );
+              })}
+              {hasNextPage && (
+                <div className="flex justify-center py-4">
+                  <button
+                    className="text-sm text-foreground/40 transition-colors hover:text-foreground/70"
+                    type="button"
+                    disabled={isFetchingNextPage}
+                    onClick={() => fetchNextPage()}
+                  >
+                    {isFetchingNextPage ? "Loading..." : "Show more replies"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </motion.div>
       </div>
     </motion.div>,
@@ -202,6 +273,9 @@ function ParentCommentPreview({ comment }: { comment: ParentComment }) {
   const displayName =
     comment.user.name ?? comment.user.username ?? "Anonymous";
   const avatar = comment.user.image ?? comment.user.profileImg;
+  const relativeTime = formatDistanceToNow(new Date(comment.createdAt), {
+    addSuffix: true,
+  });
 
   return (
     <div className="flex gap-3">
@@ -217,8 +291,16 @@ function ParentCommentPreview({ comment }: { comment: ParentComment }) {
         <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
       )}
       <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground">{displayName}</p>
-        <p className="mt-0.5 text-sm text-foreground/60">{comment.text}</p>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-medium text-foreground">
+            {displayName}
+          </span>
+          <span className="text-foreground/30">&middot;</span>
+          <span className="text-xs text-foreground/40">{relativeTime}</span>
+        </div>
+        <p className="mt-1 text-sm leading-relaxed text-foreground/60">
+          {comment.text}
+        </p>
       </div>
     </div>
   );

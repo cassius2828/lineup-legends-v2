@@ -7,6 +7,8 @@ import { api } from "~/trpc/react";
 import { useParams, useRouter } from "next/navigation";
 import Loading from "./loading";
 import CommentCard from "~/app/_components/Comment/CommentCard";
+import CommentModal from "~/app/_components/Comment/CommentModal";
+import type { ParentComment } from "~/app/_components/Comment/CommentModal";
 import Image from "next/image";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
 import { useState } from "react";
@@ -14,6 +16,7 @@ import { useState } from "react";
 const LineupCardPage = () => {
     const router = useRouter();
     const [text, setText] = useState("");
+    const [replyTarget, setReplyTarget] = useState<ParentComment | null>(null);
     const { data: session } = api.profile.getMe.useQuery(undefined, {
         retry: false,
     });
@@ -108,10 +111,18 @@ const LineupCardPage = () => {
                         return (
                             <CommentCard
                                 key={cid}
-                                comment={comment as unknown as import("~/server/models").Comment}
+                                comment={comment as unknown as import("~/server/models").Comment & { threadCount?: number }}
                                 lineupId={lineupId}
                                 currentUserId={session?.id}
                                 userVote={myVotes?.[cid] ?? null}
+                                onReplyClick={() =>
+                                    setReplyTarget({
+                                        _id: cid,
+                                        text: comment.text,
+                                        user: comment.user as unknown as ParentComment["user"],
+                                        createdAt: comment.createdAt,
+                                    })
+                                }
                             />
                         );
                     })}
@@ -129,9 +140,19 @@ const LineupCardPage = () => {
                     )}
                 </div>
             )}
+
+            {replyTarget && (
+                <CommentModal
+                    open={!!replyTarget}
+                    onClose={() => setReplyTarget(null)}
+                    lineupId={lineupId}
+                    currentUserId={session?.id}
+                    mode="reply"
+                    parentComment={replyTarget}
+                />
+            )}
         </div>
     );
 };
 
-
-export default LineupCardPage
+export default LineupCardPage;

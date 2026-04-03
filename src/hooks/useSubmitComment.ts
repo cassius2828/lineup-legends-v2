@@ -28,7 +28,11 @@ export function useSubmitComment({
   const addReply = api.comment.addThreadReply.useMutation({
     onSuccess: () => {
       toast.success("Reply posted");
+      if (commentId) {
+        void utils.comment.getThreads.invalidate({ commentId });
+      }
       void utils.comment.getComments.invalidate({ lineupId });
+      void utils.comment.getCommentCount.invalidate({ lineupId });
       onSuccess?.();
     },
     onError: (err) => toast.error(err.message),
