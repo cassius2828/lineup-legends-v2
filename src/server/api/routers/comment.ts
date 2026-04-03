@@ -158,16 +158,27 @@ export const commentRouter = createTRPCRouter({
 
   addComment: protectedProcedure
     .input(
-      z.object({
-        lineupId: z.string(),
-        text: z.string().min(1).max(1000),
-      }),
+      z
+        .object({
+          lineupId: z.string(),
+          text: z.string().max(1000).default(""),
+          image: z.string().url().nullish(),
+          gif: z.string().url().nullish(),
+        })
+        .refine((d) => d.text.trim().length > 0 || !!d.image || !!d.gif, {
+          message: "Comment must have text or an attachment",
+        })
+        .refine((d) => !(d.image && d.gif), {
+          message: "Only one attachment type allowed",
+        }),
     )
     .mutation(async ({ ctx, input }) => {
       const comment = await CommentModel.create({
-        text: input.text,
+        text: input.text.trim() || null,
         user: ctx.session.user.id,
         lineup: input.lineupId,
+        image: input.image ?? null,
+        gif: input.gif ?? null,
       });
 
       return {
@@ -183,11 +194,20 @@ export const commentRouter = createTRPCRouter({
 
   addThreadReply: protectedProcedure
     .input(
-      z.object({
-        lineupId: z.string(),
-        commentId: z.string(),
-        text: z.string().min(1).max(1000),
-      }),
+      z
+        .object({
+          lineupId: z.string(),
+          commentId: z.string(),
+          text: z.string().max(1000).default(""),
+          image: z.string().url().nullish(),
+          gif: z.string().url().nullish(),
+        })
+        .refine((d) => d.text.trim().length > 0 || !!d.image || !!d.gif, {
+          message: "Reply must have text or an attachment",
+        })
+        .refine((d) => !(d.image && d.gif), {
+          message: "Only one attachment type allowed",
+        }),
     )
     .mutation(async ({ ctx, input }) => {
       const comment = await CommentModel.findOne({
@@ -202,9 +222,11 @@ export const commentRouter = createTRPCRouter({
         });
       }
       const newThreadReply = await ThreadModel.create({
-        text: input.text,
+        text: input.text.trim() || null,
         user: ctx.session.user.id,
         comment: new mongoose.Types.ObjectId(input.commentId),
+        image: input.image ?? null,
+        gif: input.gif ?? null,
       });
 
       return {

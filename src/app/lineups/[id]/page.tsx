@@ -9,6 +9,8 @@ import Loading from "./loading";
 import CommentCard from "~/app/_components/Comment/CommentCard";
 import CommentModal from "~/app/_components/Comment/CommentModal";
 import type { ParentComment } from "~/app/_components/Comment/CommentModal";
+import ComposerToolbar from "~/app/_components/Comment/ComposerToolbar";
+import type { ComposerMedia } from "~/app/_components/Comment/ComposerToolbar";
 import Image from "next/image";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
 import { useState } from "react";
@@ -16,6 +18,7 @@ import { useState } from "react";
 const LineupCardPage = () => {
     const router = useRouter();
     const [text, setText] = useState("");
+    const [media, setMedia] = useState<ComposerMedia>({});
     const [replyTarget, setReplyTarget] = useState<ParentComment | null>(null);
     const { data: session } = api.profile.getMe.useQuery(undefined, {
         retry: false,
@@ -80,23 +83,27 @@ const LineupCardPage = () => {
                     ) : (
                         <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
                     )}
-                    <textarea
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        rows={2}
-                        maxLength={1000}
-                        className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
-                        placeholder="Post your reply"
-                    />
+                    <div className="flex-1">
+                        <textarea
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            rows={2}
+                            maxLength={1000}
+                            className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
+                            placeholder="Post your reply"
+                        />
+                        <ComposerToolbar media={media} onMediaChange={setMedia} />
+                    </div>
                 </div>
                 <div className="mt-3 flex items-center justify-end">
                     <button
                         type="button"
                         onClick={() => {
-                            submit(text);
+                            submit(text, media);
                             setText("");
+                            setMedia({});
                         }}
-                        disabled={!text.trim() || isSubmitting || !session}
+                        disabled={(!text.trim() && !media.image && !media.gif) || isSubmitting || !session}
                         className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
                     >
                         {isSubmitting ? "Posting..." : "Reply"}
@@ -119,6 +126,8 @@ const LineupCardPage = () => {
                                     setReplyTarget({
                                         _id: cid,
                                         text: comment.text,
+                                        image: (comment as unknown as { image?: string | null }).image,
+                                        gif: (comment as unknown as { gif?: string | null }).gif,
                                         user: comment.user as unknown as ParentComment["user"],
                                         createdAt: comment.createdAt,
                                     })

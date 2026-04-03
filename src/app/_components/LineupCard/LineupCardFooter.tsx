@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { MessageCircle, Bookmark, Share2, Eye } from "lucide-react";
+import { MessageCircle, Bookmark, BookmarkCheck, Eye } from "lucide-react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import CommentModal from "~/app/_components/Comment/CommentModal";
+import ShareMenu from "~/app/_components/LineupCard/ShareMenu";
+import { api } from "~/trpc/react";
 
 interface LineupCardFooterProps {
   commentCount: number;
@@ -22,6 +25,40 @@ export default function LineupCardFooter({
   totalValue,
 }: LineupCardFooterProps) {
   const [commentModalOpen, setCommentModalOpen] = useState(false);
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user;
+
+  const { data: bookmarkData } = api.bookmark.isBookmarked.useQuery(
+    { lineupId },
+    { enabled: isAuthenticated && !!lineupId },
+  );
+
+  const [optimisticBookmarked, setOptimisticBookmarked] = useState<boolean | null>(null);
+  const bookmarked = optimisticBookmarked ?? bookmarkData?.bookmarked ?? false;
+
+  const utils = api.useUtils();
+  const toggleBookmark = api.bookmark.toggle.useMutation({
+    onSuccess: (data) => {
+      setOptimisticBookmarked(data.bookmarked);
+      void utils.bookmark.isBookmarked.invalidate({ lineupId });
+      void utils.bookmark.getBookmarkedLineups.invalidate();
+    },
+    onError: () => {
+      setOptimisticBookmarked(bookmarkData?.bookmarked ?? false);
+      toast.error("Failed to update bookmark");
+    },
+  });
+
+  const handleBookmark = () => {
+    if (!isAuthenticated) {
+      toast.info("Sign in to bookmark lineups");
+      return;
+    }
+    setOptimisticBookmarked(!bookmarked);
+    toggleBookmark.mutate({ lineupId });
+  };
+
+  const BookmarkIcon = bookmarked ? BookmarkCheck : Bookmark;
 
   return (
     <>
@@ -49,24 +86,18 @@ export default function LineupCardFooter({
           </Link>
           <button
             type="button"
-            onClick={() => toast.info("Coming soon")}
-            className="group cursor-pointer text-foreground/40 transition-colors hover:text-gold"
-            aria-label="Bookmark lineup"
+            onClick={handleBookmark}
+            className={`group cursor-pointer transition-colors ${
+              bookmarked
+                ? "text-gold hover:text-gold-light"
+                : "text-foreground/40 hover:text-gold"
+            }`}
+            aria-label={bookmarked ? "Remove bookmark" : "Bookmark lineup"}
+            aria-pressed={bookmarked}
           >
-            <Bookmark className="h-4 w-4" />
+            <BookmarkIcon className="h-4 w-4" />
           </button>
-          <button
-            type="button"
-            onClick={async () => {
-              const url = `${window.location.origin}/lineups/${lineupId}`;
-              await navigator.clipboard.writeText(url);
-              toast.success("Link copied to clipboard");
-            }}
-            className="group cursor-pointer text-foreground/40 transition-colors hover:text-gold"
-            aria-label="Share lineup"
-          >
-            <Share2 className="h-4 w-4" />
-          </button>
+          <ShareMenu lineupId={lineupId} />
         </div>
       </div>
 

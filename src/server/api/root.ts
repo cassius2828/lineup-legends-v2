@@ -7,6 +7,7 @@ import { requestedPlayerRouter } from "~/server/api/routers/requestedPlayer";
 import { feedbackRouter } from "~/server/api/routers/feedback";
 import { adminRouter } from "~/server/api/routers/admin";
 import { videoRouter } from "~/server/api/routers/video";
+import { bookmarkRouter } from "~/server/api/routers/bookmark";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -24,6 +25,7 @@ export const appRouter = createTRPCRouter({
   feedback: feedbackRouter,
   admin: adminRouter,
   video: videoRouter,
+  bookmark: bookmarkRouter,
 });
 
 // export type definition of API

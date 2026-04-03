@@ -102,9 +102,30 @@ export default function CommentCard({
         </div>
 
         {/* Body */}
-        <p className="mt-1 text-sm leading-relaxed text-foreground/80">
-          {comment.text}
-        </p>
+        {comment.text && (
+          <p className="mt-1 text-sm leading-relaxed text-foreground/80">
+            {comment.text}
+          </p>
+        )}
+
+        {/* Attachment */}
+        {comment.image && (
+          <Image
+            src={comment.image}
+            alt="Comment attachment"
+            width={400}
+            height={300}
+            className="mt-2 max-h-[300px] w-auto rounded-lg object-cover"
+            unoptimized
+          />
+        )}
+        {comment.gif && (
+          <img
+            src={comment.gif}
+            alt="GIF"
+            className="mt-2 max-h-[300px] w-auto rounded-lg object-cover"
+          />
+        )}
 
         {/* Actions */}
         <div className="mt-2 flex items-center gap-6">

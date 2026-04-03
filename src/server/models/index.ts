@@ -45,6 +45,11 @@ export {
   type FeedbackStatus,
 } from "./feedback";
 export {
+  BookmarkModel,
+  type Bookmark,
+  type BookmarkDoc,
+} from "./bookmark";
+export {
   VideoModel,
   type Video,
   type VideoDoc,

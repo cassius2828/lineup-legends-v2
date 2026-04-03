@@ -16,7 +16,7 @@ export const env = createEnv({
     AUTH_GOOGLE_CLIENT_SECRET: z.string(),
 
     // Database (sensitive)
-    MONGODB_URI: z.string().url(),
+    MONGODB_URI: z.string().startsWith("mongodb"),
 
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -43,6 +43,7 @@ export const env = createEnv({
   client: {
     // CloudFront URL is safe to expose - it's a public CDN endpoint
     NEXT_PUBLIC_CLOUDFRONT_URL: z.string().url(),
+    NEXT_PUBLIC_GIPHY_API_KEY: z.string(),
   },
 
   /**
@@ -71,6 +72,7 @@ export const env = createEnv({
     YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
     // Public (safe for client exposure)
     NEXT_PUBLIC_CLOUDFRONT_URL: process.env.NEXT_PUBLIC_CLOUDFRONT_URL,
+    NEXT_PUBLIC_GIPHY_API_KEY: process.env.NEXT_PUBLIC_GIPHY_API_KEY,
   },
 
   /**

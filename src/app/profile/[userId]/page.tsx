@@ -357,6 +357,15 @@ export default function ProfilePage() {
             {isOwnProfile ? (
               <>
                 <Link
+                  href="/lineups/bookmarked"
+                  className="rounded-lg bg-foreground/10 px-5 py-2.5 font-medium text-foreground transition-colors hover:bg-foreground/20"
+                >
+                  <svg className="inline-block h-4 w-4 mr-1.5 -mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                  </svg>
+                  Bookmarked
+                </Link>
+                <Link
                   href="/profile/edit"
                   className="rounded-lg bg-foreground/10 px-5 py-2.5 font-medium text-foreground transition-colors hover:bg-foreground/20"
                 >

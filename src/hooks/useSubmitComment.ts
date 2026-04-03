@@ -38,18 +38,32 @@ export function useSubmitComment({
     onError: (err) => toast.error(err.message),
   });
 
-  const submit = (text: string) => {
+  const submit = (
+    text: string,
+    media?: { image?: string; gif?: string },
+  ) => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed && !media?.image && !media?.gif) return;
 
     if (mode === "comment") {
-      addComment.mutate({ lineupId, text: trimmed });
+      addComment.mutate({
+        lineupId,
+        text: trimmed,
+        image: media?.image,
+        gif: media?.gif,
+      });
     } else {
       if (!commentId) {
         toast.error("Cannot reply without a parent comment");
         return;
       }
-      addReply.mutate({ lineupId, commentId, text: trimmed });
+      addReply.mutate({
+        lineupId,
+        commentId,
+        text: trimmed,
+        image: media?.image,
+        gif: media?.gif,
+      });
     }
   };
 

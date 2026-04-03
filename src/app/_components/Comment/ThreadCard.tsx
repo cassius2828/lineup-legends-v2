@@ -13,6 +13,8 @@ interface ThreadCardProps {
   commentId: string;
   currentUserId: string | undefined;
   userVote: "upvote" | "downvote" | null;
+  replyingTo?: string;
+  isLast?: boolean;
 }
 
 export default function ThreadCard({
@@ -21,6 +23,8 @@ export default function ThreadCard({
   commentId,
   currentUserId,
   userVote,
+  replyingTo,
+  isLast = true,
 }: ThreadCardProps) {
   const utils = api.useUtils();
   const threadId =
@@ -84,20 +88,31 @@ export default function ThreadCard({
         : "text-foreground/40";
 
   return (
-    <div className="flex gap-3 border-b border-foreground/10 py-4 last:border-b-0">
-      {avatar ? (
-        <Image
-          src={avatar}
-          alt={displayName}
-          width={36}
-          height={36}
-          className="h-9 w-9 shrink-0 rounded-full"
-        />
-      ) : (
-        <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
-      )}
+    <div className="flex gap-3">
+      <div className="flex w-9 shrink-0 flex-col items-center">
+        {avatar ? (
+          <Image
+            src={avatar}
+            alt={displayName}
+            width={36}
+            height={36}
+            className="h-9 w-9 shrink-0 rounded-full"
+          />
+        ) : (
+          <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+        )}
+        {replyingTo && !isLast && (
+          <div className="mt-2 w-0.5 flex-1 bg-foreground/20" />
+        )}
+      </div>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 pb-3">
+        {replyingTo && (
+          <span className="mb-0.5 block text-xs text-foreground/40">
+            Replying to{" "}
+            <span className="text-gold">@{replyingTo}</span>
+          </span>
+        )}
         <div className="flex items-center gap-1.5">
           <span className="truncate text-sm font-medium text-foreground">
             {displayName}
@@ -108,9 +123,29 @@ export default function ThreadCard({
           </span>
         </div>
 
-        <p className="mt-1 text-sm leading-relaxed text-foreground/80">
-          {thread.text}
-        </p>
+        {thread.text && (
+          <p className="mt-1 text-sm leading-relaxed text-foreground/80">
+            {thread.text}
+          </p>
+        )}
+
+        {thread.image && (
+          <Image
+            src={thread.image}
+            alt="Reply attachment"
+            width={400}
+            height={300}
+            className="mt-2 max-h-[300px] w-auto rounded-lg object-cover"
+            unoptimized
+          />
+        )}
+        {thread.gif && (
+          <img
+            src={thread.gif}
+            alt="GIF"
+            className="mt-2 max-h-[300px] w-auto rounded-lg object-cover"
+          />
+        )}
 
         <div className="mt-2 flex items-center">
           <div className="flex items-center gap-1">

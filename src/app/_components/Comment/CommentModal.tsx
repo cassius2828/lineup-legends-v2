@@ -10,12 +10,16 @@ import { api } from "~/trpc/react";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
 import { LineupCard } from "../LineupCard/LineupCard";
 import ThreadCard from "./ThreadCard";
+import ComposerToolbar from "./ComposerToolbar";
+import type { ComposerMedia } from "./ComposerToolbar";
 import type { LineupType } from "~/lib/types";
 import type { Thread } from "~/server/models/threads";
 
 export interface ParentComment {
   _id: string;
   text: string;
+  image?: string | null;
+  gif?: string | null;
   user: {
     name?: string;
     username?: string;
@@ -54,6 +58,7 @@ export default function CommentModal({
     retry: false,
   });
   const [text, setText] = useState("");
+  const [media, setMedia] = useState<ComposerMedia>({});
   const [mounted, setMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -68,6 +73,7 @@ export default function CommentModal({
     commentId: parentComment?._id,
     onSuccess: () => {
       setText("");
+      setMedia({});
       if (mode === "comment") onClose();
     },
   });
@@ -110,6 +116,7 @@ export default function CommentModal({
     } else {
       document.body.style.overflow = "";
       setText("");
+      setMedia({});
     }
     return () => {
       document.body.style.overflow = "";
@@ -127,10 +134,12 @@ export default function CommentModal({
 
   if (!open || !mounted) return null;
 
+  const hasContent = text.trim().length > 0 || !!media.image || !!media.gif;
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      submit(text);
+      submit(text, media);
     }
   };
 
@@ -170,96 +179,207 @@ export default function CommentModal({
             <div className="w-6" />
           </div>
 
-          {/* Parent context */}
-          <div className="border-b border-foreground/10 px-5 py-4">
-            {mode === "comment" && lineup ? (
-              <LineupCard lineup={lineup as unknown as LineupType} hideFooter />
-            ) : mode === "reply" && parentComment ? (
-              <ParentCommentPreview comment={parentComment} />
-            ) : null}
-          </div>
-
-          {/* Replying to @name */}
-          {mode === "reply" && parentComment && (
-            <div className="px-5 pt-3">
-              <span className="text-xs text-foreground/40">
-                Replying to{" "}
-                <span className="text-gold">@{parentDisplayName}</span>
-              </span>
-            </div>
-          )}
-
-          {/* Composer */}
-          <div className="px-5 py-4">
-            <div className="flex gap-3">
-              {userImage ? (
-                <Image
-                  src={userImage}
-                  alt={session?.name ?? "You"}
-                  width={36}
-                  height={36}
-                  className="h-9 w-9 shrink-0 rounded-full"
-                />
-              ) : (
-                <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
-              )}
-              <div className="flex-1">
-                <textarea
-                  ref={textareaRef}
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Post your reply"
-                  maxLength={1000}
-                  rows={3}
-                  className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
-                />
-              </div>
-            </div>
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs text-foreground/30">
-                {text.length}/1000
-              </span>
-              <button
-                type="button"
-                onClick={() => submit(text)}
-                disabled={!text.trim() || isSubmitting || !session}
-                className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {isSubmitting ? "Posting..." : "Reply"}
-              </button>
-            </div>
-          </div>
-
-          {/* Thread replies */}
-          {mode === "reply" && allThreads.length > 0 && (
-            <div className="border-t border-foreground/10 px-5">
-              {allThreads.map((thread) => {
-                const tid =
-                  (thread as unknown as { _id: string })._id?.toString() ?? "";
-                return (
-                  <ThreadCard
-                    key={tid}
-                    thread={thread as unknown as Thread}
-                    lineupId={lineupId}
-                    commentId={parentComment!._id}
-                    currentUserId={currentUserId}
-                    userVote={myThreadVotes?.[tid] ?? null}
+          {/* Comment mode: lineup card + composer */}
+          {mode === "comment" && (
+            <>
+              <div className="border-b border-foreground/10 px-5 py-4">
+                {lineup && (
+                  <LineupCard
+                    lineup={lineup as unknown as LineupType}
+                    hideFooter
                   />
-                );
-              })}
-              {hasNextPage && (
-                <div className="flex justify-center py-4">
+                )}
+              </div>
+
+              <div className="px-5 py-4">
+                <div className="flex gap-3">
+                  {userImage ? (
+                    <Image
+                      src={userImage}
+                      alt={session?.name ?? "You"}
+                      width={36}
+                      height={36}
+                      className="h-9 w-9 shrink-0 rounded-full"
+                    />
+                  ) : (
+                    <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+                  )}
+                  <div className="flex-1">
+                    <textarea
+                      ref={textareaRef}
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Post your reply"
+                      maxLength={1000}
+                      rows={3}
+                      className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
+                    />
+                    <ComposerToolbar media={media} onMediaChange={setMedia} />
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-xs text-foreground/30">
+                    {text.length}/1000
+                  </span>
                   <button
-                    className="text-sm text-foreground/40 transition-colors hover:text-foreground/70"
                     type="button"
-                    disabled={isFetchingNextPage}
-                    onClick={() => fetchNextPage()}
+                    onClick={() => submit(text, media)}
+                    disabled={!hasContent || isSubmitting || !session}
+                    className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
                   >
-                    {isFetchingNextPage ? "Loading..." : "Show more replies"}
+                    {isSubmitting ? "Posting..." : "Reply"}
                   </button>
                 </div>
-              )}
+              </div>
+            </>
+          )}
+
+          {/* Reply mode: threaded layout with composer at bottom */}
+          {mode === "reply" && parentComment && (
+            <div className="flex max-h-[70vh] flex-col">
+              {/* Scrollable thread area */}
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                {/* Parent comment with connector line */}
+                <div className="flex gap-3">
+                  <div className="flex w-9 shrink-0 flex-col items-center">
+                    {(parentComment.user.image ??
+                      parentComment.user.profileImg) ? (
+                      <Image
+                        src={
+                          (parentComment.user.image ??
+                            parentComment.user.profileImg)!
+                        }
+                        alt={parentDisplayName}
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 shrink-0 rounded-full"
+                      />
+                    ) : (
+                      <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+                    )}
+                    {allThreads.length > 0 && (
+                      <div className="mt-2 w-0.5 flex-1 bg-foreground/20" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 pb-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-foreground">
+                        {parentDisplayName}
+                      </span>
+                      <span className="text-foreground/30">&middot;</span>
+                      <span className="text-xs text-foreground/40">
+                        {formatDistanceToNow(
+                          new Date(parentComment.createdAt),
+                          { addSuffix: true },
+                        )}
+                      </span>
+                    </div>
+                    {parentComment.text && (
+                      <p className="mt-1 text-sm leading-relaxed text-foreground/60">
+                        {parentComment.text}
+                      </p>
+                    )}
+                    {parentComment.image && (
+                      <Image
+                        src={parentComment.image}
+                        alt="Attachment"
+                        width={200}
+                        height={150}
+                        className="mt-2 max-h-[150px] w-auto rounded-lg object-cover"
+                        unoptimized
+                      />
+                    )}
+                    {parentComment.gif && (
+                      <img
+                        src={parentComment.gif}
+                        alt="GIF"
+                        className="mt-2 max-h-[150px] w-auto rounded-lg object-cover"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Thread replies */}
+                {allThreads.map((thread, index) => {
+                  const tid =
+                    (thread as unknown as { _id: string })._id?.toString() ??
+                    "";
+                  return (
+                    <ThreadCard
+                      key={tid}
+                      thread={thread as unknown as Thread}
+                      lineupId={lineupId}
+                      commentId={parentComment._id}
+                      currentUserId={currentUserId}
+                      userVote={myThreadVotes?.[tid] ?? null}
+                      replyingTo={parentDisplayName}
+                      isLast={index === allThreads.length - 1}
+                    />
+                  );
+                })}
+                {hasNextPage && (
+                  <div className="flex justify-center py-4">
+                    <button
+                      className="text-sm text-foreground/40 transition-colors hover:text-foreground/70"
+                      type="button"
+                      disabled={isFetchingNextPage}
+                      onClick={() => fetchNextPage()}
+                    >
+                      {isFetchingNextPage ? "Loading..." : "Show more replies"}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Sticky composer at bottom */}
+              <div className="border-t border-foreground/10 px-5 py-3">
+                <div className="flex gap-3">
+                  <div className="w-9 shrink-0">
+                    {userImage ? (
+                      <Image
+                        src={userImage}
+                        alt={session?.name ?? "You"}
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 shrink-0 rounded-full"
+                      />
+                    ) : (
+                      <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <span className="mb-1 block text-xs text-foreground/40">
+                      Replying to{" "}
+                      <span className="text-gold">@{parentDisplayName}</span>
+                    </span>
+                    <textarea
+                      ref={textareaRef}
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Post your reply"
+                      maxLength={1000}
+                      rows={2}
+                      className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
+                    />
+                    <ComposerToolbar media={media} onMediaChange={setMedia} />
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-xs text-foreground/30">
+                        {text.length}/1000
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => submit(text, media)}
+                        disabled={!hasContent || isSubmitting || !session}
+                        className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {isSubmitting ? "Posting..." : "Reply"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </motion.div>
@@ -269,39 +389,3 @@ export default function CommentModal({
   );
 }
 
-function ParentCommentPreview({ comment }: { comment: ParentComment }) {
-  const displayName =
-    comment.user.name ?? comment.user.username ?? "Anonymous";
-  const avatar = comment.user.image ?? comment.user.profileImg;
-  const relativeTime = formatDistanceToNow(new Date(comment.createdAt), {
-    addSuffix: true,
-  });
-
-  return (
-    <div className="flex gap-3">
-      {avatar ? (
-        <Image
-          src={avatar}
-          alt={displayName}
-          width={36}
-          height={36}
-          className="h-9 w-9 shrink-0 rounded-full"
-        />
-      ) : (
-        <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
-      )}
-      <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium text-foreground">
-            {displayName}
-          </span>
-          <span className="text-foreground/30">&middot;</span>
-          <span className="text-xs text-foreground/40">{relativeTime}</span>
-        </div>
-        <p className="mt-1 text-sm leading-relaxed text-foreground/60">
-          {comment.text}
-        </p>
-      </div>
-    </div>
-  );
-}
