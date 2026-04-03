@@ -1,10 +1,12 @@
 "use client";
 
-import { ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import ConfirmModal from "~/app/_components/ui/ConfirmModal";
 import type { Thread } from "~/server/models/threads";
 
 interface ThreadCardProps {
@@ -35,6 +37,7 @@ export default function ThreadCard({
       : String(thread.user);
   const isOwnThread = !!currentUserId && currentUserId === threadOwnerId;
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [optimisticVote, setOptimisticVote] = useState(userVote);
   const [optimisticTotal, setOptimisticTotal] = useState(
     thread.totalVotes ?? 0,
@@ -49,6 +52,17 @@ export default function ThreadCard({
       setOptimisticVote(userVote);
       setOptimisticTotal(thread.totalVotes ?? 0);
     },
+  });
+
+  const deleteMutation = api.comment.deleteThread.useMutation({
+    onSuccess: () => {
+      setShowDeleteConfirm(false);
+      toast.success("Reply deleted");
+      void utils.comment.getThreads.invalidate({ commentId });
+      void utils.comment.getComments.invalidate();
+      void utils.comment.getCommentCount.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
   });
 
   const handleVote = (type: "upvote" | "downvote") => {
@@ -147,7 +161,7 @@ export default function ThreadCard({
           />
         )}
 
-        <div className="mt-2 flex items-center">
+        <div className="mt-2 flex items-center gap-6">
           <div className="flex items-center gap-1">
             <button
               type="button"
@@ -183,7 +197,29 @@ export default function ThreadCard({
               <ChevronDown className="h-4 w-4" />
             </button>
           </div>
+
+          {isOwnThread && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-foreground/30 transition-colors hover:text-red-500"
+              aria-label="Delete reply"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
+
+        <ConfirmModal
+          open={showDeleteConfirm}
+          title="Delete reply?"
+          description="This will permanently delete this reply. This action cannot be undone."
+          confirmLabel="Delete"
+          variant="danger"
+          loading={deleteMutation.isPending}
+          onConfirm={() => deleteMutation.mutate({ commentId, threadId })}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
       </div>
     </div>
   );

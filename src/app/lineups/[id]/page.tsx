@@ -70,46 +70,55 @@ const LineupCardPage = () => {
                 currentUserId={session?.id ?? ""}
             />
             {/* Composer */}
-            <div className="mt-4 rounded-xl border border-foreground/10 p-4">
-                <div className="flex gap-3">
-                    {(session?.image ?? session?.profileImg) ? (
-                        <Image
-                            src={(session.image ?? session.profileImg)!}
-                            alt={session.name ?? "You"}
-                            width={36}
-                            height={36}
-                            className="h-9 w-9 shrink-0 rounded-full"
-                        />
-                    ) : (
-                        <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
-                    )}
-                    <div className="flex-1">
-                        <textarea
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            rows={2}
-                            maxLength={1000}
-                            className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
-                            placeholder="Post your reply"
-                        />
-                        <ComposerToolbar media={media} onMediaChange={setMedia} />
+            {session ? (
+                <div className="mt-4 rounded-xl border border-foreground/10 p-4">
+                    <div className="flex gap-3">
+                        {(session.image ?? session.profileImg) ? (
+                            <Image
+                                src={(session.image ?? session.profileImg)!}
+                                alt={session.name ?? "You"}
+                                width={36}
+                                height={36}
+                                className="h-9 w-9 shrink-0 rounded-full"
+                            />
+                        ) : (
+                            <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+                        )}
+                        <div className="flex-1">
+                            <textarea
+                                value={text}
+                                onChange={(e) => setText(e.target.value)}
+                                rows={2}
+                                maxLength={1000}
+                                className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
+                                placeholder="Post your reply"
+                            />
+                            <ComposerToolbar media={media} onMediaChange={setMedia} />
+                        </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-end">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                submit(text, media);
+                                setText("");
+                                setMedia({});
+                            }}
+                            disabled={(!text.trim() && !media.image && !media.gif) || isSubmitting}
+                            className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            {isSubmitting ? "Posting..." : "Reply"}
+                        </button>
                     </div>
                 </div>
-                <div className="mt-3 flex items-center justify-end">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            submit(text, media);
-                            setText("");
-                            setMedia({});
-                        }}
-                        disabled={(!text.trim() && !media.image && !media.gif) || isSubmitting || !session}
-                        className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                        {isSubmitting ? "Posting..." : "Reply"}
-                    </button>
+            ) : (
+                <div className="mt-4 rounded-xl border border-foreground/10 p-6 text-center">
+                    <p className="text-sm text-foreground/50">
+                        <a href="/api/auth/signin" className="font-medium text-gold hover:text-gold-light">Sign in</a>
+                        {" "}to join the conversation
+                    </p>
                 </div>
-            </div>
+            )}
             {/* Comments list */}
             {allComments.length > 0 && (
                 <div className="mt-2 px-1">

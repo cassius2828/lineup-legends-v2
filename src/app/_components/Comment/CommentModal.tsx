@@ -191,47 +191,56 @@ export default function CommentModal({
                 )}
               </div>
 
-              <div className="px-5 py-4">
-                <div className="flex gap-3">
-                  {userImage ? (
-                    <Image
-                      src={userImage}
-                      alt={session?.name ?? "You"}
-                      width={36}
-                      height={36}
-                      className="h-9 w-9 shrink-0 rounded-full"
-                    />
-                  ) : (
-                    <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
-                  )}
-                  <div className="flex-1">
-                    <textarea
-                      ref={textareaRef}
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Post your reply"
-                      maxLength={1000}
-                      rows={3}
-                      className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
-                    />
-                    <ComposerToolbar media={media} onMediaChange={setMedia} />
+              {session ? (
+                <div className="px-5 py-4">
+                  <div className="flex gap-3">
+                    {userImage ? (
+                      <Image
+                        src={userImage}
+                        alt={session?.name ?? "You"}
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 shrink-0 rounded-full"
+                      />
+                    ) : (
+                      <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+                    )}
+                    <div className="flex-1">
+                      <textarea
+                        ref={textareaRef}
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Post your reply"
+                        maxLength={1000}
+                        rows={3}
+                        className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
+                      />
+                      <ComposerToolbar media={media} onMediaChange={setMedia} />
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className="text-xs text-foreground/30">
+                      {text.length}/1000
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => submit(text, media)}
+                      disabled={!hasContent || isSubmitting}
+                      className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {isSubmitting ? "Posting..." : "Reply"}
+                    </button>
                   </div>
                 </div>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-xs text-foreground/30">
-                    {text.length}/1000
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => submit(text, media)}
-                    disabled={!hasContent || isSubmitting || !session}
-                    className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {isSubmitting ? "Posting..." : "Reply"}
-                  </button>
+              ) : (
+                <div className="px-5 py-6 text-center">
+                  <p className="text-sm text-foreground/50">
+                    <a href="/api/auth/signin" className="font-medium text-gold hover:text-gold-light">Sign in</a>
+                    {" "}to comment
+                  </p>
                 </div>
-              </div>
+              )}
             </>
           )}
 
@@ -333,53 +342,62 @@ export default function CommentModal({
               </div>
 
               {/* Sticky composer at bottom */}
-              <div className="border-t border-foreground/10 px-5 py-3">
-                <div className="flex gap-3">
-                  <div className="w-9 shrink-0">
-                    {userImage ? (
-                      <Image
-                        src={userImage}
-                        alt={session?.name ?? "You"}
-                        width={36}
-                        height={36}
-                        className="h-9 w-9 shrink-0 rounded-full"
-                      />
-                    ) : (
-                      <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="mb-1 block text-xs text-foreground/40">
-                      Replying to{" "}
-                      <span className="text-gold">@{parentDisplayName}</span>
-                    </span>
-                    <textarea
-                      ref={textareaRef}
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Post your reply"
-                      maxLength={1000}
-                      rows={2}
-                      className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
-                    />
-                    <ComposerToolbar media={media} onMediaChange={setMedia} />
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-xs text-foreground/30">
-                        {text.length}/1000
+              {session ? (
+                <div className="border-t border-foreground/10 px-5 py-3">
+                  <div className="flex gap-3">
+                    <div className="w-9 shrink-0">
+                      {userImage ? (
+                        <Image
+                          src={userImage}
+                          alt={session?.name ?? "You"}
+                          width={36}
+                          height={36}
+                          className="h-9 w-9 shrink-0 rounded-full"
+                        />
+                      ) : (
+                        <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="mb-1 block text-xs text-foreground/40">
+                        Replying to{" "}
+                        <span className="text-gold">@{parentDisplayName}</span>
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => submit(text, media)}
-                        disabled={!hasContent || isSubmitting || !session}
-                        className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
-                      >
-                        {isSubmitting ? "Posting..." : "Reply"}
-                      </button>
+                      <textarea
+                        ref={textareaRef}
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="Post your reply"
+                        maxLength={1000}
+                        rows={2}
+                        className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
+                      />
+                      <ComposerToolbar media={media} onMediaChange={setMedia} />
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-xs text-foreground/30">
+                          {text.length}/1000
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => submit(text, media)}
+                          disabled={!hasContent || isSubmitting}
+                          className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {isSubmitting ? "Posting..." : "Reply"}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="border-t border-foreground/10 px-5 py-4 text-center">
+                  <p className="text-sm text-foreground/50">
+                    <a href="/api/auth/signin" className="font-medium text-gold hover:text-gold-light">Sign in</a>
+                    {" "}to reply
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </motion.div>

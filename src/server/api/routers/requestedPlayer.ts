@@ -128,7 +128,7 @@ export const requestedPlayerRouter = createTRPCRouter({
     }),
 
   // Create or add description to existing requested player
-  create: protectedProcedure
+  create: publicProcedure
     .input(
       z.object({
         firstName: z.string().min(1).max(50),
@@ -140,7 +140,9 @@ export const requestedPlayerRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const firstName = input.firstName.trim();
       const lastName = input.lastName.trim();
-      const userId = new mongoose.Types.ObjectId(ctx.session.user.id);
+      const userId = ctx.session?.user?.id
+        ? new mongoose.Types.ObjectId(ctx.session.user.id)
+        : null;
 
       // Upsert: find by name or create, then push description
       const result = await RequestedPlayerModel.findOneAndUpdate(
@@ -153,7 +155,7 @@ export const requestedPlayerRouter = createTRPCRouter({
           $push: {
             descriptions: {
               _id: new mongoose.Types.ObjectId(),
-              user: userId,
+              ...(userId ? { user: userId } : {}),
               suggestedValue: input.suggestedValue,
               note: input.note?.trim() || null,
               createdAt: new Date(),

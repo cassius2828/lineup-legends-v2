@@ -66,7 +66,13 @@ export default function LineupCardFooter({
         {/* Comments */}
         <button
           type="button"
-          onClick={() => setCommentModalOpen((prev) => !prev)}
+          onClick={() => {
+            if (!isAuthenticated) {
+              toast.info("Sign in to comment");
+              return;
+            }
+            setCommentModalOpen((prev) => !prev);
+          }}
           className="group flex cursor-pointer items-center gap-1.5 text-foreground/40 transition-colors hover:text-gold"
         >
           <MessageCircle className="h-4 w-4" />
@@ -84,19 +90,21 @@ export default function LineupCardFooter({
           >
             <Eye className="h-4 w-4" />
           </Link>
-          <button
-            type="button"
-            onClick={handleBookmark}
-            className={`group cursor-pointer transition-colors ${
-              bookmarked
-                ? "text-gold hover:text-gold-light"
-                : "text-foreground/40 hover:text-gold"
-            }`}
-            aria-label={bookmarked ? "Remove bookmark" : "Bookmark lineup"}
-            aria-pressed={bookmarked}
-          >
-            <BookmarkIcon className="h-4 w-4" />
-          </button>
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={handleBookmark}
+              className={`group cursor-pointer transition-colors ${
+                bookmarked
+                  ? "text-gold hover:text-gold-light"
+                  : "text-foreground/40 hover:text-gold"
+              }`}
+              aria-label={bookmarked ? "Remove bookmark" : "Bookmark lineup"}
+              aria-pressed={bookmarked}
+            >
+              <BookmarkIcon className="h-4 w-4" />
+            </button>
+          )}
           <ShareMenu lineupId={lineupId} />
         </div>
       </div>

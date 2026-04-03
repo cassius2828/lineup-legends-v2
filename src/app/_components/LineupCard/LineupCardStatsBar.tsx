@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import type { LineupType } from "~/lib/types";
 
 export function LineupCardStatsBar({
@@ -10,11 +12,27 @@ export function LineupCardStatsBar({
   lineup: LineupType;
   isOwner: boolean;
 }) {
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user;
+  const canRate = isAuthenticated && !isOwner;
+
+  const handleRateClick = (e: React.MouseEvent) => {
+    if (isOwner) {
+      e.preventDefault();
+      return;
+    }
+    if (!isAuthenticated) {
+      e.preventDefault();
+      toast.info("Sign in to rate lineups");
+    }
+  };
+
   return (
     <div className="mb-4 flex items-center gap-4 text-sm">
       <Link
         href={`/lineups/${lineup._id?.toString() ?? ""}/rate`}
-        className={`flex gap-2 text-xs text-foreground/50 hover:text-foreground/80 ${isOwner ? "cursor-not-allowed" : ""}`}
+        onClick={handleRateClick}
+        className={`flex gap-2 text-xs text-foreground/50 hover:text-foreground/80 ${!canRate ? "cursor-not-allowed" : ""}`}
       >
         <div className="flex items-center gap-1">
           <svg

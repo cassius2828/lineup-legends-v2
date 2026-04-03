@@ -24,17 +24,21 @@ const LineupsHeader = ({
         <p className="mt-1 text-foreground/60">{description}</p>
       </div>
       <div className="flex gap-3">
-        <ButtonLink href={exploreLink} color="white">
-          {exploreLinkText}
-        </ButtonLink>
+        {exploreLinkText && (
+          <ButtonLink href={exploreLink} color="white">
+            {exploreLinkText}
+          </ButtonLink>
+        )}
         {extraLinks?.map((link) => (
           <ButtonLink key={link.href} href={link.href} color="white">
             {link.label}
           </ButtonLink>
         ))}
-        <ButtonLink href={createLink} color="gold">
-          {createLinkText}
-        </ButtonLink>
+        {createLinkText && (
+          <ButtonLink href={createLink} color="gold">
+            {createLinkText}
+          </ButtonLink>
+        )}
       </div>
     </div>
   );

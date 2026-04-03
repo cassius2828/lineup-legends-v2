@@ -1,10 +1,12 @@
 "use client";
 
-import { ChevronUp, ChevronDown, MessageCircle } from "lucide-react";
+import { ChevronUp, ChevronDown, MessageCircle, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import ConfirmModal from "~/app/_components/ui/ConfirmModal";
 import type { Comment } from "~/server/models";
 
 interface CommentCardProps {
@@ -30,6 +32,7 @@ export default function CommentCard({
       : String(comment.user);
   const isOwnComment = !!currentUserId && currentUserId === commentOwnerId;
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [optimisticVote, setOptimisticVote] = useState(userVote);
   const [optimisticTotal, setOptimisticTotal] = useState(comment.totalVotes ?? 0);
 
@@ -42,6 +45,16 @@ export default function CommentCard({
       setOptimisticVote(userVote);
       setOptimisticTotal(comment.totalVotes ?? 0);
     },
+  });
+
+  const deleteMutation = api.comment.deleteComment.useMutation({
+    onSuccess: () => {
+      setShowDeleteConfirm(false);
+      toast.success("Comment deleted");
+      void utils.comment.getComments.invalidate({ lineupId });
+      void utils.comment.getCommentCount.invalidate({ lineupId });
+    },
+    onError: (err) => toast.error(err.message),
   });
 
   const handleVote = (type: "upvote" | "downvote") => {
@@ -175,8 +188,30 @@ export default function CommentCard({
               <ChevronDown className="h-4 w-4" />
             </button>
           </div>
+
+          {isOwnComment && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="text-foreground/30 transition-colors hover:text-red-500"
+              aria-label="Delete comment"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={showDeleteConfirm}
+        title="Delete comment?"
+        description="This will permanently delete this comment and all its replies. This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate({ lineupId, commentId })}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </div>
   );
 }

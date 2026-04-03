@@ -18,6 +18,18 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
       >
         create a lineup
       </Link>
+      <Link
+        href="/lineups/explore"
+        className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
+      >
+        Explore
+      </Link>
+      <Link
+        href="/contact"
+        className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
+      >
+        Contact
+      </Link>
 
       {session ? (
         <>
@@ -28,22 +40,10 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
             My Lineups
           </Link>
           <Link
-            href="/lineups/explore"
-            className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
-          >
-            Explore
-          </Link>
-          <Link
             href="/users/search"
             className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
           >
             Find Users
-          </Link>
-          <Link
-            href="/contact"
-            className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
-          >
-            Contact
           </Link>
           {session.user.admin && (
             <Link

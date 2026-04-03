@@ -240,7 +240,59 @@ export const commentRouter = createTRPCRouter({
       };
     }),
 
-  // TODO: must be refactored to use the new comment vote schema
+  deleteComment: protectedProcedure
+    .input(z.object({ lineupId: z.string(), commentId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const comment = await CommentModel.findOne({
+        _id: input.commentId,
+        lineup: new mongoose.Types.ObjectId(input.lineupId),
+      })
+        .select("user")
+        .lean();
+
+      if (!comment) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Comment not found." });
+      }
+      if (comment.user.toString() !== ctx.session.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "You can only delete your own comments." });
+      }
+
+      const threadIds = await ThreadModel.find({ comment: comment._id })
+        .select("_id")
+        .lean();
+
+      await Promise.all([
+        CommentModel.deleteOne({ _id: comment._id }),
+        ThreadModel.deleteMany({ comment: comment._id }),
+        CommentVoteModel.deleteMany({ comment: comment._id }),
+        ThreadVoteModel.deleteMany({ thread: { $in: threadIds.map((t) => t._id) } }),
+      ]);
+
+      return { deleted: true };
+    }),
+
+  deleteThread: protectedProcedure
+    .input(z.object({ commentId: z.string(), threadId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const thread = await ThreadModel.findById(input.threadId)
+        .select("user comment")
+        .lean();
+
+      if (!thread) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Reply not found." });
+      }
+      if (thread.user.toString() !== ctx.session.user.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "You can only delete your own replies." });
+      }
+
+      await Promise.all([
+        ThreadModel.deleteOne({ _id: thread._id }),
+        ThreadVoteModel.deleteMany({ thread: thread._id }),
+      ]);
+
+      return { deleted: true };
+    }),
+
   voteComment: protectedProcedure
     .input(
       z.object({

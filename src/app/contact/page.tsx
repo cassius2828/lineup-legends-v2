@@ -67,7 +67,6 @@ export default function ContactPage() {
 // ─── Player Request Section ──────────────────────────────────────────────────
 
 function PlayerRequestSection() {
-  const { data: session } = useSession();
   const utils = api.useUtils();
 
   const [firstName, setFirstName] = useState("");
@@ -160,20 +159,7 @@ function PlayerRequestSection() {
         </p>
       </div>
 
-      {!session ? (
-        <div className="rounded-lg border border-gold/20 bg-gold/5 p-4 text-center">
-          <p className="mb-3 text-sm text-foreground/70">
-            You need to be signed in to request a player.
-          </p>
-          <Link
-            href="/sign-in"
-            className="inline-block rounded-lg bg-gold px-6 py-2 text-sm font-semibold text-black transition-colors hover:bg-gold-light"
-          >
-            Sign In
-          </Link>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label
@@ -267,7 +253,6 @@ function PlayerRequestSection() {
             {createRequest.isPending ? "Submitting..." : "Submit Request"}
           </button>
         </form>
-      )}
     </motion.section>
   );
 }
