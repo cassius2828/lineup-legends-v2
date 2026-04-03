@@ -10,9 +10,11 @@ import type { Lineup } from "./lineup";
 // API Type - for responses and client-side usage (after population)
 export interface Comment {
   id: string;
-  text: string;
+  text?: string | null;
   user: User;
   lineup: Lineup;
+  image: string | null;
+  gif: string | null;
   totalVotes: number;
   createdAt: Date;
   updatedAt: Date;
@@ -20,9 +22,11 @@ export interface Comment {
 
 // DB Type - for database operations
 export interface CommentDoc extends Document {
-  text: string;
+  text?: string | null;
   user: Types.ObjectId;
   lineup: Types.ObjectId;
+  image: string | null;
+  gif: string | null;
   totalVotes: number;
   createdAt: Date;
   updatedAt: Date;
@@ -30,9 +34,11 @@ export interface CommentDoc extends Document {
 
 const CommentSchema = new Schema<CommentDoc>(
   {
-    text: { type: String, required: true },
+    text: { type: String, default: null },
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
+    image: { type: String, default: null },
+    gif: { type: String, default: null },
     totalVotes: { type: Number, default: 0 },
   },
   {

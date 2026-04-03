@@ -47,10 +47,11 @@ export default function ExploreLineupsPage() {
         <LineupsHeader
           title="Explore Lineups"
           description="Discover lineups from the community"
-          exploreLink="/lineups"
-          createLink="/lineups/new"
-          exploreLinkText="My Lineups"
-          createLinkText="+ Create Lineup"
+          exploreLink={session ? "/lineups" : ""}
+          createLink={session ? "/lineups/new" : ""}
+          exploreLinkText={session ? "My Lineups" : ""}
+          createLinkText={session ? "+ Create Lineup" : ""}
+          extraLinks={session ? [{ href: "/lineups/bookmarked", label: "Bookmarked" }] : []}
         />
 
         {/* Sort Controls */}

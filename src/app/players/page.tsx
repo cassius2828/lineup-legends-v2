@@ -4,6 +4,7 @@ import Fuse from "fuse.js";
 import { useState } from "react";
 import { api } from "~/trpc/react";
 import { PlayerImage } from "~/app/_components/PlayerImage";
+import { useRouter } from "next/navigation";
 
 const valueShadows: Record<number, string> = {
   5: "shadow-[0px_0px_10px_3px_#99fcff]",
@@ -50,6 +51,7 @@ function getPaginationRange(
 }
 
 export default function PlayersPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [valueFilter, setValueFilter] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -59,9 +61,9 @@ export default function PlayersPage() {
 
   const fuse = allPlayers
     ? new Fuse(allPlayers, {
-        keys: ["firstName", "lastName"],
-        threshold: 0.3,
-      })
+      keys: ["firstName", "lastName"],
+      threshold: 0.3,
+    })
     : null;
 
   const searchResults = fuse?.search(searchQuery);
@@ -155,11 +157,10 @@ export default function PlayersPage() {
         <div className="mb-8 flex flex-wrap gap-2">
           <button
             onClick={() => handleValueFilterChange(null)}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              valueFilter === null
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${valueFilter === null
                 ? "bg-gold text-black"
                 : "bg-foreground/10 text-foreground hover:bg-foreground/20"
-            }`}
+              }`}
           >
             All
           </button>
@@ -167,11 +168,10 @@ export default function PlayersPage() {
             <button
               key={value}
               onClick={() => handleValueFilterChange(value)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                valueFilter === value
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${valueFilter === value
                   ? "bg-gold text-black"
                   : "bg-foreground/10 text-foreground hover:bg-foreground/20"
-              }`}
+                }`}
             >
               ${value} &middot; {valueLabels[value]}
             </button>
@@ -226,11 +226,11 @@ export default function PlayersPage() {
                     className="group flex flex-col items-center"
                   >
                     <div
-                      className={`relative h-24 w-24 overflow-hidden bg-[#f2f2f2] transition-all duration-200 sm:h-28 sm:w-28 ${
-                        valueShadows[player.value ?? 0]
-                      } group-hover:scale-105`}
+                      className={`relative h-24 w-24 overflow-hidden bg-[#f2f2f2] transition-all duration-200 sm:h-28 sm:w-28 ${valueShadows[player.value ?? 0]
+                        } group-hover:scale-105`}
                     >
                       <PlayerImage
+                        onClick={() => router.push(`/players/${player._id?.toString()}`)}
                         imgUrl={player.imgUrl ?? undefined}
                         alt={`${player.firstName ?? ""} ${player.lastName ?? ""}`}
                         className="absolute inset-0 h-full w-full object-cover"
@@ -289,11 +289,10 @@ export default function PlayersPage() {
                     <button
                       key={page}
                       onClick={() => handlePageChange(page as number)}
-                      className={`min-w-[36px] rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                        currentPage === page
+                      className={`min-w-[36px] rounded-lg px-3 py-2 text-sm font-medium transition-colors ${currentPage === page
                           ? "bg-gold text-black"
                           : "text-foreground hover:bg-foreground/10"
-                      }`}
+                        }`}
                     >
                       {page}
                     </button>

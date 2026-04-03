@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { PlayerCard } from "~/app/_components/PlayerCard";
@@ -49,6 +50,8 @@ function getRatingColor(rating: number): string {
 export default function RateLineupPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user;
   const lineupId = params.id as string;
 
   const [selectedRating, setSelectedRating] = useState<number>(RATING_DEFAULT);
@@ -202,21 +205,30 @@ export default function RateLineupPage() {
         </div>
 
         {/* Submit */}
-        <div className="flex gap-3">
-          <Link
-            href="/lineups/explore"
-            className="flex-1 rounded-lg bg-foreground/10 py-3 text-center font-medium text-foreground transition-colors hover:bg-foreground/20"
-          >
-            Cancel
-          </Link>
-          <button
-            onClick={handleSubmit}
-            disabled={rateMutation.isPending}
-            className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:opacity-50"
-          >
-            {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
-          </button>
-        </div>
+        {isAuthenticated ? (
+          <div className="flex gap-3">
+            <Link
+              href="/lineups/explore"
+              className="flex-1 rounded-lg bg-foreground/10 py-3 text-center font-medium text-foreground transition-colors hover:bg-foreground/20"
+            >
+              Cancel
+            </Link>
+            <button
+              onClick={handleSubmit}
+              disabled={rateMutation.isPending}
+              className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:opacity-50"
+            >
+              {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-foreground/10 p-6 text-center">
+            <p className="text-sm text-foreground/50">
+              <a href="/api/auth/signin" className="font-medium text-gold hover:text-gold-light">Sign in</a>
+              {" "}to rate this lineup
+            </p>
+          </div>
+        )}
       </div>
     </main>
   );

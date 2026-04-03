@@ -7,6 +7,7 @@ const LineupsHeader = ({
   createLink,
   exploreLinkText,
   createLinkText,
+  extraLinks,
 }: {
   title: string;
   description: string;
@@ -14,6 +15,7 @@ const LineupsHeader = ({
   createLink: string;
   exploreLinkText: string;
   createLinkText: string;
+  extraLinks?: { href: string; label: string }[];
 }) => {
   return (
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -22,12 +24,21 @@ const LineupsHeader = ({
         <p className="mt-1 text-foreground/60">{description}</p>
       </div>
       <div className="flex gap-3">
-        <ButtonLink href={exploreLink} color="white">
-          {exploreLinkText}
-        </ButtonLink>
-        <ButtonLink href={createLink} color="gold">
-          {createLinkText}
-        </ButtonLink>
+        {exploreLinkText && (
+          <ButtonLink href={exploreLink} color="white">
+            {exploreLinkText}
+          </ButtonLink>
+        )}
+        {extraLinks?.map((link) => (
+          <ButtonLink key={link.href} href={link.href} color="white">
+            {link.label}
+          </ButtonLink>
+        ))}
+        {createLinkText && (
+          <ButtonLink href={createLink} color="gold">
+            {createLinkText}
+          </ButtonLink>
+        )}
       </div>
     </div>
   );

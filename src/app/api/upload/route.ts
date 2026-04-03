@@ -21,9 +21,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    if (!type || !["profile", "banner"].includes(type)) {
+    if (!type || !["profile", "banner", "comment"].includes(type)) {
       return NextResponse.json(
-        { error: "Invalid type. Must be 'profile' or 'banner'" },
+        { error: "Invalid type. Must be 'profile', 'banner', or 'comment'" },
         { status: 400 },
       );
     }
@@ -43,14 +43,21 @@ export async function POST(request: Request) {
     }
 
     const ext = file.name.split(".").pop() ?? "jpg";
-    const key = `profiles/${session.user.id}/${type}-${Date.now()}.${ext}`;
+    const subPath =
+      type === "comment"
+        ? `comments/${session.user.id}/${Date.now()}.${ext}`
+        : `profiles/${session.user.id}/${type}-${Date.now()}.${ext}`;
+
+    const cdnUrl = new URL(env.NEXT_PUBLIC_CLOUDFRONT_URL);
+    const bucketPrefix = cdnUrl.pathname.replace(/^\//, "");
+    const s3Key = bucketPrefix ? `${bucketPrefix}/${subPath}` : subPath;
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    await uploadToS3(buffer, key, file.type);
+    await uploadToS3(buffer, s3Key, file.type);
 
-    const cdnUrl = `${env.NEXT_PUBLIC_CLOUDFRONT_URL}/${key}`;
+    const publicUrl = `${env.NEXT_PUBLIC_CLOUDFRONT_URL}/${subPath}`;
 
-    return NextResponse.json({ url: cdnUrl });
+    return NextResponse.json({ url: publicUrl });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json(

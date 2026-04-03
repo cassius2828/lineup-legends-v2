@@ -6,6 +6,8 @@ import { LineupCardHeader } from "./LineupCardHeader";
 import { LineupCardStatsBar } from "./LineupCardStatsBar";
 import { LineupCardPlayersGrid } from "./LineupCardPlayersGrid";
 import { LineupCardOwnerActions } from "./LineupCardOwnerActions";
+import LineupCardFooter from "./LineupCardFooter";
+import { api } from "~/trpc/react";
 
 interface LineupCardProps {
   lineup: LineupType;
@@ -17,6 +19,7 @@ interface LineupCardProps {
   currentUserId?: string;
   userVote?: "upvote" | "downvote" | null;
   featured?: boolean;
+  hideFooter?: boolean;
 }
 
 export function LineupCard({
@@ -26,6 +29,7 @@ export function LineupCard({
   onToggleFeatured,
   isOwner = false,
   featured = false,
+  hideFooter = false,
 }: LineupCardProps) {
   const totalValue =
     lineup.players.pg?.value +
@@ -37,6 +41,11 @@ export function LineupCard({
   const relativeTime = formatDistanceToNow(new Date(lineup.createdAt), {
     addSuffix: true,
   });
+  const lineupId = lineup._id?.toString() ?? "";
+  const { data: countData } = api.comment.getCommentCount.useQuery(
+    { lineupId },
+    { enabled: !!lineupId && !hideFooter },
+  );
 
   return (
     <div className={`relative rounded-2xl bg-gradient-to-br from-surface-800/90 to-surface-950/90 p-6 shadow-xl backdrop-blur-sm ${featured ? "glow-gold" : ""}`}>
@@ -50,12 +59,20 @@ export function LineupCard({
       <LineupCardStatsBar lineup={lineup} isOwner={isOwner} />
 
       <LineupCardPlayersGrid players={lineup.players} />
-
       {isOwner && (
         <LineupCardOwnerActions
           lineup={lineup}
           onToggleFeatured={onToggleFeatured}
           onDelete={onDelete}
+        />
+      )}
+      {!hideFooter && (
+        <LineupCardFooter
+          lineupId={lineupId}
+          ownerName={lineup.owner?.name ?? lineup.owner?.username ?? "Anonymous"}
+          ownerImage={lineup.owner?.image ?? lineup.owner?.profileImg}
+          totalValue={totalValue}
+          commentCount={countData?.total ?? 0}
         />
       )}
     </div>

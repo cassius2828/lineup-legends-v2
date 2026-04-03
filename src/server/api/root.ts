@@ -1,11 +1,13 @@
 import { playerRouter } from "~/server/api/routers/player";
 import { lineupRouter } from "~/server/api/routers/lineup";
+import { commentRouter } from "~/server/api/routers/comment";
 import { profileRouter } from "~/server/api/routers/profile";
 import { followRouter } from "~/server/api/routers/follow";
 import { requestedPlayerRouter } from "~/server/api/routers/requestedPlayer";
 import { feedbackRouter } from "~/server/api/routers/feedback";
 import { adminRouter } from "~/server/api/routers/admin";
 import { videoRouter } from "~/server/api/routers/video";
+import { bookmarkRouter } from "~/server/api/routers/bookmark";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -16,12 +18,14 @@ import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 export const appRouter = createTRPCRouter({
   player: playerRouter,
   lineup: lineupRouter,
+  comment: commentRouter,
   profile: profileRouter,
   follow: followRouter,
   requestedPlayer: requestedPlayerRouter,
   feedback: feedbackRouter,
   admin: adminRouter,
   video: videoRouter,
+  bookmark: bookmarkRouter,
 });
 
 // export type definition of API

@@ -63,7 +63,7 @@ const UserSchema = new Schema<UserDoc>(
   {
     name: { type: String, required: true },
     password: { type: String, required: false, default: null },
-    username: { type: String, required: false, unique: true, sparse: true },
+    username: { type: String, required: false },
     email: { type: String, required: true, unique: true },
     emailVerified: { type: Date, default: null },
     image: { type: String, default: null },
@@ -81,6 +81,9 @@ const UserSchema = new Schema<UserDoc>(
     timestamps: false,
   },
 );
+
+UserSchema.index({ username: 1 }, { unique: true, sparse: true });
+UserSchema.index({name: 1})
 
 // Virtual for id
 UserSchema.virtual("id").get(function (this: UserDoc) {

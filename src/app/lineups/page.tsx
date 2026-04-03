@@ -68,6 +68,7 @@ export default function MyLineupsPage() {
           createLink="/lineups/new"
           exploreLinkText="Explore Lineups"
           createLinkText="+ Create Lineup"
+          extraLinks={[{ href: "/lineups/bookmarked", label: "Bookmarked" }]}
         />
 
         {/* Sort Controls */}

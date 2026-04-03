@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import { DuplicateHints } from "~/app/_components/PlayerRequest/DuplicateHints";
 
 const sectionVariants = {
   hidden: { opacity: 0, y: 30 },
@@ -66,12 +67,37 @@ export default function ContactPage() {
 // ─── Player Request Section ──────────────────────────────────────────────────
 
 function PlayerRequestSection() {
-  const { data: session } = useSession();
   const utils = api.useUtils();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [suggestedValue, setSuggestedValue] = useState(3);
+  const [note, setNote] = useState("");
+
+  const [debouncedFirst, setDebouncedFirst] = useState("");
+  const [debouncedLast, setDebouncedLast] = useState("");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (firstName.trim().length >= 2 && lastName.trim().length >= 2) {
+      timerRef.current = setTimeout(() => {
+        setDebouncedFirst(firstName.trim());
+        setDebouncedLast(lastName.trim());
+      }, 2000);
+    } else {
+      setDebouncedFirst("");
+      setDebouncedLast("");
+    }
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [firstName, lastName]);
+
+  const { data: duplicates } = api.requestedPlayer.searchDuplicates.useQuery(
+    { firstName: debouncedFirst, lastName: debouncedLast },
+    { enabled: debouncedFirst.length >= 2 && debouncedLast.length >= 2 },
+  );
 
   const createRequest = api.requestedPlayer.create.useMutation({
     onSuccess: () => {
@@ -79,6 +105,7 @@ function PlayerRequestSection() {
       setFirstName("");
       setLastName("");
       setSuggestedValue(3);
+      setNote("");
       void utils.requestedPlayer.getAll.invalidate();
     },
     onError: (error) => {
@@ -96,6 +123,7 @@ function PlayerRequestSection() {
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       suggestedValue,
+      note: note.trim() || undefined,
     });
   };
 
@@ -131,20 +159,7 @@ function PlayerRequestSection() {
         </p>
       </div>
 
-      {!session ? (
-        <div className="rounded-lg border border-gold/20 bg-gold/5 p-4 text-center">
-          <p className="mb-3 text-sm text-foreground/70">
-            You need to be signed in to request a player.
-          </p>
-          <Link
-            href="/sign-in"
-            className="inline-block rounded-lg bg-gold px-6 py-2 text-sm font-semibold text-black transition-colors hover:bg-gold-light"
-          >
-            Sign In
-          </Link>
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label
@@ -182,6 +197,10 @@ function PlayerRequestSection() {
             </div>
           </div>
 
+          {duplicates && duplicates.length > 0 && (
+            <DuplicateHints duplicates={duplicates} />
+          )}
+
           <div>
             <label className="mb-2 block text-sm font-medium text-foreground/80">
               Suggested Value ($1-$5)
@@ -204,6 +223,28 @@ function PlayerRequestSection() {
             </div>
           </div>
 
+          <div>
+            <label
+              htmlFor="reqNote"
+              className="mb-2 block text-sm font-medium text-foreground/80"
+            >
+              Note{" "}
+              <span className="font-normal text-foreground/40">(optional)</span>
+            </label>
+            <textarea
+              id="reqNote"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              maxLength={500}
+              rows={3}
+              placeholder="Why do you want this player?"
+              className="w-full resize-none rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+            />
+            <p className="mt-1 text-right text-xs text-foreground/40">
+              {note.length}/500
+            </p>
+          </div>
+
           <button
             type="submit"
             disabled={createRequest.isPending}
@@ -212,7 +253,6 @@ function PlayerRequestSection() {
             {createRequest.isPending ? "Submitting..." : "Submit Request"}
           </button>
         </form>
-      )}
     </motion.section>
   );
 }

@@ -51,6 +51,13 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                   create a lineup
                 </Link>
                 <Link
+                  href="/lineups/explore"
+                  onClick={closeMenu}
+                  className="hover:text-gold text-foreground/90 capitalize transition-colors"
+                >
+                  Explore
+                </Link>
+                <Link
                   href="/contact"
                   onClick={closeMenu}
                   className="hover:text-gold text-foreground/90 capitalize transition-colors"
@@ -66,13 +73,6 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                       className="hover:text-gold text-foreground/90 capitalize transition-colors"
                     >
                       My Lineups
-                    </Link>
-                    <Link
-                      href="/lineups/explore"
-                      onClick={closeMenu}
-                      className="hover:text-gold text-foreground/90 capitalize transition-colors"
-                    >
-                      Explore
                     </Link>
                     <Link
                       href="/users/search"
