@@ -3,15 +3,19 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { api } from "~/trpc/react";
+import Image from "next/image";
 
-function FollowButton({ targetUserId }: { targetUserId: string }) {
+function FollowButton({
+  targetUserId,
+  sessionUserId,
+}: {
+  targetUserId: string;
+  sessionUserId: string | undefined;
+}) {
   const utils = api.useUtils();
-  const { data: session } = api.profile.getMe.useQuery(undefined, {
-    retry: false,
-  });
   const { data: followStatus } = api.follow.isFollowing.useQuery(
     { targetUserId },
-    { enabled: !!session && session.id !== targetUserId },
+    { enabled: !!sessionUserId && sessionUserId !== targetUserId },
   );
   const toggleFollow = api.follow.toggleFollow.useMutation({
     onSuccess: () => {
@@ -20,7 +24,7 @@ function FollowButton({ targetUserId }: { targetUserId: string }) {
     },
   });
 
-  if (!session || session.id === targetUserId) return null;
+  if (!sessionUserId || sessionUserId === targetUserId) return null;
 
   return (
     <button
@@ -30,11 +34,10 @@ function FollowButton({ targetUserId }: { targetUserId: string }) {
         toggleFollow.mutate({ targetUserId });
       }}
       disabled={toggleFollow.isPending}
-      className={`shrink-0 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
-        followStatus?.following
-          ? "bg-foreground/10 text-foreground hover:bg-red-500/20 hover:text-red-400"
-          : "bg-gold text-black hover:bg-gold-light"
-      }`}
+      className={`shrink-0 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${followStatus?.following
+        ? "bg-foreground/10 text-foreground hover:bg-red-500/20 hover:text-red-400"
+        : "bg-gold text-black hover:bg-gold-light"
+        }`}
     >
       {toggleFollow.isPending
         ? "..."
@@ -48,6 +51,9 @@ function FollowButton({ targetUserId }: { targetUserId: string }) {
 export default function UserSearchPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const { data: session } = api.profile.getMe.useQuery(undefined, {
+    retry: false,
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -141,16 +147,20 @@ export default function UserSearchPage() {
               className="flex items-center gap-4 rounded-xl bg-foreground/5 p-4 transition-colors hover:bg-foreground/10"
             >
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-surface-700">
-                <img
+                <Image
+                  width={48}
+                  height={48}
                   src={
-                    user.profileImg ?? user.image ?? "/default-avatar.png"
+                    user.image ?? user.profileImg ?? "/default-avatar.png"
                   }
                   alt={user.name ?? "User"}
                   className="h-full w-full object-cover"
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-foreground">{user.name}</p>
+                <p className="truncate font-medium text-foreground">
+                  {user.name}
+                </p>
                 {user.username && (
                   <p className="truncate text-sm text-foreground/50">
                     @{user.username}
@@ -160,7 +170,10 @@ export default function UserSearchPage() {
                   {user.followerCount ?? 0} followers
                 </p>
               </div>
-              <FollowButton targetUserId={user.id} />
+              <FollowButton
+                targetUserId={user.id}
+                sessionUserId={session?.id}
+              />
             </Link>
           ))}
         </div>
