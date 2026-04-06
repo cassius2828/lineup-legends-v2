@@ -14,8 +14,10 @@ The database stores:
 - **Threads**: Threaded replies to comments
 - **CommentVotes / ThreadVotes**: Upvotes/downvotes on comments and threads
 - **Follows**: User-to-user follow relationships
+- **Bookmarks**: Saved lineups per user
 - **Feedback**: User-submitted feedback with status tracking
 - **RequestedPlayers**: User requests for new players to be added
+- **Videos**: YouTube videos for the Getting Technical page
 - **Auth data**: Sessions, accounts, verification tokens (managed by NextAuth)
 
 ## Environment Variables
@@ -78,7 +80,7 @@ export const redis = ((globalThis as unknown as { redis: Redis }).redis ??= new 
 
 ### Caching Strategies
 
-Two caching strategies are used depending on the data characteristics:
+Three caching strategies are used depending on the data characteristics:
 
 #### Cache-Aside (Players)
 
@@ -92,6 +94,14 @@ Used for shared, rarely-changing data with explicit invalidation on writes.
 - Filtering and lookups are performed in-memory on the cached data
 - Admin mutations (`create`, `update`, `delete`) call `redis.del("players")` to invalidate
 - The next read after invalidation repopulates the cache from MongoDB
+
+#### Cache-Aside (User Profiles)
+
+Used for individual user profile data with per-user cache keys.
+
+| Cache Key      | Data               | TTL     | Invalidated By           |
+| -------------- | ------------------ | ------- | ------------------------ |
+| `user:{userId}`| User profile data  | varies  | `profile.update`         |
 
 #### TTL-Only (Admin Stats)
 
@@ -133,13 +143,15 @@ import { logger } from "~/lib/logger";
 
 const log = logger.child({ module: "db" });
 
-const cached: MongooseCache = global.mongooseCache;
-
 export async function connectDB(): Promise<typeof mongoose> {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, { bufferCommands: false })
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      bufferCommands: false,
+      family: 4,
+      serverSelectionTimeoutMS: 10000,
+    })
       .then((mongoose) => {
         log.info("Connected to MongoDB via Mongoose");
         return mongoose;
@@ -154,6 +166,8 @@ export async function connectDB(): Promise<typeof mongoose> {
 **Key details:**
 - Singleton pattern prevents multiple connections in development (stored in `globalThis`)
 - `bufferCommands: false` ensures operations fail immediately if disconnected
+- `family: 4` forces IPv4 connections
+- `serverSelectionTimeoutMS: 10000` sets a 10-second timeout for server selection
 - A separate `getMongoClient()` function provides a raw `MongoClient` for the NextAuth MongoDB adapter
 - Logging uses pino via `~/lib/logger`
 
@@ -172,7 +186,6 @@ const PlayerSchema = new Schema<PlayerDoc>({
   value:     { type: Number, required: true, min: 1, max: 5 },
 }, { timestamps: false });
 
-// Text + value compound index for search
 PlayerSchema.index({ firstName: "text", lastName: "text", value: 1 });
 ```
 
@@ -186,12 +199,12 @@ PlayerSchema.index({ firstName: "text", lastName: "text", value: 1 });
 
 ### Lineup
 
-Fantasy lineups with 5 basketball positions and engagement tracking:
+Fantasy lineups with 5 basketball positions, rating tracking, and gambling state:
 
 ```typescript
 // src/server/models/lineup.ts
 const LineupSchema = new Schema<LineupDoc>({
-  featured:          { type: Boolean, default: false },
+  featured:            { type: Boolean, default: false },
   players: {
     pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
     sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
@@ -199,28 +212,31 @@ const LineupSchema = new Schema<LineupDoc>({
     pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
     c:  { type: Schema.Types.ObjectId, ref: "Player", required: true },
   },
-  owner:             { type: Schema.Types.ObjectId, ref: "User", required: true },
-  avgRating:         { type: Number, default: 0 },
-  timesGambled:      { type: Number, default: 0 },
-  lastGambleResult:  { type: LastGambleResultSchema, default: undefined },
-  gambleStreak:      { type: Number, default: 0 },
-  lastGambleAt:      { type: Date, default: undefined },
-  dailyGamblesUsed:  { type: Number, default: 0 },
+  owner:               { type: Schema.Types.ObjectId, ref: "User", required: true },
+  avgRating:           { type: Number, default: 0 },
+  ratingSum:           { type: Number, default: 0 },
+  ratingCount:         { type: Number, default: 0 },
+  timesGambled:        { type: Number, default: 0 },
+  lastGambleResult:    { type: LastGambleResultSchema, default: undefined },
+  gambleStreak:        { type: Number, default: 0 },
+  lastGambleAt:        { type: Date, default: undefined },
+  dailyGamblesUsed:    { type: Number, default: 0 },
   dailyGamblesResetAt: { type: Date, default: undefined },
 }, { timestamps: true });
 
-// Indexes for common query patterns
 LineupSchema.index({ owner: 1, createdAt: -1 });
 LineupSchema.index({ owner: 1, updatedAt: -1 });
 LineupSchema.index({ featured: 1, createdAt: -1 });
 LineupSchema.index({ avgRating: -1 });
+LineupSchema.index({ ratingCount: -1 });
 LineupSchema.index({ createdAt: -1 });
 ```
 
 **Notes:**
 - Players are stored as a nested `players` subdocument with ObjectId refs (populated on read)
 - `timestamps: true` auto-manages `createdAt` / `updatedAt`
-- Gambling fields track daily limits, streaks, and the last gamble outcome
+- Rating fields (`avgRating`, `ratingSum`, `ratingCount`) are updated atomically when a user rates
+- Gambling fields track daily limits, cooldown, streaks, and the last gamble outcome
 - Multiple indexes optimize explore/feed query patterns
 
 ### Rating
@@ -235,7 +251,6 @@ const RatingSchema = new Schema<RatingDoc>({
   lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
 }, { timestamps: true });
 
-// One rating per user per lineup
 RatingSchema.index({ user: 1, lineup: 1 }, { unique: true });
 ```
 
@@ -319,6 +334,7 @@ const UserSchema = new Schema<UserDoc>({
 - `username` uses `sparse: true` so null values don't conflict with the unique constraint
 - `socialMedia` is an embedded subdocument with `twitter`, `instagram`, `facebook`
 - `followerCount` / `followingCount` are denormalized for query performance
+- `password` stores bcrypt hashes for credentials-based auth (null for OAuth-only users)
 
 ### Follow
 
@@ -336,6 +352,21 @@ FollowSchema.index({ following: 1 });
 FollowSchema.index({ follower: 1 });
 FollowSchema.index({ follower: 1, createdAt: -1 });
 FollowSchema.index({ following: 1, createdAt: -1 });
+```
+
+### Bookmark
+
+Saved lineups per user:
+
+```typescript
+// src/server/models/bookmark.ts
+const BookmarkSchema = new Schema<BookmarkDoc>({
+  user:   { type: Schema.Types.ObjectId, ref: "User", required: true },
+  lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
+}, { timestamps: true });
+
+BookmarkSchema.index({ user: 1, lineup: 1 }, { unique: true });
+BookmarkSchema.index({ user: 1, createdAt: -1 });
 ```
 
 ### Feedback
@@ -362,15 +393,42 @@ User requests for new players to be added:
 const RequestedPlayerSchema = new Schema<RequestedPlayerDoc>({
   firstName:    { type: String, required: true },
   lastName:     { type: String, required: true },
-  descriptions: [ValueDescriptionSchema], // array of { user, suggestedValue, createdAt }
+  descriptions: [ValueDescriptionSchema],
 }, { timestamps: true });
 
-// Case-insensitive unique on name
 RequestedPlayerSchema.index(
   { firstName: 1, lastName: 1 },
   { unique: true, collation: { locale: "en", strength: 2 } },
 );
 ```
+
+### Video
+
+YouTube videos for the Getting Technical page:
+
+```typescript
+// src/server/models/video.ts
+const VideoSchema = new Schema<VideoDoc>({
+  youtubeId:    { type: String, required: true, unique: true },
+  title:        { type: String, required: true, maxlength: 500 },
+  description:  { type: String, default: "" },
+  thumbnailUrl: { type: String, required: true },
+  duration:     { type: String, default: "" },
+  timestamps:   { type: [VideoTimestampSchema], default: [] },
+  addedBy:      { type: Schema.Types.ObjectId, ref: "User", required: true },
+}, { timestamps: true });
+```
+
+**Fields:**
+| Field          | Type               | Description                          |
+| -------------- | ------------------ | ------------------------------------ |
+| `youtubeId`    | String (unique)    | YouTube video ID                     |
+| `title`        | String             | Video title (max 500 chars)          |
+| `description`  | String             | Video description                    |
+| `thumbnailUrl` | String             | YouTube thumbnail URL                |
+| `duration`     | String             | Video duration                       |
+| `timestamps`   | VideoTimestamp[]    | Chapter markers (time + label)       |
+| `addedBy`      | ObjectId → User    | Admin who added the video            |
 
 ### Auth Models (Account, Session, VerificationToken)
 
@@ -394,7 +452,6 @@ All models follow a consistent pattern:
 ### Querying with Population
 
 ```typescript
-// Get lineup with all players and owner populated
 const lineup = await LineupModel.findById(id)
   .populate("players.pg players.sg players.sf players.pf players.c")
   .populate("owner")
@@ -404,7 +461,6 @@ const lineup = await LineupModel.findById(id)
 ### Filtering and Sorting
 
 ```typescript
-// Get user's lineups, sorted by creation date
 const lineups = await LineupModel.find({ owner: userId })
   .sort({ createdAt: -1 })
   .populate("players.pg players.sg players.sf players.pf players.c")
@@ -449,10 +505,7 @@ const featuredCount = await LineupModel.countDocuments({
 ### Bulk Operations
 
 ```typescript
-// Seed players
-const result = await PlayerModel.insertMany(playersData);
-
-// Clear all players
+await PlayerModel.insertMany(playersData);
 await PlayerModel.deleteMany();
 ```
 
@@ -477,7 +530,7 @@ The seed script is located at `src/server/seed.ts` and uses a standalone Mongoos
 The seed script:
 1. Connects directly to MongoDB using `MONGODB_URI` from `.env`
 2. Clears all existing players
-3. Inserts ~100 basketball players across 5 value tiers
+3. Inserts ~200 basketball players across 5 value tiers
 4. Logs a summary of players seeded per tier
 
 ```bash
@@ -509,6 +562,6 @@ MONGODB_URI="mongodb://localhost:27017/lineup-legends"
 2. **Enable authentication**: Never expose MongoDB without auth in production
 3. **Connection pooling**: Mongoose manages this via the cached singleton in `db.ts`
 4. **Index strategy**: All models define indexes for their common query patterns (see individual model sections)
-5. **Denormalized aggregates**: Fields like `avgRating`, `totalVotes`, `followerCount` are stored directly on documents for read performance and updated atomically during writes
-6. **Redis caching**: Shared, rarely-changing data (players) uses cache-aside with explicit invalidation; expensive aggregations (admin stats) use TTL-only caching to avoid complex invalidation across many write paths
+5. **Denormalized aggregates**: Fields like `avgRating`, `ratingCount`, `totalVotes`, `followerCount` are stored directly on documents for read performance and updated atomically during writes
+6. **Redis caching**: Shared, rarely-changing data (players) uses cache-aside with explicit invalidation; expensive aggregations (admin stats) use TTL-only caching; user profiles use per-key caching
 7. **Managed Redis**: Use Upstash or AWS ElastiCache instead of self-hosted Redis in production

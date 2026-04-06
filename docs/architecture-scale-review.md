@@ -2,7 +2,7 @@
 
 This document provides a comprehensive analysis of the Lineup Legends v2 database architecture and documents the current scalable design patterns implemented.
 
-> **Last Updated**: March 2026  
+> **Last Updated**: April 2026
 > **Status**: Implemented
 
 ---
@@ -27,26 +27,29 @@ This document provides a comprehensive analysis of the Lineup Legends v2 databas
 | Database  | MongoDB     | Document store                             |
 | ODM       | Mongoose    | Schema validation, virtuals                |
 | Cache     | Redis       | Server-side cache via ioredis              |
-| API Layer | tRPC        | Type-safe procedures                       |
-| Auth      | NextAuth.js | OAuth + credentials                        |
+| API Layer | tRPC        | Type-safe procedures (10 routers)          |
+| Auth      | NextAuth.js | OAuth (Google) + credentials               |
 
 ### Model Summary
 
 | Model               | Purpose                          | Indexes                                                     | Document Size Risk |
 | ------------------- | -------------------------------- | ----------------------------------------------------------- | ------------------ |
-| `User`              | User accounts & profiles         | `email` (unique), `username` (unique sparse)                | Low ✅             |
-| `Player`            | Basketball player reference data | `firstName/lastName` (text), `value`                        | Low ✅             |
-| `Lineup`            | User-created fantasy lineups     | `owner`, `avgRating`, `totalVotes`, `createdAt`, `featured` | Low ✅             |
-| `LineupVote`        | Lineup upvotes/downvotes         | `user + lineup` (compound unique)                           | Low ✅             |
-| `Rating`            | Lineup ratings (1-10)            | `user + lineup` (compound unique)                           | Low ✅             |
-| `Comment`           | Comments on lineups              | `lineup + createdAt`, `user + createdAt`                    | Low ✅             |
-| `Thread`            | Replies to comments              | `user + createdAt`                                          | Low ✅             |
-| `CommentVote`       | Comment upvotes/downvotes        | `user + comment` (compound unique)                          | Low ✅             |
-| `Follow`            | User follow relationships        | `follower + following` (unique), `follower`, `following`    | Low ✅             |
-| `RequestedPlayer`   | Player requests from users       | `firstName + lastName` (unique, case-insensitive)           | Medium ⚠️          |
-| `Account`           | OAuth provider links             | `provider + providerAccountId`                              | Low ✅             |
-| `Session`           | Active user sessions             | `sessionToken`, `user`, `expires`                           | Low ✅             |
-| `VerificationToken` | Email verification tokens        | `identifier + token` (unique)                               | Low ✅             |
+| `User`              | User accounts & profiles         | `email` (unique), `username` (unique sparse), `name`        | Low                |
+| `Player`            | Basketball player reference data | `firstName/lastName` (text), `value`                        | Low                |
+| `Lineup`            | User-created fantasy lineups     | `owner+createdAt`, `owner+updatedAt`, `featured+createdAt`, `avgRating`, `ratingCount`, `createdAt` | Low |
+| `Rating`            | Lineup ratings (1-10)            | `user + lineup` (compound unique)                           | Low                |
+| `Comment`           | Comments on lineups              | `lineup + createdAt`, `user + createdAt`                    | Low                |
+| `Thread`            | Replies to comments              | `user + comment + createdAt`                                | Low                |
+| `CommentVote`       | Comment upvotes/downvotes        | `user + comment` (compound unique)                          | Low                |
+| `ThreadVote`        | Thread upvotes/downvotes         | `user + thread` (compound unique)                           | Low                |
+| `Follow`            | User follow relationships        | `follower + following` (unique), `follower`, `following`    | Low                |
+| `Bookmark`          | Saved lineups per user           | `user + lineup` (unique), `user + createdAt`                | Low                |
+| `Video`             | Getting Technical videos         | `youtubeId` (unique)                                        | Low                |
+| `RequestedPlayer`   | Player requests from users       | `firstName + lastName` (unique, case-insensitive)           | Medium (embedded array) |
+| `Feedback`          | User-submitted feedback          | `createdAt`                                                 | Low                |
+| `Account`           | OAuth provider links             | `provider + providerAccountId`                              | Low                |
+| `Session`           | Active user sessions             | `sessionToken`, `user`, `expires`                           | Low                |
+| `VerificationToken` | Email verification tokens        | `identifier + token` (unique)                               | Low                |
 
 ---
 
@@ -68,20 +71,21 @@ This document provides a comprehensive analysis of the Lineup Legends v2 databas
 ┌──────────────┐    ┌─────────────────┐    ┌───────────────┐
 │    User      │◄───│     Lineup      │───►│    Comment    │
 │              │    │                 │    │               │
-│ followerCount│    │ • totalVotes    │    │ • totalVotes  │
-│ followingCount    │ • avgRating     │    └───────┬───────┘
+│ followerCount│    │ • avgRating     │    │ • totalVotes  │
+│ followingCount    │ • ratingCount   │    └───────┬───────┘
 │              │    │ • timesGambled  │            │
 └──────┬───────┘    └────────┬────────┘            │
        │                     │              ┌──────▼──────┐
        │                     │              │   Thread    │
        │                     │              │ (separate)  │
+       │                     │              │ • totalVotes│
        │                     │              └──────┬──────┘
        │                     │                     │
        │        ┌────────────┼─────────────────────┤
        │        │            │                     │
        │ ┌──────▼──────┐ ┌───▼───────┐ ┌──────────▼──────────┐
-       │ │ LineupVote  │ │  Rating   │ │     CommentVote     │
-       │ │ (separate)  │ │ (separate)│ │     (separate)      │
+       │ │  Bookmark   │ │  Rating   │ │  CommentVote /      │
+       │ │ (separate)  │ │ (separate)│ │  ThreadVote          │
        │ └─────────────┘ └───────────┘ └─────────────────────┘
        │
        │              ┌─────────────┐
@@ -98,14 +102,16 @@ This document provides a comprehensive analysis of the Lineup Legends v2 databas
 
 | Pattern                   | Models                         | Cardinality | Status     |
 | ------------------------- | ------------------------------ | ----------- | ---------- |
-| One-to-Many (Referenced)  | User → Lineup                  | 1:N         | ✅ Correct |
-| One-to-Many (Referenced)  | Lineup → LineupVote            | 1:N         | ✅ Correct |
-| One-to-Many (Referenced)  | Lineup → Rating                | 1:N         | ✅ Correct |
-| One-to-Many (Referenced)  | Lineup → Comment               | 1:N         | ✅ Correct |
-| One-to-Many (Referenced)  | Comment → Thread               | 1:N         | ✅ Correct |
-| One-to-Many (Referenced)  | Comment → CommentVote          | 1:N         | ✅ Correct |
-| Many-to-Many (Join Table) | User ↔ User (Follow)           | N:M         | ✅ Correct |
-| One-to-Many (Embedded)    | RequestedPlayer → descriptions | 1:N         | ⚠️ Bounded |
+| One-to-Many (Referenced)  | User → Lineup                  | 1:N         | Correct    |
+| One-to-Many (Referenced)  | Lineup → Rating                | 1:N         | Correct    |
+| One-to-Many (Referenced)  | Lineup → Comment               | 1:N         | Correct    |
+| One-to-Many (Referenced)  | Lineup → Bookmark              | 1:N         | Correct    |
+| One-to-Many (Referenced)  | Comment → Thread               | 1:N         | Correct    |
+| One-to-Many (Referenced)  | Comment → CommentVote          | 1:N         | Correct    |
+| One-to-Many (Referenced)  | Thread → ThreadVote            | 1:N         | Correct    |
+| Many-to-Many (Join Table) | User ↔ User (Follow)           | N:M         | Correct    |
+| Many-to-Many (Join Table) | User ↔ Lineup (Bookmark)       | N:M         | Correct    |
+| One-to-Many (Embedded)    | RequestedPlayer → descriptions | 1:N         | Bounded    |
 
 ---
 
@@ -118,7 +124,7 @@ All models follow a consistent dual-type pattern:
 ```typescript
 // API Type - for responses and client-side usage (after population)
 export interface User {
-  id: string; // String ID for client
+  id: string;
   name: string;
   followerCount: number;
   followingCount: number;
@@ -152,135 +158,6 @@ export interface UserDoc extends Document {
 
 ---
 
-## Resolved Scale Issues
-
-The following issues from the original architecture review have been resolved:
-
-### ✅ 1. Comment Votes Extracted to Separate Collection
-
-**Before**: Embedded `votes[]` array in Comment documents (unbounded)
-
-**After**: `CommentVote` is a separate collection with proper indexes
-
-```typescript
-// src/server/models/commentVote.ts
-const CommentVoteSchema = new Schema<CommentVoteDoc>({
-  type: { type: String, enum: ["upvote", "downvote"], required: true },
-  user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  comment: { type: Schema.Types.ObjectId, ref: "Comment", required: true },
-  createdAt: { type: Date, default: Date.now },
-});
-
-CommentVoteSchema.index({ user: 1, comment: 1 }, { unique: true });
-```
-
-**Benefits**:
-
-- No document size limits
-- O(1) vote operations
-- Votes can be queried independently
-
----
-
-### ✅ 2. Thread Replies Extracted to Separate Collection
-
-**Before**: Embedded `thread[]` array in Comment documents (unbounded)
-
-**After**: `Thread` is a separate collection
-
-```typescript
-// src/server/models/threads.ts
-const ThreadSchema = new Schema<ThreadDoc>(
-  {
-    text: { type: String, required: true },
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    totalVotes: { type: Number, default: 0 },
-  },
-  { timestamps: true },
-);
-
-ThreadSchema.index({ user: 1, createdAt: -1 });
-```
-
-**Benefits**:
-
-- Threads can grow without limit
-- Efficient pagination of replies
-- Independent querying
-
----
-
-### ✅ 3. User Friends Array Removed - Follow Architecture Implemented
-
-**Before**: Redundant `friends[]` embedded array + `Friend` collection
-
-**After**: Single `Follow` collection (Twitter/Instagram pattern)
-
-```typescript
-// src/server/models/follow.ts
-const FollowSchema = new Schema<FollowDoc>(
-  {
-    follower: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    following: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  },
-  { timestamps: true },
-);
-
-FollowSchema.index({ follower: 1, following: 1 }, { unique: true });
-FollowSchema.index({ following: 1 });
-FollowSchema.index({ follower: 1 });
-FollowSchema.index({ follower: 1, createdAt: -1 });
-FollowSchema.index({ following: 1, createdAt: -1 });
-```
-
-**User model now has denormalized counts**:
-
-```typescript
-// src/server/models/user.ts
-followerCount: { type: Number, default: 0 },
-followingCount: { type: Number, default: 0 },
-```
-
-**Query patterns**:
-
-```typescript
-// Get followers
-await FollowModel.find({ following: userId }).populate("follower");
-
-// Get following
-await FollowModel.find({ follower: userId }).populate("following");
-
-// Check if following
-await FollowModel.exists({ follower: userA, following: userB });
-
-// Mutual follow (friends)
-const [aFollowsB, bFollowsA] = await Promise.all([
-  FollowModel.exists({ follower: userA, following: userB }),
-  FollowModel.exists({ follower: userB, following: userA }),
-]);
-const areMutualFollowers = aFollowsB && bFollowsA;
-```
-
----
-
-### ✅ 4. Lineup Indexes Improved
-
-**Before**: Single compound index
-
-**After**: Multiple targeted indexes for different query patterns
-
-```typescript
-// src/server/models/lineup.ts
-LineupSchema.index({ owner: 1, createdAt: -1 }); // User's lineups
-LineupSchema.index({ owner: 1, updatedAt: -1 }); // User's updated lineups
-LineupSchema.index({ featured: 1, createdAt: -1 }); // Featured lineups
-LineupSchema.index({ avgRating: -1 }); // Top rated
-LineupSchema.index({ totalVotes: -1 }); // Most popular
-LineupSchema.index({ createdAt: -1 }); // Newest
-```
-
----
-
 ## Redis Caching Strategy
 
 ### Overview
@@ -297,28 +174,25 @@ Player data is the primary caching target because it satisfies all three criteri
 2. **Rarely changes** — only admin mutations (create, update, delete) modify players
 3. **Eliminates repeated DB queries** — client-side search uses the cached data for filtering
 
-```
-User request → Check Redis → Hit? → Return cached data
-                            → Miss? → Query MongoDB → Store in Redis → Return
-```
-
 | Cache Key | Contents         | TTL    | Invalidation                                      |
 | --------- | ---------------- | ------ | ------------------------------------------------- |
 | `players` | All player data  | 24 hrs | `player.create`, `player.update`, `player.delete` |
 
-All read endpoints (`getAll`, `getById`, `search`) pull from the same `players` key and filter in-memory. This avoids managing multiple cache keys while keeping invalidation to a single `redis.del("players")` call.
+### Cache-Aside Pattern (User Profiles)
+
+Individual user profiles are cached with per-user keys:
+
+| Cache Key        | Contents          | TTL     | Invalidation     |
+| ---------------- | ----------------- | ------- | ---------------- |
+| `user:{userId}`  | Profile data      | varies  | `profile.update` |
 
 ### TTL-Only Pattern (Admin Stats)
 
 The admin dashboard aggregates counts across 8 collections (13 parallel queries). Explicit invalidation is impractical here because 10+ mutations across 6 routers would each need to invalidate the cache.
 
-Instead, the cache relies solely on TTL expiry:
-
 | Cache Key     | Contents          | TTL   | Invalidation   |
 | ------------- | ----------------- | ----- | -------------- |
 | `admin:stats` | Dashboard counts  | 5 min | TTL expiry only |
-
-This trades a small window of staleness (acceptable for aggregate counts) for dramatically simpler code.
 
 ### What's NOT Cached (and Why)
 
@@ -328,58 +202,84 @@ This trades a small window of staleness (acceptable for aggregate counts) for dr
 | Comments/votes    | High write frequency would cause constant invalidation                 |
 | Follow lists      | Per-user, paginated, changes on every follow/unfollow                  |
 | Random players    | Intentionally random per-request; caching defeats the purpose          |
-| User profiles     | Candidate for future caching (5 parallel queries, shared, infrequent changes) |
+| Bookmarks         | Per-user, changes on every toggle                                      |
+
+---
+
+## Resolved Scale Issues
+
+The following issues from the original architecture review have been resolved:
+
+### 1. Comment Votes Extracted to Separate Collection
+
+**Before**: Embedded `votes[]` array in Comment documents (unbounded)
+
+**After**: `CommentVote` is a separate collection with proper indexes
+
+```typescript
+CommentVoteSchema.index({ user: 1, comment: 1 }, { unique: true });
+```
+
+**Benefits**: No document size limits, O(1) vote operations, votes can be queried independently.
+
+### 2. Thread Replies Extracted to Separate Collection
+
+**Before**: Embedded `thread[]` array in Comment documents (unbounded)
+
+**After**: `Thread` is a separate collection with `comment` reference
+
+**Benefits**: Threads can grow without limit, efficient pagination of replies, independent querying.
+
+### 3. User Friends Array Removed — Follow Architecture Implemented
+
+**Before**: Redundant `friends[]` embedded array + `Friend` collection
+
+**After**: Single `Follow` collection (Twitter/Instagram pattern) with denormalized counts on User
+
+```typescript
+FollowSchema.index({ follower: 1, following: 1 }, { unique: true });
+```
+
+### 4. Lineup Indexes Improved
+
+Multiple targeted indexes for different query patterns:
+
+```typescript
+LineupSchema.index({ owner: 1, createdAt: -1 });
+LineupSchema.index({ owner: 1, updatedAt: -1 });
+LineupSchema.index({ featured: 1, createdAt: -1 });
+LineupSchema.index({ avgRating: -1 });
+LineupSchema.index({ ratingCount: -1 });
+LineupSchema.index({ createdAt: -1 });
+```
+
+### 5. Lineup Popularity Simplified to Ratings Only
+
+**Before**: Both `totalVotes` (upvote/downvote) and ratings on lineups
+
+**After**: Ratings only (`avgRating`, `ratingCount`, `ratingSum`). Comments and threads retain upvote/downvote.
+
+See [Lineup popularity: ratings only](./lineup-ratings-vs-votes-proposal.md).
 
 ---
 
 ## Remaining Considerations
 
-### ⚠️ 1. RequestedPlayer Descriptions Array
+### 1. RequestedPlayer Descriptions Array
 
 **Location**: `src/server/models/requestedPlayer.ts`
 
 The `descriptions` array is still embedded but is lower risk:
 
-```typescript
-const RequestedPlayerSchema = new Schema<RequestedPlayerDoc>({
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  descriptions: [ValueDescriptionSchema], // ⚠️ Embedded but bounded by feature usage
-});
-```
-
 **Mitigation options if needed**:
-
 - Cap array at reasonable limit (e.g., 100 descriptions)
 - Extract to separate collection if feature becomes popular
 
----
+### 2. Pagination
 
-### 📋 2. Pagination Implementation Needed
+Most list endpoints now support cursor-based pagination (comments, threads, followers, following). Lineup list endpoints use simple sorting without cursor pagination — this should be added as lineup counts grow.
 
-List endpoints should implement cursor-based pagination:
-
-```typescript
-// Recommended pattern
-getAllLineups: publicProcedure
-  .input(
-    z.object({
-      sort: z
-        .enum(["newest", "oldest", "highest-rated", "most-votes"])
-        .default("newest"),
-      limit: z.number().min(1).max(50).default(20),
-      cursor: z.string().optional(),
-    }),
-  )
-  .query(async ({ input }) => {
-    const { sort, limit, cursor } = input;
-    // ... cursor-based pagination logic
-  });
-```
-
----
-
-### 📋 3. Session TTL Index
+### 3. Session TTL Index
 
 Consider adding TTL index for automatic session cleanup:
 
@@ -413,36 +313,47 @@ const UserSchema = new Schema<UserDoc>({
 });
 ```
 
-### Follow
+### Lineup
 
 ```typescript
-const FollowSchema = new Schema<FollowDoc>(
-  {
-    follower: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    following: { type: Schema.Types.ObjectId, ref: "User", required: true },
+const LineupSchema = new Schema<LineupDoc>({
+  featured: { type: Boolean, default: false },
+  players: {
+    pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    c: { type: Schema.Types.ObjectId, ref: "Player", required: true },
   },
-  { timestamps: true },
-);
+  owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  avgRating: { type: Number, default: 0 },
+  ratingSum: { type: Number, default: 0 },
+  ratingCount: { type: Number, default: 0 },
+  timesGambled: { type: Number, default: 0 },
+  lastGambleResult: { type: LastGambleResultSchema, default: undefined },
+  gambleStreak: { type: Number, default: 0 },
+  lastGambleAt: { type: Date, default: undefined },
+  dailyGamblesUsed: { type: Number, default: 0 },
+  dailyGamblesResetAt: { type: Date, default: undefined },
+}, { timestamps: true });
 
-FollowSchema.index({ follower: 1, following: 1 }, { unique: true });
-FollowSchema.index({ following: 1 });
-FollowSchema.index({ follower: 1 });
-FollowSchema.index({ follower: 1, createdAt: -1 });
-FollowSchema.index({ following: 1, createdAt: -1 });
+LineupSchema.index({ owner: 1, createdAt: -1 });
+LineupSchema.index({ owner: 1, updatedAt: -1 });
+LineupSchema.index({ featured: 1, createdAt: -1 });
+LineupSchema.index({ avgRating: -1 });
+LineupSchema.index({ ratingCount: -1 });
+LineupSchema.index({ createdAt: -1 });
 ```
 
 ### Comment
 
 ```typescript
-const CommentSchema = new Schema<CommentDoc>(
-  {
-    text: { type: String, required: true },
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
-    totalVotes: { type: Number, default: 0 },
-  },
-  { timestamps: true },
-);
+const CommentSchema = new Schema<CommentDoc>({
+  text: { type: String, required: true },
+  user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
+  totalVotes: { type: Number, default: 0 },
+}, { timestamps: true });
 
 CommentSchema.index({ lineup: 1, createdAt: -1 });
 CommentSchema.index({ user: 1, createdAt: -1 });
@@ -451,58 +362,40 @@ CommentSchema.index({ user: 1, createdAt: -1 });
 ### Thread
 
 ```typescript
-const ThreadSchema = new Schema<ThreadDoc>(
-  {
-    text: { type: String, required: true },
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    totalVotes: { type: Number, default: 0 },
-  },
-  { timestamps: true },
-);
-
-ThreadSchema.index({ user: 1, createdAt: -1 });
-```
-
-### CommentVote
-
-```typescript
-const CommentVoteSchema = new Schema<CommentVoteDoc>({
-  type: { type: String, enum: ["upvote", "downvote"], required: true },
+const ThreadSchema = new Schema<ThreadDoc>({
+  text: { type: String, required: true },
   user: { type: Schema.Types.ObjectId, ref: "User", required: true },
   comment: { type: Schema.Types.ObjectId, ref: "Comment", required: true },
-  createdAt: { type: Date, default: Date.now },
-});
+  totalVotes: { type: Number, default: 0 },
+}, { timestamps: true });
 
-CommentVoteSchema.index({ user: 1, comment: 1 }, { unique: true });
+ThreadSchema.index({ user: 1, comment: 1, createdAt: -1 });
 ```
 
-### Lineup
+### Bookmark
 
 ```typescript
-const LineupSchema = new Schema<LineupDoc>(
-  {
-    featured: { type: Boolean, default: false },
-    players: {
-      pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-      sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-      sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-      pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-      c: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    },
-    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    totalVotes: { type: Number, default: 0 },
-    avgRating: { type: Number, default: 0 },
-    timesGambled: { type: Number, default: 0 },
-  },
-  { timestamps: true },
-);
+const BookmarkSchema = new Schema<BookmarkDoc>({
+  user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
+}, { timestamps: true });
 
-LineupSchema.index({ owner: 1, createdAt: -1 });
-LineupSchema.index({ owner: 1, updatedAt: -1 });
-LineupSchema.index({ featured: 1, createdAt: -1 });
-LineupSchema.index({ avgRating: -1 });
-LineupSchema.index({ totalVotes: -1 });
-LineupSchema.index({ createdAt: -1 });
+BookmarkSchema.index({ user: 1, lineup: 1 }, { unique: true });
+BookmarkSchema.index({ user: 1, createdAt: -1 });
+```
+
+### Video
+
+```typescript
+const VideoSchema = new Schema<VideoDoc>({
+  youtubeId: { type: String, required: true, unique: true },
+  title: { type: String, required: true, maxlength: 500 },
+  description: { type: String, default: "" },
+  thumbnailUrl: { type: String, required: true },
+  duration: { type: String, default: "" },
+  timestamps: { type: [VideoTimestampSchema], default: [] },
+  addedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+}, { timestamps: true });
 ```
 
 ---

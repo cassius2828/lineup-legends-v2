@@ -99,7 +99,7 @@ MongoDB indexes still serve an important role: they make the cache-miss path (af
 
 ### `player.getAll` (Public)
 
-Gets all players, optionally filtered by value tier. Reads from Redis cache when available.
+Gets all players. Reads from Redis cache when available. The Zod schema accepts an optional `value` filter, but the current implementation returns all players regardless (client-side filtering is used instead).
 
 **Input (optional):**
 
@@ -109,13 +109,12 @@ Gets all players, optionally filtered by value tier. Reads from Redis cache when
 }
 ```
 
-**Returns:** Array of players sorted by value (descending).
+**Returns:** Array of all players.
 
 **Example usage:**
 
 ```typescript
 const allPlayers = api.player.getAll.useQuery();
-const superstars = api.player.getAll.useQuery({ value: 5 });
 ```
 
 ### `player.getById` (Public)
@@ -178,7 +177,7 @@ Updates a player's details. Invalidates the Redis player cache after the write.
   firstName: string;
   lastName: string;
   value: 1 | 2 | 3 | 4 | 5;
-  imgUrl: string; // URL
+  imgUrl: string;
 }
 ```
 
@@ -193,7 +192,7 @@ Creates a new player. Checks for duplicate names (case-insensitive) before creat
   firstName: string;
   lastName: string;
   value: 1 | 2 | 3 | 4 | 5;
-  imgUrl: string; // URL
+  imgUrl: string;
 }
 ```
 
@@ -218,6 +217,29 @@ https://<cloudfront-domain>/lineup-legends/<image-path>
 ```
 
 The `NEXT_PUBLIC_CLOUDFRONT_URL` environment variable provides the base URL. Images are loaded by the browser independently of the player data — the Redis cache speeds up data delivery, but image loading depends on CDN proximity and browser caching.
+
+The `PlayerImage` component provides automatic retry (up to 3 attempts) with a fallback silhouette SVG if all retries fail.
+
+## Player Pages
+
+### Player List (`/players`)
+
+Displays all players with search and filtering:
+
+- **Fuse.js** client-side fuzzy search
+- Value tier filter buttons ($1–$5)
+- Default shows 10 players, expandable to all
+- Pagination (50 per page) when searching or expanded
+- Grid layout with PlayerCards
+
+### Player Detail (`/players/[id]`)
+
+Individual player page:
+
+- Player headshot and name
+- Tier label (Diamond, Gold, Silver, Bronze, etc.)
+- Value display
+- "More info coming soon" placeholder for future stats
 
 ## Database Seeding
 
@@ -249,7 +271,6 @@ Displays a single player with their value and image:
 <PlayerCard
   player={player}
   selected={isSelected}
-  onSelect={handleSelect}
   disabled={!canAfford}
   compact={false}
 />
@@ -258,14 +279,13 @@ Displays a single player with their value and image:
 **Modes:**
 
 1. **Standard mode**: Used in player selection grid
-   - Circular player image
-   - Value badge with color coding
+   - Square cell with value-colored shadow
    - Selection checkmark overlay
    - Disabled state styling
+   - Navigates to player detail on click
 
 2. **Compact mode**: Used in lineup cards
-   - Horizontal layout
-   - Smaller image
+   - Circular image with truncated name
    - Inline value badge
 
 ### Value Color Coding
@@ -287,18 +307,16 @@ const valueColors = {
 The `PlayerSelector` component uses the random player data:
 
 1. Fetch random players: `api.player.getRandomByValue.useQuery()`
-2. Display players grouped by value tier
+2. Display players grouped by value tier in a `PlayerGrid`
 3. Track selected players and remaining budget
-4. Disable players that would exceed budget
+4. Assign players to positions via click or drag-and-drop
 5. Submit selected players as lineup
 
 ```typescript
 const { data: playersByValue } = api.player.getRandomByValue.useQuery();
 
-const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
+const [selectedPlayers, setSelectedPlayers] = useState<PlayerType[]>([]);
 
 const currentBudget = selectedPlayers.reduce((sum, p) => sum + p.value, 0);
 const remainingBudget = 15 - currentBudget;
-
-const canAffordPlayer = (player) => player.value <= remainingBudget;
 ```

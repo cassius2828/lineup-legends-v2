@@ -1,14 +1,36 @@
 # Components
 
-This document describes the reusable React components in Lineup Legends v2. All components are located in `src/app/_components/`.
+This document describes the reusable React components in Lineup Legends v2. Components are located in `src/app/_components/`.
 
 ## Overview
 
-| Component          | Purpose                              | Type   |
-| ------------------ | ------------------------------------ | ------ |
-| `PlayerCard`       | Display individual player            | Client |
-| `PlayerSelector`   | Interactive player selection grid    | Client |
-| `LineupCard`       | Display complete lineup with actions | Client |
+| Component               | Purpose                                    | Type   |
+| ----------------------- | ------------------------------------------ | ------ |
+| `PlayerCard`            | Display individual player                  | Client |
+| `PlayerImage`           | Player headshot with retry/fallback        | Client |
+| `DraggablePlayerCard`   | Player card with drag support              | Client |
+| `DroppablePositionSlot` | Position slot accepting dropped players    | Client |
+| `PlayerSelector`        | Interactive player selection for lineups   | Client |
+| `PlayerGrid`            | Value-tiered grid of draggable players     | Client |
+| `OrderLineup`           | Position slots + submit for lineup creation| Client |
+| `LineupCard`            | Display complete lineup with actions       | Client |
+| `LineupCardHeader`      | Owner info, featured badge, timestamp      | Client |
+| `LineupCardStatsBar`    | Rating display, gamble count, rate link    | Client |
+| `LineupCardPlayersGrid` | 5-position player grid                     | Client |
+| `LineupCardFooter`      | Comment, view, bookmark, share             | Client |
+| `LineupCardOwnerActions`| Reorder, gamble, feature, delete           | Client |
+| `ShareMenu`             | Share via link, social, SMS, email         | Client |
+| `CommentCard`           | Comment with votes, media, reply           | Client |
+| `ThreadCard`            | Thread reply with votes and media          | Client |
+| `CommentModal`          | Modal for commenting or viewing replies    | Client |
+| `GifPicker`             | Giphy-powered GIF search and selection     | Client |
+| `ComposerToolbar`       | Image upload or GIF attachment toolbar     | Client |
+| `DuplicateHints`        | Player request duplicate match warnings    | Client |
+| `SearchInput`           | Reusable search input with styling         | Client |
+| `ConfirmModal`          | Confirmation dialog                        | Client |
+| `LineupCardGrid`        | Responsive grid layout for lineup cards    | Client |
+
+---
 
 ## PlayerCard
 
@@ -22,11 +44,10 @@ Displays a single basketball player with their image, name, and value.
 
 ```typescript
 interface PlayerCardProps {
-  player: Player;           // Player data
-  selected?: boolean;       // Whether player is selected (default: false)
-  onSelect?: (player: Player) => void;  // Click handler
-  disabled?: boolean;       // Disable interaction (default: false)
-  compact?: boolean;        // Use compact layout (default: false)
+  player: PlayerType;
+  selected?: boolean;
+  disabled?: boolean;
+  compact?: boolean; // default: false
 }
 ```
 
@@ -34,45 +55,26 @@ interface PlayerCardProps {
 
 #### Standard Mode
 
-Full-size card for player selection:
+Full-size card used in player grids and detail views:
 
-```tsx
-<PlayerCard
-  player={player}
-  selected={isSelected}
-  onSelect={handlePlayerClick}
-  disabled={!canAfford}
-/>
-```
-
-Features:
-
-- Circular player headshot (80x80px)
-- Value badge in top-right corner
-- Colored border on selection
-- Checkmark overlay when selected
-- Opacity reduction when disabled
-- Hover state with background change
+- Square cell with value-colored shadow
+- Gold check overlay when selected
+- Navigates to `/players/[id]` on click
+- Names longer than 8 characters are hidden to prevent overflow
 
 #### Compact Mode
 
-Inline display for lineup cards:
+Inline display used in lineup cards:
 
-```tsx
-<PlayerCard player={player} compact />
-```
-
-Features:
-
-- Horizontal layout
-- Smaller image (40x40px)
-- Inline value badge
-- Player name truncation
+- Circular player image with truncated name
+- Navigates to player detail on image click
 
 ### Value Color Coding
 
+Each value tier has a distinct shadow/accent color:
+
 ```typescript
-const valueColors: Record<number, string> = {
+const valueColors = {
   1: "bg-gray-500",    // Role players
   2: "bg-green-500",   // Solid contributors
   3: "bg-blue-500",    // Quality starters
@@ -81,28 +83,55 @@ const valueColors: Record<number, string> = {
 };
 ```
 
-### Usage Example
+---
 
-```tsx
-import { PlayerCard } from "~/app/_components/PlayerCard";
+## PlayerImage
 
-function PlayerGrid({ players }) {
-  const [selected, setSelected] = useState<string | null>(null);
+Renders a player headshot with automatic retry and fallback.
 
-  return (
-    <div className="grid grid-cols-5 gap-4">
-      {players.map((player) => (
-        <PlayerCard
-          key={player.id}
-          player={player}
-          selected={selected === player.id}
-          onSelect={() => setSelected(player.id)}
-        />
-      ))}
-    </div>
-  );
+### Location
+
+`src/app/_components/PlayerImage.tsx`
+
+### Props
+
+```typescript
+interface PlayerImageProps {
+  imgUrl: string;
+  alt: string;
+  className?: string;
+  onClick?: () => void;
 }
 ```
+
+### Behavior
+
+- Uses Next.js `Image` component
+- On load error, retries up to 3 times with a `?retry=n` query parameter
+- After all retries fail, renders an SVG data-URL fallback silhouette
+
+---
+
+## DraggablePlayerCard / DroppablePositionSlot
+
+Drag-and-drop components for lineup creation using **dnd-kit**.
+
+### DraggablePlayerCard
+
+`src/app/_components/DraggablePlayerCard.tsx`
+
+- Wraps PlayerCard with `useDraggable` from dnd-kit
+- Drag disabled when player is disabled and not selected
+- Click toggles selection (deselects if already selected)
+
+### DroppablePositionSlot
+
+`src/app/_components/DroppablePositionSlot.tsx`
+
+- Position label (PG, SG, SF, PF, C) + droppable slot
+- Empty state (dashed border) vs filled state (player card)
+- Swap indicator ring when dragging over an occupied slot
+- Remove "×" button to clear a filled slot
 
 ---
 
@@ -112,215 +141,171 @@ Interactive component for selecting 5 players within a budget to create a lineup
 
 ### Location
 
-`src/app/_components/PlayerSelector.tsx`
+`src/app/_components/CreateNew/PlayerSelector.tsx`
 
 ### Props
 
 ```typescript
-interface PlayersByValue {
-  value1Players: Player[];
-  value2Players: Player[];
-  value3Players: Player[];
-  value4Players: Player[];
-  value5Players: Player[];
-}
-
 interface PlayerSelectorProps {
-  playersByValue: PlayersByValue;          // Players grouped by value
-  onSubmit: (selectedPlayers: Player[]) => void;  // Submit callback
-  isSubmitting?: boolean;                  // Loading state (default: false)
+  playersByValue: PlayersByValue;
+  onSubmit: (selectedPlayers: PlayerType[]) => void;
+  isSubmitting?: boolean;
+  isAuthenticated?: boolean; // default: true
 }
 ```
 
 ### Features
 
-#### Budget Tracking
-
-- Displays remaining budget (out of $15)
-- Color-coded budget indicator:
-  - Emerald: $6+ remaining
-  - Amber: $3-5 remaining
-  - Red: $0-2 remaining
-
-#### Selected Players Preview
-
-Shows 5 position slots (PG, SG, SF, PF, C) with:
-
-- Empty dashed border when unassigned
-- Player thumbnail when assigned
-
-#### Player Grid
-
-- Grouped by value tier ($5 → $1)
-- 5 columns on large screens, responsive
-- Disabled state for unaffordable players
-- Visual selection feedback
-
-#### Actions
-
-- **Clear**: Reset all selections
-- **Create Lineup**: Submit when 5 players selected
-
-### State Management
-
-```typescript
-const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
-
-const currentBudget = selectedPlayers.reduce((sum, p) => sum + p.value, 0);
-const remainingBudget = BUDGET_LIMIT - currentBudget;
-const canSubmit = selectedPlayers.length === 5;
-```
-
-### Usage Example
-
-```tsx
-import { PlayerSelector } from "~/app/_components/PlayerSelector";
-
-function CreateLineupPage() {
-  const { data: playersByValue } = api.player.getRandomByValue.useQuery();
-  const createLineup = api.lineup.create.useMutation();
-
-  const handleSubmit = (selectedPlayers: Player[]) => {
-    createLineup.mutate({
-      pgId: selectedPlayers[0].id,
-      sgId: selectedPlayers[1].id,
-      sfId: selectedPlayers[2].id,
-      pfId: selectedPlayers[3].id,
-      cId: selectedPlayers[4].id,
-    });
-  };
-
-  if (!playersByValue) return <Loading />;
-
-  return (
-    <PlayerSelector
-      playersByValue={playersByValue}
-      onSubmit={handleSubmit}
-      isSubmitting={createLineup.isPending}
-    />
-  );
-}
-```
+- **Budget tracking**: Displays remaining budget (out of $15) with color coding
+- **Position slots**: 5 DroppablePositionSlots for PG, SG, SF, PF, C
+- **Drag-and-drop**: Drag players from the grid to position slots; supports swap on occupied slots
+- **Click assignment**: Click a player to assign them to the first empty slot
+- **Player grid**: 5 rows grouped by value tier ($5 → $1), 5 columns each
+- **Disabled states**: Players unaffordable or all slots filled
+- **Submit validation**: Requires 5 players and authentication
+- **Clear selection**: Resets all position slots
 
 ---
 
 ## LineupCard
 
-Displays a complete lineup with all 5 players and optional owner actions.
+Displays a complete lineup with stats, actions, and social features.
 
 ### Location
 
-`src/app/_components/LineupCard.tsx`
+`src/app/_components/LineupCard/LineupCard.tsx`
 
 ### Props
 
 ```typescript
-type LineupWithRelations = Lineup & {
-  pg: Player;
-  sg: Player;
-  sf: Player;
-  pf: Player;
-  c: Player;
-  owner: User;
-};
-
 interface LineupCardProps {
-  lineup: LineupWithRelations;    // Lineup with relations
-  showOwner?: boolean;            // Show owner info (default: true)
-  onDelete?: (id: string) => void;           // Delete callback
-  onToggleFeatured?: (id: string) => void;   // Feature toggle callback
-  onVote?: (lineupId: string, type: "upvote" | "downvote") => void;
-  isOwner?: boolean;              // Show owner actions (default: false)
-  currentUserId?: string;         // For vote permission check
-  userVote?: "upvote" | "downvote" | null;   // User's current vote
+  lineup: LineupWithRelations;
+  showOwner?: boolean;         // default: true
+  onDelete?: (id: string) => void;
+  onToggleFeatured?: (id: string) => void;
+  isOwner?: boolean;           // default: false
+  featured?: boolean;          // default: false
+  hideFooter?: boolean;        // default: false
 }
 ```
 
-### Layout
+### Sub-components
 
-```
-┌──────────────────────────────────────────────────────┐
-│  [Owner Avatar] Owner Name   Featured     2h ago $12 │
-│  ──────────────────────────────────────────────────  │
-│  ▲ 42 ▼  ★ 4.5  Rate                                 │
-│  ──────────────────────────────────────────────────  │
-│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐       │
-│  │  PG  │ │  SG  │ │  SF  │ │  PF  │ │  C   │       │
-│  │Player│ │Player│ │Player│ │Player│ │Player│       │
-│  └──────┘ └──────┘ └──────┘ └──────┘ └──────┘       │
-│  ──────────────────────────────────────────────────  │
-│                    [Reorder] [Gamble] [Feature] [X]  │
-└──────────────────────────────────────────────────────┘
-```
+#### LineupCardHeader
 
-### Features
+- Owner avatar and name (links to `/profile/[ownerId]`)
+- "Featured" pill when lineup is featured
+- Relative timestamp (via date-fns)
+- Total lineup value pill
 
-#### Header
+#### LineupCardStatsBar
 
-- Owner avatar and name (links to profile)
-- Featured badge (amber highlight)
-- Relative timestamp (using date-fns)
-- Total lineup value
+- Average rating display (star icon + value or "–")
+- Rating count ("Rated N times" or "Not rated yet")
+- Times gambled indicator (dice icon, shown when > 0)
+- Link to rate page (disabled for owners and unauthenticated users with toast prompt)
 
-#### Stats Bar
+#### LineupCardPlayersGrid
 
-- Voting buttons (upvote/downvote)
-- Vote count with color coding
-- Average rating display
-- Rate link for non-owners
-- Gambled count indicator
-
-#### Player Grid
-
-- 5-column layout
+- 5-column layout of compact PlayerCards
 - Position labels (PG, SG, SF, PF, C)
-- Compact PlayerCard for each position
 
-#### Owner Actions
+#### LineupCardOwnerActions
 
 Visible only when `isOwner={true}`:
 
-- **Reorder**: Link to edit page
-- **Gamble**: Link to gambling page
+- **Reorder**: Link to `/lineups/[id]/edit`
+- **Gamble**: Link to `/lineups/[id]/gamble`
 - **Feature/Unfeature**: Toggle featured status
 - **Delete**: Remove lineup (with confirmation)
 
-### Usage Examples
+#### LineupCardFooter
 
-#### Explore Page (Public View)
+- **Comment**: Opens CommentModal (unauthenticated users get a toast prompt)
+- **View**: Links to `/lineups/[id]` detail page
+- **Bookmark**: Toggle bookmark (authenticated only, optimistic update)
+- **Share**: ShareMenu dropdown
 
-```tsx
-<LineupCard
-  lineup={lineup}
-  showOwner={true}
-  isOwner={false}
-/>
-```
+#### ShareMenu
 
-#### My Lineups Page (Owner View)
+- Copy link to clipboard
+- Web Share API (on supported browsers)
+- Share to X (Twitter), Facebook, SMS, Email
+- Dismisses on outside click or Escape
 
-```tsx
-<LineupCard
-  lineup={lineup}
-  showOwner={false}
-  isOwner={true}
-  onDelete={(id) => deleteLineup.mutate({ id })}
-  onToggleFeatured={(id) => toggleFeatured.mutate({ id })}
-/>
-```
+---
 
-#### With Voting (Future)
+## Comment System
 
-```tsx
-<LineupCard
-  lineup={lineup}
-  showOwner={true}
-  isOwner={false}
-  currentUserId={session.user.id}
-  userVote={userVotes[lineup.id]}
-  onVote={(lineupId, type) => vote.mutate({ lineupId, type })}
-/>
-```
+### CommentCard
+
+`src/app/_components/Comment/CommentCard.tsx`
+
+Displays a single comment on a lineup:
+
+- User avatar, name, and relative timestamp
+- Comment text with optional attached image or GIF
+- Reply button (shows thread count if replies exist)
+- Upvote/downvote buttons with total vote count (via `useVote` hook)
+- Delete button for the comment author (with confirmation, warns about cascading thread deletion)
+
+### ThreadCard
+
+`src/app/_components/Comment/ThreadCard.tsx`
+
+Displays a thread reply to a comment:
+
+- Same media/voting/delete pattern as CommentCard
+- Optional "Replying to @user" label with vertical connector line
+- No nested reply button (threads are one level deep)
+
+### CommentModal
+
+`src/app/_components/Comment/CommentModal.tsx`
+
+Portal-based modal for adding comments or viewing/replying to threads:
+
+- **Comment mode**: Textarea for new comment on a lineup
+- **Reply mode**: Shows existing comment, thread list with infinite scroll, textarea for new reply
+- Framer Motion animations
+- Body scroll lock while open
+- ComposerToolbar for image/GIF attachments
+- Escape key to close
+
+### GifPicker
+
+`src/app/_components/Comment/GifPicker.tsx`
+
+GIF search powered by the **Giphy SDK**:
+
+- Search input with 300ms debounce
+- Shows trending GIFs when search is empty
+- Grid layout of results
+- Returns `fixed_height` URL on selection
+- "Powered by GIPHY" attribution
+
+### ComposerToolbar
+
+`src/app/_components/Comment/ComposerToolbar.tsx`
+
+Toolbar for attaching media to comments/threads:
+
+- Image upload (JPEG, PNG, WebP, GIF) via `useImageUpload` hook
+- GIF selection via GifPicker
+- Single attachment at a time (image or GIF)
+- Preview with remove button
+
+---
+
+## DuplicateHints
+
+`src/app/_components/PlayerRequest/DuplicateHints.tsx`
+
+Shows potential duplicate matches when requesting a new player:
+
+- Displays up to 5 matches with match percentage
+- Color-coded by match confidence (green/yellow/red)
+- Uses Fuse.js fuzzy matching from the `requestedPlayer.searchDuplicates` endpoint
 
 ---
 
@@ -382,5 +367,3 @@ When adding new components:
 4. Define TypeScript interfaces for props
 5. Follow existing Tailwind patterns
 6. Document in this file
-
-
