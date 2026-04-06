@@ -8,6 +8,7 @@ import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
 import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { getId } from "~/lib/types";
+import { SORT_OPTIONS_BASIC } from "~/lib/constants";
 import { api } from "~/trpc/react";
 
 type SortOption = "newest" | "oldest";
@@ -35,12 +36,7 @@ export default function BookmarkedLineupsPage() {
         />
 
         <div className="mb-6 flex gap-2">
-          {(
-            [
-              { value: "newest", label: "Newest" },
-              { value: "oldest", label: "Oldest" },
-            ] as const
-          ).map((option) => (
+          {SORT_OPTIONS_BASIC.map((option) => (
             <button
               key={option.value}
               onClick={() => setSort(option.value)}

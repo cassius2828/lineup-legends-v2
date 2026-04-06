@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import mongoose from "mongoose";
-import { lineupPopulateFields } from "~/lib/utils";
+import { lineupPopulateFields } from "~/server/lib/lineup-queries";
 
 import {
   createTRPCRouter,
@@ -137,7 +138,10 @@ export const profileRouter = createTRPCRouter({
           existingUser &&
           existingUser._id.toString() !== ctx.session.user.id
         ) {
-          throw new Error("Username is already taken.");
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Username is already taken.",
+          });
         }
       }
 

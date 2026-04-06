@@ -12,9 +12,8 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { getId } from "~/lib/types";
+import { SORT_OPTIONS, type SortOption } from "~/lib/constants";
 import { api } from "~/trpc/react";
-
-type SortOption = "newest" | "oldest" | "highest-rated" | "most-rated";
 
 export default function ExploreLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
@@ -56,14 +55,7 @@ export default function ExploreLineupsPage() {
 
         {/* Sort Controls */}
         <div className="mb-6 flex gap-2">
-          {(
-            [
-              { value: "newest", label: "Newest" },
-              { value: "oldest", label: "Oldest" },
-              { value: "highest-rated", label: "Highest Rated" },
-              { value: "most-rated", label: "Most Rated" },
-            ] as const
-          ).map((option) => (
+          {SORT_OPTIONS.map((option) => (
             <button
               key={option.value}
               onMouseEnter={() => handlePreFetchLineups(option.value)}

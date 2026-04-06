@@ -1,10 +1,7 @@
 import type { GambleOutcomeTier } from "~/server/models";
+import { BUDGET_LIMIT } from "~/lib/constants";
 
-// ============================================
-// LINEUP CONSTANTS
-// ============================================
-
-export const BUDGET_LIMIT = 15;
+export { BUDGET_LIMIT };
 
 // ============================================
 // GAMBLING CONFIGURATION

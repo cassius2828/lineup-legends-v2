@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { BookmarkModel, LineupModel } from "~/server/models";
-import { lineupPopulateFields } from "~/lib/utils";
+import { lineupPopulateFields } from "~/server/lib/lineup-queries";
 
 export const bookmarkRouter = createTRPCRouter({
   toggle: protectedProcedure

@@ -1,7 +1,8 @@
 import { TRPCError } from "@trpc/server";
-import mongoose, { type SortOrder } from "mongoose";
+import mongoose from "mongoose";
 import { z } from "zod";
-import { lineupPopulateFields } from "~/lib/utils";
+import { lineupPopulateFields } from "~/server/lib/lineup-queries";
+import { buildLineupSort } from "~/server/services/lineup";
 import { logger } from "~/lib/logger";
 
 import {
@@ -29,13 +30,7 @@ import {
   shouldResetDailyGambles,
 } from "./lineup-utils";
 
-const playerSchema = z.object({
-  _id: z.string(),
-  firstName: z.string(),
-  lastName: z.string(),
-  imgUrl: z.string(),
-  value: z.number(),
-});
+import { playerSchema } from "~/server/api/schemas/lineup";
 
 export const lineupRouter = createTRPCRouter({
   // Create a new lineup (protected - requires auth)
@@ -114,22 +109,8 @@ export const lineupRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      let sortOption: Record<string, SortOrder> = { createdAt: -1 };
-
-      switch (input?.sort) {
-        case "oldest":
-          sortOption = { createdAt: 1 };
-          break;
-        case "highest-rated":
-          sortOption = { avgRating: -1 };
-          break;
-        case "most-rated":
-          sortOption = { ratingCount: -1 };
-          break;
-      }
-
       const data = await LineupModel.find({ owner: ctx.session.user.id })
-        .sort(sortOption)
+        .sort(buildLineupSort(input?.sort))
         .populate(lineupPopulateFields)
         .lean();
       return data;
@@ -148,24 +129,10 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
-      let sortOption: Record<string, SortOrder> = { createdAt: -1 };
-
-      switch (input?.sort) {
-        case "oldest":
-          sortOption = { createdAt: 1 };
-          break;
-        case "highest-rated":
-          sortOption = { avgRating: -1 };
-          break;
-        case "most-rated":
-          sortOption = { ratingCount: -1 };
-          break;
-      }
-      // may need to check if we need to map ratings here
       return await LineupModel.find({
         owner: { $ne: new mongoose.Types.ObjectId(input.userId) },
       })
-        .sort(sortOption)
+        .sort(buildLineupSort(input?.sort))
         .populate(lineupPopulateFields)
         .lean();
     }),
@@ -183,19 +150,8 @@ export const lineupRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ input }) => {
-      let sortOption: Record<string, SortOrder> = { createdAt: -1 };
-
-      switch (input?.sort) {
-        case "oldest":
-          sortOption = { createdAt: 1 };
-          break;
-        case "highest-rated":
-          sortOption = { avgRating: -1 };
-          break;
-      }
-      // may need to check if we need to map ratings here
       return await LineupModel.find()
-        .sort(sortOption)
+        .sort(buildLineupSort(input?.sort))
         .populate(lineupPopulateFields)
         .lean();
     }),

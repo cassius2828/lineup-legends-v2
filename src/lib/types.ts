@@ -1,20 +1,7 @@
-// Shared types for the application
-// These types match the Mongoose models and are used across the frontend
-// Note: id and _id are both optional because Mongoose returns _id but we transform to id
-
 import type mongoose from "mongoose";
+import type { GambleOutcomeTier } from "~/server/models";
 
 type ObjectIdLike = string | { toString(): string };
-
-// Type for fields that can be either an ObjectId or a populated object with _id
-type WithId = { _id?: ObjectIdLike; id?: string };
-
-export type PopulatableField =
-  | mongoose.Types.ObjectId
-  | WithId
-  | string
-  | null
-  | undefined;
 
 export interface PlayerType {
   id?: string;
@@ -22,7 +9,7 @@ export interface PlayerType {
   firstName: string;
   lastName: string;
   imgUrl: string;
-  value: number; // 1-5 representing player cost
+  value: number;
 }
 
 export interface UserType {
@@ -57,26 +44,13 @@ export interface LineupType {
   ratingCount: number;
 }
 
-export interface VoteType {
-  id?: string;
-  _id?: ObjectIdLike;
-  type: "upvote" | "downvote";
-  userId: ObjectIdLike;
-  lineupId: ObjectIdLike;
-  createdAt: Date;
+export interface GambleResultData {
+  previousPlayer: PlayerType;
+  newPlayer: PlayerType;
+  outcomeTier: GambleOutcomeTier;
+  valueChange: number;
 }
 
-export interface RatingType {
-  id?: string;
-  _id?: ObjectIdLike;
-  value: number; // 1-10
-  userId: ObjectIdLike;
-  lineupId: ObjectIdLike;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Helper function to get a string ID from either id or _id
 export function getId(
   obj: { id?: string; _id?: ObjectIdLike } | null | undefined,
 ): string {

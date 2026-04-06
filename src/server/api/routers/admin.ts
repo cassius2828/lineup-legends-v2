@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import { adminProcedure, createTRPCRouter } from "~/server/api/trpc";
 import {
   UserModel,
@@ -11,13 +10,7 @@ import {
   FollowModel,
 } from "~/server/models";
 import { redis } from "~/server/redis";
-
-function objectIdFromDate(date: Date): mongoose.Types.ObjectId {
-  const hexSeconds = Math.floor(date.getTime() / 1000)
-    .toString(16)
-    .padStart(8, "0");
-  return new mongoose.Types.ObjectId(hexSeconds + "0000000000000000");
-}
+import { objectIdFromDate } from "~/server/lib/objectId";
 
 export const adminRouter = createTRPCRouter({
   getStats: adminProcedure.query(async () => {

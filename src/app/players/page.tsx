@@ -5,50 +5,11 @@ import { useState } from "react";
 import { api } from "~/trpc/react";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 import { useRouter } from "next/navigation";
-
-const valueShadows: Record<number, string> = {
-  5: "shadow-[0px_0px_10px_3px_#99fcff]",
-  4: "shadow-[0px_0px_10px_3px_#8317e8]",
-  3: "shadow-[0px_0px_10px_3px_#e3b920]",
-  2: "shadow-[0px_0px_10px_3px_#c0c0c0]",
-  1: "shadow-[0px_0px_10px_3px_#804a14]",
-};
-
-const valueLabels: Record<number, string> = {
-  5: "Diamond",
-  4: "Amethyst",
-  3: "Gold",
-  2: "Silver",
-  1: "Bronze",
-};
+import { VALUE_SHADOWS, VALUE_LABELS } from "~/lib/constants";
+import { getPaginationRange } from "~/lib/pagination";
 
 const INITIAL_COUNT = 10;
 const PAGE_SIZE = 50;
-
-function getPaginationRange(
-  current: number,
-  total: number,
-): (number | "...")[] {
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1);
-  }
-
-  const pages: (number | "...")[] = [1];
-
-  if (current > 3) pages.push("...");
-
-  const start = Math.max(2, current - 1);
-  const end = Math.min(total - 1, current + 1);
-
-  for (let i = start; i <= end; i++) {
-    pages.push(i);
-  }
-
-  if (current < total - 2) pages.push("...");
-
-  pages.push(total);
-  return pages;
-}
 
 export default function PlayersPage() {
   const router = useRouter();
@@ -173,7 +134,7 @@ export default function PlayersPage() {
                   : "bg-foreground/10 text-foreground hover:bg-foreground/20"
                 }`}
             >
-              ${value} &middot; {valueLabels[value]}
+              ${value} &middot; {VALUE_LABELS[value]}
             </button>
           ))}
         </div>
@@ -226,7 +187,7 @@ export default function PlayersPage() {
                     className="group flex flex-col items-center"
                   >
                     <div
-                      className={`relative h-24 w-24 overflow-hidden bg-[#f2f2f2] transition-all duration-200 sm:h-28 sm:w-28 ${valueShadows[player.value ?? 0]
+                      className={`relative h-24 w-24 overflow-hidden bg-[#f2f2f2] transition-all duration-200 sm:h-28 sm:w-28 ${VALUE_SHADOWS[player.value ?? 0]
                         } group-hover:scale-105`}
                     >
                       <PlayerImage

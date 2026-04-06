@@ -1,4 +1,5 @@
 import { type PlayerType } from "~/lib/types";
+import { POSITIONS, type PositionSlots } from "~/lib/constants";
 import {
   Tooltip,
   TooltipTrigger,
@@ -6,16 +7,6 @@ import {
 } from "~/components/ui/tooltip";
 import { Button } from "../ui/Button";
 import { DroppablePositionSlot } from "../DroppablePositionSlot";
-
-const POSITIONS = ["PG", "SG", "SF", "PF", "C"] as const;
-
-type PositionSlots = {
-  PG: PlayerType | null;
-  SG: PlayerType | null;
-  SF: PlayerType | null;
-  PF: PlayerType | null;
-  C: PlayerType | null;
-};
 
 export default function OrderLineup({
   positionSlots,

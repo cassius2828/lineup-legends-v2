@@ -20,26 +20,20 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getId, type PlayerType } from "~/lib/types";
+import {
+  POSITIONS_LOWER,
+  POSITION_FULL_LABELS,
+  type PositionLower,
+} from "~/lib/constants";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 
-const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
-const POSITION_LABELS = {
-  pg: "Point Guard",
-  sg: "Shooting Guard",
-  sf: "Small Forward",
-  pf: "Power Forward",
-  c: "Center",
-};
-
-type Position = (typeof POSITIONS)[number];
-
 interface SortablePositionCardProps {
-  pos: Position;
+  pos: PositionLower;
   index: number;
   player: PlayerType;
-  onSwap: (pos1: Position, pos2: Position) => void;
+  onSwap: (pos1: PositionLower, pos2: PositionLower) => void;
 }
 
 function SortablePositionCard({
@@ -82,7 +76,7 @@ function SortablePositionCard({
         </span>
         <div className="flex-1">
           <span className="text-xs font-bold text-foreground/50 uppercase">
-            {POSITION_LABELS[pos]}
+            {POSITION_FULL_LABELS[pos]}
           </span>
           <div className="mt-1 flex items-center gap-3">
             <div className="relative h-12 w-12 overflow-hidden rounded-full">
@@ -107,7 +101,7 @@ function SortablePositionCard({
         {index > 0 && (
           <button
             onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => onSwap(pos, POSITIONS[index - 1]!)}
+            onClick={() => onSwap(pos, POSITIONS_LOWER[index - 1]!)}
             className="rounded-lg bg-foreground/10 p-2 text-foreground/60 transition-colors hover:bg-foreground/20 hover:text-foreground"
           >
             <svg
@@ -125,10 +119,10 @@ function SortablePositionCard({
             </svg>
           </button>
         )}
-        {index < POSITIONS.length - 1 && (
+        {index < POSITIONS_LOWER.length - 1 && (
           <button
             onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => onSwap(pos, POSITIONS[index + 1]!)}
+            onClick={() => onSwap(pos, POSITIONS_LOWER[index + 1]!)}
             className="rounded-lg bg-foreground/10 p-2 text-foreground/60 transition-colors hover:bg-foreground/20 hover:text-foreground"
           >
             <svg
@@ -204,9 +198,9 @@ export default function EditLineupPage() {
     },
   });
 
-  const handleButtonSwap = (activeId: Position, overId: Position) => {
-    const from = POSITIONS.indexOf(activeId);
-    const to = POSITIONS.indexOf(overId);
+  const handleButtonSwap = (activeId: PositionLower, overId: PositionLower) => {
+    const from = POSITIONS_LOWER.indexOf(activeId);
+    const to = POSITIONS_LOWER.indexOf(overId);
     if (from < 0 || to < 0 || from === to) return;
 
     setPositionsArray((prev) => {
@@ -224,8 +218,8 @@ export default function EditLineupPage() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const from = POSITIONS.indexOf(active.id as Position);
-    const to = POSITIONS.indexOf(over.id as Position);
+    const from = POSITIONS_LOWER.indexOf(active.id as PositionLower);
+    const to = POSITIONS_LOWER.indexOf(over.id as PositionLower);
     if (from < 0 || to < 0) return;
 
     setPositionsArray((prev) => {
@@ -323,17 +317,17 @@ export default function EditLineupPage() {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={POSITIONS.map((pos) => ({ id: pos }))}
+            items={POSITIONS_LOWER.map((pos) => ({ id: pos }))}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-3">
               {positionsArray?.map((player, index) => {
-                if (!player || !POSITIONS[index]) return null;
+                if (!player || !POSITIONS_LOWER[index]) return null;
 
                 return (
                   <SortablePositionCard
-                    key={POSITIONS[index]}
-                    pos={POSITIONS[index]}
+                    key={POSITIONS_LOWER[index]}
+                    pos={POSITIONS_LOWER[index]}
                     index={index}
                     player={player}
                     onSwap={handleButtonSwap}

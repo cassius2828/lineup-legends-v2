@@ -2,10 +2,11 @@
 
 import { ChevronUp, ChevronDown, MessageCircle, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import { formatRelativeTime, getDisplayName } from "~/lib/format";
+import { useVote } from "~/hooks/useVote";
 import ConfirmModal from "~/app/_components/ui/ConfirmModal";
 import type { Comment } from "~/server/models";
 
@@ -33,18 +34,23 @@ export default function CommentCard({
   const isOwnComment = !!currentUserId && currentUserId === commentOwnerId;
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [optimisticVote, setOptimisticVote] = useState(userVote);
-  const [optimisticTotal, setOptimisticTotal] = useState(comment.totalVotes ?? 0);
 
   const voteMutation = api.comment.voteComment.useMutation({
     onSuccess: (data) => {
-      setOptimisticTotal(data.totalVotes);
+      vote.resetVote(vote.optimisticVote, data.totalVotes);
       void utils.comment.getMyCommentVotes.invalidate({ lineupId });
     },
     onError: () => {
-      setOptimisticVote(userVote);
-      setOptimisticTotal(comment.totalVotes ?? 0);
+      vote.resetVote(userVote, comment.totalVotes ?? 0);
     },
+  });
+
+  const vote = useVote({
+    initialVote: userVote,
+    initialTotal: comment.totalVotes ?? 0,
+    isOwn: isOwnComment,
+    currentUserId,
+    onVote: (type) => voteMutation.mutate({ lineupId, commentId, type }),
   });
 
   const deleteMutation = api.comment.deleteComment.useMutation({
@@ -57,34 +63,9 @@ export default function CommentCard({
     onError: (err) => toast.error(err.message),
   });
 
-  const handleVote = (type: "upvote" | "downvote") => {
-    if (isOwnComment || !currentUserId) return;
-
-    const newVote = optimisticVote === type ? null : type;
-    const delta =
-      optimisticVote === null
-        ? type === "upvote" ? 1 : -1
-        : optimisticVote === type
-          ? type === "upvote" ? -1 : 1
-          : type === "upvote" ? 2 : -2;
-
-    setOptimisticVote(newVote);
-    setOptimisticTotal((prev) => prev + delta);
-    voteMutation.mutate({ lineupId, commentId, type });
-  };
-
-  const displayName = comment.user.name ?? comment.user.username ?? "Anonymous";
+  const displayName = getDisplayName(comment.user);
   const avatar = comment.user.image ?? comment.user.profileImg;
-  const relativeTime = formatDistanceToNow(new Date(comment.createdAt), {
-    addSuffix: true,
-  });
-
-  const voteColor =
-    optimisticTotal > 0
-      ? "text-gold"
-      : optimisticTotal < 0
-        ? "text-red-500"
-        : "text-foreground/40";
+  const relativeTime = formatRelativeTime(comment.createdAt);
 
   return (
     <div className="flex gap-3 border-b border-foreground/10 py-4 last:border-b-0">
@@ -158,10 +139,10 @@ export default function CommentCard({
           <div className="flex items-center gap-1">
             <button
               type="button"
-              disabled={isOwnComment || !currentUserId}
-              onClick={() => handleVote("upvote")}
+              disabled={vote.isDisabled}
+              onClick={() => vote.handleVote("upvote")}
               className={`transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
-                optimisticVote === "upvote"
+                vote.optimisticVote === "upvote"
                   ? "text-gold"
                   : "text-foreground/30 hover:text-gold"
               }`}
@@ -170,16 +151,16 @@ export default function CommentCard({
               <ChevronUp className="h-4 w-4" />
             </button>
 
-            <span className={`min-w-[1.25rem] text-center text-xs font-medium ${voteColor}`}>
-              {optimisticTotal}
+            <span className={`min-w-[1.25rem] text-center text-xs font-medium ${vote.voteColor}`}>
+              {vote.optimisticTotal}
             </span>
 
             <button
               type="button"
-              disabled={isOwnComment || !currentUserId}
-              onClick={() => handleVote("downvote")}
+              disabled={vote.isDisabled}
+              onClick={() => vote.handleVote("downvote")}
               className={`transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
-                optimisticVote === "downvote"
+                vote.optimisticVote === "downvote"
                   ? "text-red-500"
                   : "text-foreground/30 hover:text-red-500"
               }`}

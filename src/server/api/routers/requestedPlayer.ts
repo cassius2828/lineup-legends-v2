@@ -6,11 +6,10 @@ import mongoose from "mongoose";
 import {
   adminProcedure,
   createTRPCRouter,
-  protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
 import { PlayerModel, RequestedPlayerModel, UserModel } from "~/server/models";
-import { redis } from "~/server/redis";
+import { getPlayersFromCacheOrDb } from "~/server/services/player-cache";
 
 export const requestedPlayerRouter = createTRPCRouter({
   searchDuplicates: publicProcedure
@@ -23,21 +22,7 @@ export const requestedPlayerRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const query = `${input.firstName.trim()} ${input.lastName.trim()}`;
 
-      // Load players (prefer Redis cache)
-      let players: Array<{
-        firstName: string;
-        lastName: string;
-        value?: number;
-        imgUrl?: string;
-      }>;
-      const cached = await redis.get("players");
-      if (cached) {
-        players = JSON.parse(cached) as typeof players;
-      } else {
-        players = await PlayerModel.find()
-          .select("firstName lastName value imgUrl")
-          .lean();
-      }
+      const players = await getPlayersFromCacheOrDb();
 
       const poolItems = players.map((p) => ({
         firstName: p.firstName,

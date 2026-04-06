@@ -1,39 +1,20 @@
 "use client";
 
 import type { PlayerType } from "~/lib/types";
+import { VALUE_SHADOWS } from "~/lib/constants";
 import { PlayerImage } from "./PlayerImage";
 import { useRouter } from "next/navigation";
 
 interface PlayerCardProps {
   player: PlayerType;
   selected?: boolean;
-  onSelect?: (player: PlayerType) => void;
   disabled?: boolean;
   compact?: boolean;
 }
 
-// Value-based box-shadow glow colors matching original design
-const valueShadows: Record<number, string> = {
-  5: "shadow-[0px_0px_10px_3px_#99fcff]", // Light blue diamond
-  4: "shadow-[0px_0px_10px_3px_#8317e8]", // Purple
-  3: "shadow-[0px_0px_10px_3px_#e3b920]", // Gold
-  2: "shadow-[0px_0px_10px_3px_#c0c0c0]", // Silver
-  1: "shadow-[0px_0px_10px_3px_#804a14]", // Bronze
-};
-
-// Keep valueColors for compact mode badge
-const valueColors: Record<number, string> = {
-  1: "bg-amber-700",
-  2: "bg-gray-400",
-  3: "bg-yellow-500",
-  4: "bg-purple-600",
-  5: "bg-cyan-400",
-};
-
 export function PlayerCard({
   player,
   selected = false,
-  onSelect,
   disabled = false,
   compact = false,
 }: PlayerCardProps) {
@@ -45,7 +26,7 @@ export function PlayerCard({
     return (
       <div className="flex w-full flex-col items-center gap-2 p-2">
         <div
-          className={`relative h-16 w-16 overflow-hidden rounded-full md:h-24 md:w-24 ${valueShadows[player?.value ?? 0]}`}
+          className={`relative h-16 w-16 overflow-hidden rounded-full md:h-24 md:w-24 ${VALUE_SHADOWS[player?.value ?? 0]}`}
         >
           <PlayerImage
             onClick={handleClick}
@@ -72,7 +53,7 @@ export function PlayerCard({
     >
       {/* Player Cell - Square with off-white background and value-based glow */}
       <div
-        className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden bg-[#f2f2f2] transition-all duration-200 ${valueShadows[player.value]
+        className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden bg-[#f2f2f2] transition-all duration-200 ${VALUE_SHADOWS[player.value]
           } ${selected ? "ring-2 ring-gold-300" : ""
           } ${disabled && !selected ? "cursor-not-allowed opacity-50 grayscale" : "cursor-pointer hover:scale-105"}`}
       >

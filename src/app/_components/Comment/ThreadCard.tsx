@@ -2,10 +2,11 @@
 
 import { ChevronUp, ChevronDown, Trash2 } from "lucide-react";
 import Image from "next/image";
-import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import { formatRelativeTime, getDisplayName } from "~/lib/format";
+import { useVote } from "~/hooks/useVote";
 import ConfirmModal from "~/app/_components/ui/ConfirmModal";
 import type { Thread } from "~/server/models/threads";
 
@@ -38,20 +39,23 @@ export default function ThreadCard({
   const isOwnThread = !!currentUserId && currentUserId === threadOwnerId;
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [optimisticVote, setOptimisticVote] = useState(userVote);
-  const [optimisticTotal, setOptimisticTotal] = useState(
-    thread.totalVotes ?? 0,
-  );
 
   const voteMutation = api.comment.voteThread.useMutation({
     onSuccess: (data) => {
-      setOptimisticTotal(data.totalVotes);
+      vote.resetVote(vote.optimisticVote, data.totalVotes);
       void utils.comment.getMyThreadVotes.invalidate({ commentId });
     },
     onError: () => {
-      setOptimisticVote(userVote);
-      setOptimisticTotal(thread.totalVotes ?? 0);
+      vote.resetVote(userVote, thread.totalVotes ?? 0);
     },
+  });
+
+  const vote = useVote({
+    initialVote: userVote,
+    initialTotal: thread.totalVotes ?? 0,
+    isOwn: isOwnThread,
+    currentUserId,
+    onVote: (type) => voteMutation.mutate({ lineupId, commentId, threadId, type }),
   });
 
   const deleteMutation = api.comment.deleteThread.useMutation({
@@ -65,41 +69,9 @@ export default function ThreadCard({
     onError: (err) => toast.error(err.message),
   });
 
-  const handleVote = (type: "upvote" | "downvote") => {
-    if (isOwnThread || !currentUserId) return;
-
-    const newVote = optimisticVote === type ? null : type;
-    const delta =
-      optimisticVote === null
-        ? type === "upvote"
-          ? 1
-          : -1
-        : optimisticVote === type
-          ? type === "upvote"
-            ? -1
-            : 1
-          : type === "upvote"
-            ? 2
-            : -2;
-
-    setOptimisticVote(newVote);
-    setOptimisticTotal((prev) => prev + delta);
-    voteMutation.mutate({ lineupId, commentId, threadId, type });
-  };
-
-  const displayName =
-    thread.user.name ?? thread.user.username ?? "Anonymous";
+  const displayName = getDisplayName(thread.user);
   const avatar = thread.user.image ?? thread.user.profileImg;
-  const relativeTime = formatDistanceToNow(new Date(thread.createdAt), {
-    addSuffix: true,
-  });
-
-  const voteColor =
-    optimisticTotal > 0
-      ? "text-gold"
-      : optimisticTotal < 0
-        ? "text-red-500"
-        : "text-foreground/40";
+  const relativeTime = formatRelativeTime(thread.createdAt);
 
   return (
     <div className="flex gap-3">
@@ -165,10 +137,10 @@ export default function ThreadCard({
           <div className="flex items-center gap-1">
             <button
               type="button"
-              disabled={isOwnThread || !currentUserId}
-              onClick={() => handleVote("upvote")}
+              disabled={vote.isDisabled}
+              onClick={() => vote.handleVote("upvote")}
               className={`transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
-                optimisticVote === "upvote"
+                vote.optimisticVote === "upvote"
                   ? "text-gold"
                   : "text-foreground/30 hover:text-gold"
               }`}
@@ -178,17 +150,17 @@ export default function ThreadCard({
             </button>
 
             <span
-              className={`min-w-[1.25rem] text-center text-xs font-medium ${voteColor}`}
+              className={`min-w-[1.25rem] text-center text-xs font-medium ${vote.voteColor}`}
             >
-              {optimisticTotal}
+              {vote.optimisticTotal}
             </span>
 
             <button
               type="button"
-              disabled={isOwnThread || !currentUserId}
-              onClick={() => handleVote("downvote")}
+              disabled={vote.isDisabled}
+              onClick={() => vote.handleVote("downvote")}
               className={`transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${
-                optimisticVote === "downvote"
+                vote.optimisticVote === "downvote"
                   ? "text-red-500"
                   : "text-foreground/30 hover:text-red-500"
               }`}

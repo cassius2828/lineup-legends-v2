@@ -2,9 +2,8 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import type { PlayerType } from "~/lib/types";
+import type { Position } from "~/lib/constants";
 import { PlayerImage } from "./PlayerImage";
-
-type Position = "PG" | "SG" | "SF" | "PF" | "C";
 
 interface DroppablePositionSlotProps {
   position: Position;

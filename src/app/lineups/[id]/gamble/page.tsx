@@ -5,35 +5,10 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { type PlayerType } from "~/lib/types";
+import { type PlayerType, type GambleResultData } from "~/lib/types";
 import { PlayerImage } from "~/app/_components/PlayerImage";
-import type { GambleOutcomeTier } from "~/server/models";
+import { POSITIONS_LOWER, POSITION_LABELS, VALUE_SHADOWS } from "~/lib/constants";
 import { GambleReveal } from "./_components/GambleReveal";
-
-const POSITIONS = ["pg", "sg", "sf", "pf", "c"] as const;
-
-const valueShadows: Record<number, string> = {
-  5: "shadow-[0px_0px_10px_3px_#99fcff]",
-  4: "shadow-[0px_0px_10px_3px_#8317e8]",
-  3: "shadow-[0px_0px_10px_3px_#D4AF37]",
-  2: "shadow-[0px_0px_10px_3px_#c0c0c0]",
-  1: "shadow-[0px_0px_10px_3px_#804a14]",
-};
-
-const POSITION_LABELS = {
-  pg: "PG",
-  sg: "SG",
-  sf: "SF",
-  pf: "PF",
-  c: "C",
-};
-
-interface GambleResultData {
-  previousPlayer: PlayerType;
-  newPlayer: PlayerType;
-  outcomeTier: GambleOutcomeTier;
-  valueChange: number;
-}
 
 type PageView = "selection" | "animating" | "result";
 
@@ -42,7 +17,7 @@ export default function GambleLineupPage() {
   const lineupId = typeof params.id === "string" ? params.id : "";
 
   const [selectedPosition, setSelectedPosition] = useState<
-    (typeof POSITIONS)[number] | null
+    (typeof POSITIONS_LOWER)[number] | null
   >(null);
   const [gambleResult, setGambleResult] = useState<GambleResultData | null>(
     null,
@@ -171,7 +146,7 @@ export default function GambleLineupPage() {
               {/* Previous Player */}
               <div className="text-center opacity-50">
                 <div
-                  className={`relative mx-auto h-20 w-20 overflow-hidden rounded-full grayscale ${valueShadows[gambleResult.previousPlayer.value] ?? "shadow"}`}
+                  className={`relative mx-auto h-20 w-20 overflow-hidden rounded-full grayscale ${VALUE_SHADOWS[gambleResult.previousPlayer.value] ?? "shadow"}`}
                 >
                   <PlayerImage
                     imgUrl={gambleResult.previousPlayer.imgUrl}
@@ -193,7 +168,7 @@ export default function GambleLineupPage() {
               {/* New Player */}
               <div className="text-center">
                 <div
-                  className={`border-gold relative mx-auto h-20 w-20 overflow-hidden rounded-full border-4 ${valueShadows[gambleResult.newPlayer.value] ?? "shadow"}`}
+                  className={`border-gold relative mx-auto h-20 w-20 overflow-hidden rounded-full border-4 ${VALUE_SHADOWS[gambleResult.newPlayer.value] ?? "shadow"}`}
                 >
                   <PlayerImage
                     imgUrl={gambleResult.newPlayer.imgUrl}
@@ -247,7 +222,7 @@ export default function GambleLineupPage() {
                 Select a player to gamble:
               </h2>
               <div className="flex gap-3 overflow-x-auto">
-                {POSITIONS.map((pos) => {
+                {POSITIONS_LOWER.map((pos) => {
                   const player =
                     lineup.players[pos as keyof typeof lineup.players];
                   const isSelected = selectedPosition === pos;
@@ -266,7 +241,7 @@ export default function GambleLineupPage() {
                         {POSITION_LABELS[pos]}
                       </span>
                       <div
-                        className={`relative mx-auto h-16 w-16 overflow-hidden rounded-full ${valueShadows[player.value] ?? "shadow"}`}
+                        className={`relative mx-auto h-16 w-16 overflow-hidden rounded-full ${VALUE_SHADOWS[player.value] ?? "shadow"}`}
                       >
                         <PlayerImage
                           imgUrl={player.imgUrl ?? undefined}

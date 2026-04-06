@@ -1,10 +1,12 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 
 import {
   adminProcedure,
   createTRPCRouter,
   publicProcedure,
 } from "~/server/api/trpc";
+import { feedbackStatusSchema } from "~/server/api/schemas/feedback";
 import { FeedbackModel } from "~/server/models";
 import { sendFeedbackEmail } from "~/server/email";
 import { logger } from "~/lib/logger";
@@ -24,7 +26,10 @@ export const feedbackRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const email = ctx.session?.user?.email ?? input.email;
       if (!email) {
-        throw new Error("An email address is required to submit feedback");
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "An email address is required to submit feedback",
+        });
       }
 
       const feedback = await FeedbackModel.create({
@@ -56,7 +61,7 @@ export const feedbackRouter = createTRPCRouter({
     .input(
       z
         .object({
-          status: z.enum(["new", "read", "resolved"]).optional(),
+          status: feedbackStatusSchema.optional(),
         })
         .optional(),
     )
@@ -77,7 +82,7 @@ export const feedbackRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-        status: z.enum(["new", "read", "resolved"]),
+        status: feedbackStatusSchema,
       }),
     )
     .mutation(async ({ input }) => {
@@ -88,7 +93,10 @@ export const feedbackRouter = createTRPCRouter({
       );
 
       if (!feedback) {
-        throw new Error("Feedback not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Feedback not found",
+        });
       }
 
       return {

@@ -11,6 +11,13 @@ import {
 } from "@dnd-kit/core";
 import { useState } from "react";
 import { getId, type PlayerType } from "~/lib/types";
+import {
+  POSITIONS,
+  BUDGET_LIMIT,
+  INITIAL_POSITION_SLOTS,
+  type Position,
+  type PositionSlots,
+} from "~/lib/constants";
 import CreateLineupHeader from "../Header/CreateLineupHeader";
 import OrderLineup from "./OrderLineup";
 import PlayerGrid from "./PlayerGrid";
@@ -31,27 +38,6 @@ interface PlayerSelectorProps {
   isAuthenticated?: boolean;
 }
 
-const BUDGET_LIMIT = 15;
-const POSITIONS = ["PG", "SG", "SF", "PF", "C"] as const;
-type Position = (typeof POSITIONS)[number];
-
-// Position-keyed state type
-type PositionSlots = {
-  PG: PlayerType | null;
-  SG: PlayerType | null;
-  SF: PlayerType | null;
-  PF: PlayerType | null;
-  C: PlayerType | null;
-};
-
-const initialPositionSlots: PositionSlots = {
-  PG: null,
-  SG: null,
-  SF: null,
-  PF: null,
-  C: null,
-};
-
 export function PlayerSelector({
   playersByValue,
   onSubmit,
@@ -59,7 +45,7 @@ export function PlayerSelector({
   isAuthenticated = true,
 }: PlayerSelectorProps) {
   const [positionSlots, setPositionSlots] =
-    useState<PositionSlots>(initialPositionSlots);
+    useState<PositionSlots>(INITIAL_POSITION_SLOTS);
   const [activePlayer, setActivePlayer] = useState<PlayerType | null>(null);
 
   // Configure sensors for better drag experience
@@ -205,7 +191,7 @@ export function PlayerSelector({
   };
 
   const clearSelection = () => {
-    setPositionSlots(initialPositionSlots);
+    setPositionSlots(INITIAL_POSITION_SLOTS);
   };
 
   const allPlayers = [

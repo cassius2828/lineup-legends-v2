@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import type { Player } from "~/server/models";
 import {
   adminProcedure,
@@ -6,38 +7,27 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { PlayerModel } from "~/server/models";
-import { redis } from "~/server/redis";
+import {
+  getPlayersFromCacheOrDb,
+  invalidatePlayersCache,
+} from "~/server/services/player-cache";
 
 export const playerRouter = createTRPCRouter({
   // Get all players, optionally filtered by value
   getAll: publicProcedure
     .input(z.object({ value: z.number().min(1).max(5).optional() }).optional())
-    .query(async ({ input }) => {
-      const filter = input?.value ? { value: input.value } : {};
-      const cachedPlayers = await redis.get("players");
-      if (cachedPlayers) {
-        return JSON.parse(cachedPlayers);
-      }
-      const players = await PlayerModel.find(filter).sort({ value: -1 }).lean();
-      await redis.set("players", JSON.stringify(players));
-      // ttl 24 hours
-      await redis.expire("players", 84600);
-      return players;
+    .query(async () => {
+      return await getPlayersFromCacheOrDb();
     }),
 
-  // Get a single player by ID
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      const cachedPlayers = await redis.get("players");
-      if (cachedPlayers) {
-        return JSON.parse(cachedPlayers).find(
-          (player: any) => (player.id ?? player._id?.toString()) === input.id,
-        );
-      }
-      return await PlayerModel.findById(input.id).lean();
-
-
+      const players = await getPlayersFromCacheOrDb();
+      return players.find(
+        (player: { id?: string; _id?: { toString(): string } }) =>
+          (player.id ?? player._id?.toString()) === input.id,
+      );
     }),
 
   // Get random players grouped by value tier (for lineup creation)
@@ -109,13 +99,15 @@ export const playerRouter = createTRPCRouter({
       );
 
       if (!updatedPlayer) {
-        throw new Error("Player not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found",
+        });
       }
-      await redis.del("players");
+      await invalidatePlayersCache();
       return updatedPlayer.toObject();
     }),
 
-  // Create a new player (admin only)
   create: adminProcedure
     .input(
       z.object({
@@ -137,9 +129,10 @@ export const playerRouter = createTRPCRouter({
       });
 
       if (existingPlayer) {
-        throw new Error(
-          `Player "${firstName} ${lastName}" already exists in the database.`,
-        );
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Player "${firstName} ${lastName}" already exists in the database.`,
+        });
       }
 
       // Create new player
@@ -150,14 +143,14 @@ export const playerRouter = createTRPCRouter({
         imgUrl: input.imgUrl,
       });
 
-      await redis.del("players");
+      await invalidatePlayersCache();
       return newPlayer.toObject();
     }),
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       await PlayerModel.findByIdAndDelete(input.id);
-      await redis.del("players");
+      await invalidatePlayersCache();
       return { success: true };
     }),
 });

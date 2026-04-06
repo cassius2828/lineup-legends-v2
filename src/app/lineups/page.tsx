@@ -4,13 +4,12 @@ import Link from "next/link";
 import { useState } from "react";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { getId } from "~/lib/types";
+import { SORT_OPTIONS, type SortOption } from "~/lib/constants";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import LineupsHeader from "../_components/Header/LineupsHeader";
 import LineupCardGrid from "../_components/common/LineupCardGrid";
 import { ConfirmModal } from "../_components/common/ConfirmModal";
-
-type SortOption = "newest" | "oldest" | "highest-rated" | "most-rated";
 
 export default function MyLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
@@ -73,14 +72,7 @@ export default function MyLineupsPage() {
 
         {/* Sort Controls */}
         <div className="mb-6 flex gap-2">
-          {(
-            [
-              { value: "newest", label: "Newest" },
-              { value: "oldest", label: "Oldest" },
-              { value: "highest-rated", label: "Highest Rated" },
-              { value: "most-rated", label: "Most Rated" },
-            ] as const
-          ).map((option) => (
+          {SORT_OPTIONS.map((option) => (
             <button
               key={option.value}
               onClick={() => setSort(option.value)}

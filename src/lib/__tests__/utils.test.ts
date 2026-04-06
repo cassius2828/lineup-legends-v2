@@ -1,4 +1,5 @@
-import { cn, getVoteDelta, incrementTotalVotes, lineupPopulateFields } from "../utils";
+import { cn, getVoteDelta } from "../utils";
+import { lineupPopulateFields } from "~/server/lib/lineup-queries";
 
 // ============================================
 // cn() - class name merging utility
@@ -72,31 +73,6 @@ describe("getVoteDelta", () => {
     it("should return -2 when switching from upvote to downvote", () => {
       expect(getVoteDelta("downvote", "upvote")).toBe(-2);
     });
-  });
-});
-
-// ============================================
-// incrementTotalVotes() - wrapper for getVoteDelta
-// ============================================
-describe("incrementTotalVotes", () => {
-  it("should return +1 for a new upvote", () => {
-    expect(incrementTotalVotes("upvote", null)).toBe(1);
-  });
-
-  it("should return -1 for a new downvote", () => {
-    expect(incrementTotalVotes("downvote", null)).toBe(-1);
-  });
-
-  it("should return -1 for toggling off an upvote", () => {
-    expect(incrementTotalVotes("upvote", "upvote")).toBe(-1);
-  });
-
-  it("should return +2 for switching from downvote to upvote", () => {
-    expect(incrementTotalVotes("upvote", "downvote")).toBe(2);
-  });
-
-  it("should return -2 for switching from upvote to downvote", () => {
-    expect(incrementTotalVotes("downvote", "upvote")).toBe(-2);
   });
 });
 

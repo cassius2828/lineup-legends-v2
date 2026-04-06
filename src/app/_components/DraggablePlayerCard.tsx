@@ -4,6 +4,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { PlayerType } from "~/lib/types";
 import { getId } from "~/lib/types";
+import { VALUE_SHADOWS } from "~/lib/constants";
 import { PlayerImage } from "./PlayerImage";
 
 interface DraggablePlayerCardProps {
@@ -12,15 +13,6 @@ interface DraggablePlayerCardProps {
   disabled?: boolean;
   onSelect?: (player: PlayerType) => void;
 }
-
-// Value-based box-shadow glow colors matching original design
-const valueShadows: Record<number, string> = {
-  5: "shadow-[0px_0px_10px_3px_#99fcff]", // Light blue diamond
-  4: "shadow-[0px_0px_10px_3px_#8317e8]", // Purple
-  3: "shadow-[0px_0px_10px_3px_#e3b920]", // Gold
-  2: "shadow-[0px_0px_10px_3px_#c0c0c0]", // Silver
-  1: "shadow-[0px_0px_10px_3px_#804a14]", // Bronze
-};
 
 export function DraggablePlayerCard({
   player,
@@ -64,7 +56,7 @@ export function DraggablePlayerCard({
       {/* Player Cell - Square with off-white background and value-based glow */}
       <div
         className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden bg-[#f2f2f2] transition-all duration-200 rounded-md ${
-          valueShadows[player.value]
+          VALUE_SHADOWS[player.value]
         } ${selected ? "ring-2 ring-gold-300" : ""} ${
           isDragging
             ? "scale-105 opacity-50 shadow-2xl"

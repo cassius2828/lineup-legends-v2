@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import mongoose from "mongoose";
 import { z } from "zod";
 import { getVoteDelta } from "~/lib/utils";
+import { commentBodySchema, threadBodySchema } from "~/server/api/schemas/comment";
+import { voteTypeSchema } from "~/server/api/schemas/common";
 
 import {
   createTRPCRouter,
@@ -157,21 +159,7 @@ export const commentRouter = createTRPCRouter({
     }),
 
   addComment: protectedProcedure
-    .input(
-      z
-        .object({
-          lineupId: z.string(),
-          text: z.string().max(1000).default(""),
-          image: z.string().url().nullish(),
-          gif: z.string().url().nullish(),
-        })
-        .refine((d) => d.text.trim().length > 0 || !!d.image || !!d.gif, {
-          message: "Comment must have text or an attachment",
-        })
-        .refine((d) => !(d.image && d.gif), {
-          message: "Only one attachment type allowed",
-        }),
-    )
+    .input(commentBodySchema)
     .mutation(async ({ ctx, input }) => {
       const comment = await CommentModel.create({
         text: input.text.trim() || null,
@@ -193,22 +181,7 @@ export const commentRouter = createTRPCRouter({
     }),
 
   addThreadReply: protectedProcedure
-    .input(
-      z
-        .object({
-          lineupId: z.string(),
-          commentId: z.string(),
-          text: z.string().max(1000).default(""),
-          image: z.string().url().nullish(),
-          gif: z.string().url().nullish(),
-        })
-        .refine((d) => d.text.trim().length > 0 || !!d.image || !!d.gif, {
-          message: "Reply must have text or an attachment",
-        })
-        .refine((d) => !(d.image && d.gif), {
-          message: "Only one attachment type allowed",
-        }),
-    )
+    .input(threadBodySchema)
     .mutation(async ({ ctx, input }) => {
       const comment = await CommentModel.findOne({
         _id: input.commentId,
@@ -298,7 +271,7 @@ export const commentRouter = createTRPCRouter({
       z.object({
         lineupId: z.string(),
         commentId: z.string(),
-        type: z.enum(["upvote", "downvote"]),
+        type: voteTypeSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -355,7 +328,7 @@ export const commentRouter = createTRPCRouter({
         lineupId: z.string(),
         commentId: z.string(),
         threadId: z.string(),
-        type: z.enum(["upvote", "downvote"]),
+        type: voteTypeSchema,
       }),
     )
     .mutation(async ({ ctx, input }) => {

@@ -7,45 +7,8 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { PlayerCard } from "~/app/_components/PlayerCard";
-
-const RATING_MIN = 0.01;
-const RATING_MAX = 10;
-const RATING_STEP = 0.01;
-const RATING_DEFAULT = 5;
-
-// Rating color scale: deep red → orange → yellow → green → diamond (#99fcff)
-const RATING_COLORS = [
-  { at: 0.01, hex: "#7f1d1d" }, // dark red
-  { at: 2.5, hex: "#ea580c" }, // orange
-  { at: 5, hex: "#eab308" }, // yellow
-  { at: 7.5, hex: "#22c55e" }, // green
-  { at: 10, hex: "#99fcff" }, // diamond light blue
-] as const;
-
-function hexToRgb(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
-function rgbToHex(r: number, g: number, b: number): string {
-  return (
-    "#" +
-    [r, g, b].map((x) => Math.round(x).toString(16).padStart(2, "0")).join("")
-  );
-}
-
-function getRatingColor(rating: number): string {
-  const r = Math.max(RATING_MIN, Math.min(RATING_MAX, rating));
-  let i = 0;
-  // understand how this works, the complexity, and how to improve perf
-  while (i < RATING_COLORS.length - 1 && RATING_COLORS[i + 1]!.at < r) i++;
-  const low = RATING_COLORS[i]!;
-  const high = RATING_COLORS[i + 1] ?? low;
-  const t = low.at === high.at ? 1 : (r - low.at) / (high.at - low.at);
-  const [r1, g1, b1] = hexToRgb(low.hex);
-  const [r2, g2, b2] = hexToRgb(high.hex);
-  return rgbToHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
-}
+import { RATING_MIN, RATING_MAX, RATING_STEP, RATING_DEFAULT } from "~/lib/constants";
+import { getRatingColor } from "~/lib/rating-color";
 
 export default function RateLineupPage() {
   const params = useParams();
