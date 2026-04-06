@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { api } from "~/trpc/react";
 import {
@@ -134,7 +135,9 @@ export default function AdminDashboardPage() {
                 className="flex items-center gap-3 rounded-lg border border-foreground/5 bg-foreground/2 p-3"
               >
                 {user.image ? (
-                  <img
+                  <Image
+                    width={36}
+                    height={36}
                     src={user.image}
                     alt={user.name}
                     className="h-9 w-9 rounded-full"

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
@@ -78,7 +79,8 @@ function ImageUploadField({
       >
         {currentUrl ? (
           <>
-            <img
+            <Image
+              fill
               src={currentUrl}
               alt={`${label} preview`}
               className="h-full w-full object-cover"
@@ -229,7 +231,9 @@ export default function EditProfilePage() {
             />
             <div className="relative -mt-12 px-6 pb-6">
               <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-surface-600 bg-surface-600">
-                <img
+                <Image
+                  width={96}
+                  height={96}
                   src={profileImg || profile.image || "/default-avatar.png"}
                   alt="Preview"
                   className="h-full w-full object-cover"

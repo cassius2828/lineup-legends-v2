@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
@@ -214,7 +215,9 @@ export default function RequestedPlayerDetailPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {desc.user?.image ? (
-                    <img
+                    <Image
+                      width={40}
+                      height={40}
                       src={desc.user.image}
                       alt={desc.user.name ?? "User"}
                       className="h-10 w-10 rounded-full"

@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useRef, useState, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { toast } from "sonner";
@@ -71,7 +72,9 @@ function FollowListModal({
                   className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-foreground/5"
                 >
                   <div className="h-10 w-10 overflow-hidden rounded-full bg-surface-700">
-                    <img
+                    <Image
+                      width={40}
+                      height={40}
                       src={user.profileImg ?? user.image ?? "/default-avatar.png"}
                       alt={user.name ?? "User"}
                       className="h-full w-full object-cover"
@@ -303,7 +306,9 @@ export default function ProfilePage() {
         <div className="relative -mt-16 mb-6 flex flex-col items-center gap-4 md:flex-row md:items-end md:gap-6">
           {/* Avatar */}
           <div className="group relative h-32 w-32 overflow-hidden rounded-full border-4 border-surface-950 bg-surface-800">
-            <img
+            <Image
+              width={128}
+              height={128}
               src={profile.profileImg ?? profile.image ?? "/default-avatar.png"}
               alt={profile.name ?? "User"}
               className="h-full w-full object-cover"
