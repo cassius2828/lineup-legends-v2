@@ -8,6 +8,7 @@ import { TooltipProvider } from "~/components/ui/tooltip";
 import { TRPCReactProvider } from "~/trpc/react";
 import Nav from "./_components/Nav";
 import { Footer } from "./_components/landing";
+import GlobalCommentModal from "./_components/Comment/GlobalCommentModal";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
@@ -73,6 +74,7 @@ export default function RootLayout({
               <div id="global-footer">
                 <Footer />
               </div>
+              <GlobalCommentModal />
               <Toaster richColors position="top-center" />
             </TooltipProvider>
           </SessionProvider>

@@ -7,19 +7,19 @@ import { api } from "~/trpc/react";
 import { useParams, useRouter } from "next/navigation";
 import Loading from "./loading";
 import CommentCard from "~/app/_components/Comment/CommentCard";
-import CommentModal from "~/app/_components/Comment/CommentModal";
 import type { ParentComment } from "~/app/_components/Comment/CommentModal";
 import ComposerToolbar from "~/app/_components/Comment/ComposerToolbar";
 import type { ComposerMedia } from "~/app/_components/Comment/ComposerToolbar";
 import Image from "next/image";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
+import { useCommentModalStore } from "~/stores/commentModal";
 import { useState } from "react";
 
 const LineupCardPage = () => {
     const router = useRouter();
     const [text, setText] = useState("");
     const [media, setMedia] = useState<ComposerMedia>({});
-    const [replyTarget, setReplyTarget] = useState<ParentComment | null>(null);
+    const openReply = useCommentModalStore((s) => s.openReply);
     const { data: session } = api.profile.getMe.useQuery(undefined, {
         retry: false,
     });
@@ -132,14 +132,18 @@ const LineupCardPage = () => {
                                 currentUserId={session?.id}
                                 userVote={myVotes?.[cid] ?? null}
                                 onReplyClick={() =>
-                                    setReplyTarget({
-                                        _id: cid,
-                                        text: comment.text,
-                                        image: (comment as unknown as { image?: string | null }).image,
-                                        gif: (comment as unknown as { gif?: string | null }).gif,
-                                        user: comment.user as unknown as ParentComment["user"],
-                                        createdAt: comment.createdAt,
-                                    })
+                                    openReply(
+                                        lineupId,
+                                        {
+                                            _id: cid,
+                                            text: comment.text,
+                                            image: (comment as unknown as { image?: string | null }).image,
+                                            gif: (comment as unknown as { gif?: string | null }).gif,
+                                            user: comment.user as unknown as ParentComment["user"],
+                                            createdAt: comment.createdAt,
+                                        },
+                                        session?.id,
+                                    )
                                 }
                             />
                         );
@@ -159,16 +163,6 @@ const LineupCardPage = () => {
                 </div>
             )}
 
-            {replyTarget && (
-                <CommentModal
-                    open={!!replyTarget}
-                    onClose={() => setReplyTarget(null)}
-                    lineupId={lineupId}
-                    currentUserId={session?.id}
-                    mode="reply"
-                    parentComment={replyTarget}
-                />
-            )}
         </div>
     );
 };

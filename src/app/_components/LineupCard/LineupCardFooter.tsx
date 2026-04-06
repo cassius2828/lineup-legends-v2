@@ -5,8 +5,8 @@ import { MessageCircle, Bookmark, BookmarkCheck, Eye } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import CommentModal from "~/app/_components/Comment/CommentModal";
 import ShareMenu from "~/app/_components/LineupCard/ShareMenu";
+import { useCommentModalStore } from "~/stores/commentModal";
 import { api } from "~/trpc/react";
 
 interface LineupCardFooterProps {
@@ -24,8 +24,8 @@ export default function LineupCardFooter({
   ownerImage,
   totalValue,
 }: LineupCardFooterProps) {
-  const [commentModalOpen, setCommentModalOpen] = useState(false);
   const { data: session } = useSession();
+  const openComment = useCommentModalStore((s) => s.openComment);
   const isAuthenticated = !!session?.user;
 
   const { data: bookmarkData } = api.bookmark.isBookmarked.useQuery(
@@ -61,7 +61,6 @@ export default function LineupCardFooter({
   const BookmarkIcon = bookmarked ? BookmarkCheck : Bookmark;
 
   return (
-    <>
       <div className="mt-4 flex items-center justify-between border-t border-foreground/10 pt-3">
         {/* Comments */}
         <button
@@ -71,7 +70,7 @@ export default function LineupCardFooter({
               toast.info("Sign in to comment");
               return;
             }
-            setCommentModalOpen((prev) => !prev);
+            openComment(lineupId, { lineupId, ownerName, ownerImage, totalValue });
           }}
           className="group flex cursor-pointer items-center gap-1.5 text-foreground/40 transition-colors hover:text-gold"
         >
@@ -108,14 +107,5 @@ export default function LineupCardFooter({
           <ShareMenu lineupId={lineupId} />
         </div>
       </div>
-
-      <CommentModal
-        open={commentModalOpen}
-        onClose={() => setCommentModalOpen(false)}
-        lineupId={lineupId}
-        mode="comment"
-        lineup={{ lineupId, ownerName, ownerImage, totalValue }}
-      />
-    </>
   );
 }
