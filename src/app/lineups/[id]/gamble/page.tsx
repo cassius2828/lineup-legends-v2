@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { type PlayerType, type GambleResultData } from "~/lib/types";
+import type { PlayerOutput, GambleOutcomeTier } from "~/server/api/schemas/output";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 import { POSITIONS_LOWER, POSITION_LABELS, VALUE_SHADOWS } from "~/lib/constants";
 import { GambleReveal } from "./_components/GambleReveal";
@@ -19,9 +19,12 @@ export default function GambleLineupPage() {
   const [selectedPosition, setSelectedPosition] = useState<
     (typeof POSITIONS_LOWER)[number] | null
   >(null);
-  const [gambleResult, setGambleResult] = useState<GambleResultData | null>(
-    null,
-  );
+  const [gambleResult, setGambleResult] = useState<{
+    previousPlayer: PlayerOutput;
+    newPlayer: PlayerOutput;
+    outcomeTier: GambleOutcomeTier;
+    valueChange: number;
+  } | null>(null);
   const [view, setView] = useState<PageView>("selection");
 
   const utils = api.useUtils();
@@ -33,8 +36,8 @@ export default function GambleLineupPage() {
   const gambleMutation = api.lineup.gamble.useMutation({
     onSuccess: (data) => {
       setGambleResult({
-        previousPlayer: data.previousPlayer as PlayerType,
-        newPlayer: data.newPlayer as PlayerType,
+        previousPlayer: data.previousPlayer,
+        newPlayer: data.newPlayer,
         outcomeTier: data.outcome.outcomeTier,
         valueChange: data.outcome.valueChange,
       });

@@ -3,8 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import type { GambleOutcomeTier } from "~/server/models";
-import type { PlayerType } from "~/lib/types";
+import type { GambleOutcomeTier, PlayerOutput } from "~/server/api/schemas/output";
 import { GambleReveal } from "~/app/lineups/[id]/gamble/_components/GambleReveal";
 import {
   VALUE_COLORS,
@@ -71,7 +70,7 @@ const OUTCOME_TIERS: {
     },
   ];
 
-function mockPlayer(value: number): PlayerType {
+function mockPlayer(value: number): PlayerOutput {
   const label = VALUE_LABELS[value] ?? "Unknown";
   return {
     _id: `mock-${value}`,

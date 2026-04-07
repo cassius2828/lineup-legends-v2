@@ -10,6 +10,7 @@ import { feedbackStatusSchema } from "~/server/api/schemas/feedback";
 import { FeedbackModel } from "~/server/models";
 import { sendFeedbackEmail } from "~/server/email";
 import { logger } from "~/lib/logger";
+import { feedbackListItemOutput, populated } from "~/server/api/schemas/output";
 
 const log = logger.child({ module: "feedback" });
 
@@ -23,6 +24,7 @@ export const feedbackRouter = createTRPCRouter({
         message: z.string().min(1).max(2000),
       }),
     )
+    .output(z.object({ id: z.string(), success: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const email = ctx.session?.user?.email ?? input.email;
       if (!email) {
@@ -65,16 +67,19 @@ export const feedbackRouter = createTRPCRouter({
         })
         .optional(),
     )
+    .output(z.array(feedbackListItemOutput))
     .query(async ({ input }) => {
       const filter = input?.status ? { status: input.status } : {};
       const feedbacks = await FeedbackModel.find(filter)
         .sort({ createdAt: -1 })
         .lean();
 
-      return feedbacks.map((f) => ({
-        ...f,
-        id: f._id.toHexString(),
-      }));
+      return populated(
+        feedbacks.map((f) => ({
+          ...f,
+          id: f._id.toHexString(),
+        })),
+      );
     }),
 
   // Update feedback status (admin only — for future admin dashboard)
@@ -85,6 +90,7 @@ export const feedbackRouter = createTRPCRouter({
         status: feedbackStatusSchema,
       }),
     )
+    .output(z.object({ id: z.string(), status: z.string() }))
     .mutation(async ({ input }) => {
       const feedback = await FeedbackModel.findByIdAndUpdate(
         input.id,

@@ -7,19 +7,23 @@ import {
 } from "~/server/api/trpc";
 import { VideoModel } from "~/server/models";
 import { extractYouTubeId, fetchYouTubeMetadata } from "~/server/lib/youtube";
+import { videoOutput, populated } from "~/server/api/schemas/output";
 
 export const videoRouter = createTRPCRouter({
-  getAll: publicProcedure.query(async () => {
+  getAll: publicProcedure.output(z.array(videoOutput)).query(async () => {
     const videos = await VideoModel.find().sort({ createdAt: -1 }).lean();
-    return videos.map((v) => ({
-      ...v,
-      id: v._id.toHexString(),
-      addedBy: v.addedBy.toHexString(),
-    }));
+    return populated(
+      videos.map((v) => ({
+        ...v,
+        id: v._id.toHexString(),
+        addedBy: v.addedBy.toHexString(),
+      })),
+    );
   }),
 
   create: adminProcedure
     .input(z.object({ url: z.string().min(1) }))
+    .output(z.object({ id: z.string(), title: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const youtubeId = extractYouTubeId(input.url);
       if (!youtubeId) {
@@ -57,6 +61,7 @@ export const videoRouter = createTRPCRouter({
 
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
+    .output(z.object({ success: z.boolean() }))
     .mutation(async ({ input }) => {
       const video = await VideoModel.findByIdAndDelete(input.id);
       if (!video) {

@@ -10,7 +10,8 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useState } from "react";
-import { getId, type PlayerType } from "~/lib/types";
+import { getId } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 import {
   POSITIONS,
   BUDGET_LIMIT,
@@ -24,16 +25,16 @@ import PlayerGrid from "./PlayerGrid";
 import CreateLineupPlayerDragOverlay from "./CreateLineupPlayerDragOverlay";
 
 interface PlayersByValue {
-  value1Players: PlayerType[];
-  value2Players: PlayerType[];
-  value3Players: PlayerType[];
-  value4Players: PlayerType[];
-  value5Players: PlayerType[];
+  value1Players: PlayerOutput[];
+  value2Players: PlayerOutput[];
+  value3Players: PlayerOutput[];
+  value4Players: PlayerOutput[];
+  value5Players: PlayerOutput[];
 }
 
 interface PlayerSelectorProps {
   playersByValue: PlayersByValue;
-  onSubmit: (selectedPlayers: PlayerType[]) => void;
+  onSubmit: (selectedPlayers: PlayerOutput[]) => void;
   isSubmitting?: boolean;
   isAuthenticated?: boolean;
 }
@@ -46,7 +47,7 @@ export function PlayerSelector({
 }: PlayerSelectorProps) {
   const [positionSlots, setPositionSlots] =
     useState<PositionSlots>(INITIAL_POSITION_SLOTS);
-  const [activePlayer, setActivePlayer] = useState<PlayerType | null>(null);
+  const [activePlayer, setActivePlayer] = useState<PlayerOutput | null>(null);
 
   // Configure sensors for better drag experience
   const sensors = useSensors(
@@ -59,17 +60,17 @@ export function PlayerSelector({
 
   // Calculate derived values
   const selectedPlayers = POSITIONS.map((pos) => positionSlots[pos]).filter(
-    (p): p is PlayerType => p !== null,
+    (p): p is PlayerOutput => p !== null,
   );
   const currentBudget = selectedPlayers.reduce((sum, p) => sum + p.value, 0);
   const remainingBudget = BUDGET_LIMIT - currentBudget;
   const filledSlots = selectedPlayers.length;
   const canSubmit = filledSlots === 5;
 
-  const isPlayerSelected = (player: PlayerType) =>
+  const isPlayerSelected = (player: PlayerOutput) =>
     selectedPlayers.some((p) => getId(p) === getId(player));
 
-  const canAffordPlayer = (player: PlayerType) =>
+  const canAffordPlayer = (player: PlayerOutput) =>
     player.value <= remainingBudget || isPlayerSelected(player);
 
   // Find first empty position slot
@@ -83,7 +84,7 @@ export function PlayerSelector({
   };
 
   // Find which position a player is in
-  const findPlayerPosition = (player: PlayerType): Position | null => {
+  const findPlayerPosition = (player: PlayerOutput): Position | null => {
     for (const pos of POSITIONS) {
       const slotPlayer = positionSlots[pos];
       if (slotPlayer && getId(slotPlayer) === getId(player)) {
@@ -94,7 +95,7 @@ export function PlayerSelector({
   };
 
   // Handle click to auto-select or deselect
-  const handlePlayerClick = (player: PlayerType) => {
+  const handlePlayerClick = (player: PlayerOutput) => {
     const currentPosition = findPlayerPosition(player);
 
     if (currentPosition) {
@@ -116,7 +117,7 @@ export function PlayerSelector({
   };
 
   // Handle removing a player from a slot
-  const handleRemovePlayer = (player: PlayerType) => {
+  const handleRemovePlayer = (player: PlayerOutput) => {
     const position = findPlayerPosition(player);
     if (position) {
       setPositionSlots((prev) => ({
@@ -129,7 +130,7 @@ export function PlayerSelector({
   // Drag and drop handlers
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
-    const player = active.data.current?.player as PlayerType | undefined;
+    const player = active.data.current?.player as PlayerOutput | undefined;
     if (player) {
       setActivePlayer(player);
     }
@@ -141,7 +142,7 @@ export function PlayerSelector({
 
     if (!over) return;
 
-    const player = active.data.current?.player as PlayerType | undefined;
+    const player = active.data.current?.player as PlayerOutput | undefined;
     const targetPosition = over.id as Position;
 
     if (!player || !POSITIONS.includes(targetPosition)) return;
@@ -184,7 +185,7 @@ export function PlayerSelector({
     if (canSubmit) {
       // Convert position slots to ordered array
       const orderedPlayers = POSITIONS.map((pos) => positionSlots[pos]).filter(
-        (p): p is PlayerType => p !== null,
+        (p): p is PlayerOutput => p !== null,
       );
       onSubmit(orderedPlayers);
     }

@@ -1,12 +1,12 @@
 "use client";
 
-import type { PlayerType } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 import { VALUE_SHADOWS } from "~/lib/constants";
 import { PlayerImage } from "./PlayerImage";
 import { useRouter } from "next/navigation";
 
 interface PlayerCardProps {
-  player: PlayerType;
+  player: PlayerOutput;
   selected?: boolean;
   disabled?: boolean;
   compact?: boolean;

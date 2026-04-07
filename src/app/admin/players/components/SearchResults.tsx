@@ -1,12 +1,12 @@
 import type { FuseResult } from "fuse.js";
 import Link from "next/link";
-import type { PlayerType } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 
 const SearchResults = ({
   filteredPlayers,
 }: {
-  filteredPlayers: FuseResult<PlayerType>[];
+  filteredPlayers: FuseResult<PlayerOutput>[];
 }) => {
   // Value-based box-shadow glow colors
   const valueShadows: Record<number, string> = {

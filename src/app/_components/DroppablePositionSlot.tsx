@@ -1,14 +1,14 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import type { PlayerType } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 import type { Position } from "~/lib/constants";
 import { PlayerImage } from "./PlayerImage";
 
 interface DroppablePositionSlotProps {
   position: Position;
-  player: PlayerType | null;
-  onRemove: (player: PlayerType) => void;
+  player: PlayerOutput | null;
+  onRemove: (player: PlayerOutput) => void;
   isAnyDragging?: boolean;
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDistanceToNow } from "date-fns";
-import { type LineupType } from "~/lib/types";
+import type { LineupOutput } from "~/server/api/schemas/output";
 import { LineupCardHeader } from "./LineupCardHeader";
 import { LineupCardStatsBar } from "./LineupCardStatsBar";
 import { LineupCardPlayersGrid } from "./LineupCardPlayersGrid";
@@ -10,7 +10,7 @@ import LineupCardFooter from "./LineupCardFooter";
 import { api } from "~/trpc/react";
 
 interface LineupCardProps {
-  lineup: LineupType;
+  lineup: LineupOutput;
   showOwner?: boolean;
   onDelete?: (id: string) => void;
   onToggleFeatured?: (id: string) => void;

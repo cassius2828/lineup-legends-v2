@@ -1,10 +1,10 @@
 "use client";
 
-import type { LineupType } from "~/lib/types";
+import type { LineupOutput } from "~/server/api/schemas/output";
 import { Button, ButtonLink } from "../ui/Button";
 
 interface LineupCardOwnerActionsProps {
-  lineup: LineupType;
+  lineup: LineupOutput;
   onToggleFeatured?: (id: string) => void;
   onDelete?: (id: string) => void;
 }

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import type { LineupType } from "~/lib/types";
+import type { LineupOutput } from "~/server/api/schemas/output";
 
 interface LineupCardHeaderProps {
-  lineup: LineupType;
+  lineup: LineupOutput;
   showOwner?: boolean;
   totalValue: number;
   relativeTime: string;

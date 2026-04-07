@@ -6,7 +6,8 @@ import Link from "next/link";
 import { PlayerSelector } from "~/app/_components/CreateNew/PlayerSelector";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { type PlayerType, getId } from "~/lib/types";
+import { getId } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 
 export default function CreateLineupPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function CreateLineupPage() {
     },
   });
 
-  const handleSubmit = (selectedPlayers: PlayerType[]) => {
+  const handleSubmit = (selectedPlayers: PlayerOutput[]) => {
     if (selectedPlayers.length !== 5) return;
     if (selectedPlayers.some((player) => !player)) return;
     createLineup.mutate({

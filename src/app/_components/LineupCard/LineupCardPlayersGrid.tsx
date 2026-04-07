@@ -1,11 +1,11 @@
 "use client";
 
-import type { LineupType } from "~/lib/types";
+import type { LineupOutput } from "~/server/api/schemas/output";
 import { POSITIONS_LOWER, POSITION_LABELS } from "~/lib/constants";
 import { PlayerCard } from "../PlayerCard";
 
 interface LineupCardPlayersGridProps {
-  players: LineupType["players"];
+  players: LineupOutput["players"];
 }
 
 export function LineupCardPlayersGrid({ players }: LineupCardPlayersGridProps) {

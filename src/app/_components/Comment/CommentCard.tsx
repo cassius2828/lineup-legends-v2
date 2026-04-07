@@ -8,10 +8,10 @@ import { api } from "~/trpc/react";
 import { formatRelativeTime, getDisplayName } from "~/lib/format";
 import { useVote } from "~/hooks/useVote";
 import ConfirmModal from "~/app/_components/ui/ConfirmModal";
-import type { Comment } from "~/server/models";
+import type { CommentOutput } from "~/server/api/schemas/output";
 
 interface CommentCardProps {
-  comment: Comment & { threadCount?: number };
+  comment: CommentOutput;
   lineupId: string;
   currentUserId: string | undefined;
   userVote: "upvote" | "downvote" | null;
@@ -26,11 +26,8 @@ export default function CommentCard({
   onReplyClick,
 }: CommentCardProps) {
   const utils = api.useUtils();
-  const commentId = (comment as unknown as { _id: string })._id?.toString() ?? comment.id;
-  const commentOwnerId =
-    typeof comment.user === "object" && comment.user !== null
-      ? ((comment.user as unknown as { _id?: string })._id ?? "")
-      : String(comment.user);
+  const commentId = comment._id;
+  const commentOwnerId = comment.user._id;
   const isOwnComment = !!currentUserId && currentUserId === commentOwnerId;
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

@@ -1,4 +1,4 @@
-import type { PlayerType } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 
 export const POSITIONS = ["PG", "SG", "SF", "PF", "C"] as const;
 
@@ -68,7 +68,7 @@ export const RATING_COLORS = [
 export type Position = (typeof POSITIONS)[number];
 export type PositionLower = (typeof POSITIONS_LOWER)[number];
 
-export type PositionSlots = Record<Position, PlayerType | null>;
+export type PositionSlots = Record<Position, PlayerOutput | null>;
 
 export const INITIAL_POSITION_SLOTS: PositionSlots = {
   PG: null,

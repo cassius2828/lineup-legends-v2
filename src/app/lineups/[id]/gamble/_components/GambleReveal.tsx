@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { PlayerType } from "~/lib/types";
-import type { GambleOutcomeTier } from "~/server/models";
+import type { PlayerOutput, GambleOutcomeTier } from "~/server/api/schemas/output";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 import { MysteryCard } from "./MysteryCard";
 import { PlayerRevealCard } from "./PlayerRevealCard";
@@ -17,8 +16,8 @@ import {
 import { useGambleSounds } from "./useGambleSounds";
 
 interface GambleRevealProps {
-  previousPlayer: PlayerType;
-  newPlayer: PlayerType;
+  previousPlayer: PlayerOutput;
+  newPlayer: PlayerOutput;
   outcomeTier: GambleOutcomeTier;
   valueChange: number;
   onComplete: () => void;

@@ -11,9 +11,10 @@ import {
 } from "~/server/models";
 import { redis } from "~/server/redis";
 import { objectIdFromDate } from "~/server/lib/objectId";
+import { adminStatsOutput, populated } from "~/server/api/schemas/output";
 
 export const adminRouter = createTRPCRouter({
-  getStats: adminProcedure.query(async () => {
+  getStats: adminProcedure.output(adminStatsOutput).query(async () => {
     const cachedStats = await redis.get("admin:stats");
     if (cachedStats) {
       return JSON.parse(cachedStats);
@@ -62,7 +63,7 @@ export const adminRouter = createTRPCRouter({
         .lean(),
     ]);
 
-    return {
+    return populated({
       totalUsers,
       newUsersWeek,
       newUsersMonth,
@@ -91,6 +92,6 @@ export const adminRouter = createTRPCRouter({
         status: f.status,
         createdAt: f.createdAt,
       })),
-    };
+    });
   }),
 });

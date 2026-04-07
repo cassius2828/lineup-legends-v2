@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { GambleOutcomeTier } from "~/server/models";
+import type { GambleOutcomeTier } from "~/server/api/schemas/output";
 import { VALUE_COLORS, getTierConfig } from "./gamble-reveal-utils";
 
 interface RevealParticlesProps {

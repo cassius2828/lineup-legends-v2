@@ -1,4 +1,4 @@
-import type { PlayerType } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 import type { FuseResult } from "fuse.js";
 const ResultsCount = ({
   isAllPlayersLoading,
@@ -7,7 +7,7 @@ const ResultsCount = ({
 }: {
   isAllPlayersLoading: boolean;
   isInitialRender: boolean;
-  filteredPlayers: FuseResult<PlayerType>[];
+  filteredPlayers: FuseResult<PlayerOutput>[];
 }) => {
   return (
     <div className="mb-4">

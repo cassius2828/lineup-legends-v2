@@ -2,8 +2,7 @@
 
 import { motion } from "framer-motion";
 import { PlayerImage } from "~/app/_components/PlayerImage";
-import type { PlayerType } from "~/lib/types";
-import type { GambleOutcomeTier } from "~/server/models";
+import type { PlayerOutput, GambleOutcomeTier } from "~/server/api/schemas/output";
 import {
   VALUE_COLORS,
   VALUE_LABELS,
@@ -12,7 +11,7 @@ import {
 } from "./gamble-reveal-utils";
 
 interface PlayerRevealCardProps {
-  player: PlayerType;
+  player: PlayerOutput;
   valueChange: number;
   outcomeTier: GambleOutcomeTier;
   config: TierAnimationConfig;
