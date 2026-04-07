@@ -43,7 +43,7 @@ const socialItemVariants = {
 
 export function Footer() {
   return (
-    <footer className="relative overflow-hidden bg-slate-950 px-4 py-16 sm:px-8 lg:px-16">
+    <footer className="relative overflow-hidden bg-surface-950 px-4 py-16 sm:px-8 lg:px-16">
       {/* Subtle gold gradient at top */}
       <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
       
@@ -69,7 +69,7 @@ export function Footer() {
 
           {/* Center - Contact Info */}
           <motion.div 
-            className="text-center text-white/70"
+            className="text-center text-foreground/70"
             variants={itemVariants}
           >
             <p>Located in Northern California</p>
@@ -83,6 +83,12 @@ export function Footer() {
                 cassius.reynolds.dev@gmail.com
               </a>
             </p>
+            <Link
+              href="/contact"
+              className="mt-3 inline-block text-sm text-gold/80 transition-colors hover:text-gold-light"
+            >
+              Contact Us &rarr;
+            </Link>
           </motion.div>
 
           {/* Right - Developer Credit */}
@@ -90,7 +96,7 @@ export function Footer() {
             className="text-center lg:text-right"
             variants={itemVariants}
           >
-            <p className="text-white/50">Developed by</p>
+            <p className="text-foreground/50">Developed by</p>
             <p className="font-stencil mt-1 text-xl uppercase tracking-wide text-gradient-gold">
               Cassius Reynolds
             </p>
@@ -128,9 +134,28 @@ export function Footer() {
           </SocialLink>
         </motion.div>
 
+        {/* Legal Links */}
+        <motion.div
+          className="mt-12 flex justify-center gap-6 border-t border-foreground/10 pt-8 pb-4"
+          variants={itemVariants}
+        >
+          <Link
+            href="/terms"
+            className="text-sm text-foreground/50 transition-colors hover:text-gold"
+          >
+            Terms of Service
+          </Link>
+          <Link
+            href="/privacy"
+            className="text-sm text-foreground/50 transition-colors hover:text-gold"
+          >
+            Privacy Policy
+          </Link>
+        </motion.div>
+
         {/* Copyright */}
         <motion.div 
-          className="mt-12 border-t border-white/10 pt-8 text-center text-sm text-white/40"
+          className="text-center text-sm text-foreground/40"
           variants={itemVariants}
         >
           © {new Date().getFullYear()} Lineup Legends. All rights reserved.
@@ -156,7 +181,7 @@ function SocialLink({
         target="_blank"
         rel="noopener noreferrer"
         aria-label={label}
-        className="group relative block text-white/60 transition-all duration-300 hover:text-gold"
+        className="group relative block text-foreground/60 transition-all duration-300 hover:text-gold"
       >
         <span className="absolute -inset-2 rounded-full bg-gold/0 transition-all duration-300 group-hover:bg-gold/10" />
         <span className="relative block transition-transform duration-300 group-hover:scale-110">

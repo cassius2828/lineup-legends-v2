@@ -12,7 +12,10 @@ import superjson from "superjson";
 import { ZodError } from "zod";
 
 import { auth } from "~/server/auth";
-import { db } from "~/server/db";
+import { connectDB } from "~/server/db";
+import { logger } from "~/lib/logger";
+
+const log = logger.child({ module: "trpc" });
 
 /**
  * 1. CONTEXT
@@ -27,10 +30,12 @@ import { db } from "~/server/db";
  * @see https://trpc.io/docs/server/context
  */
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+  // Ensure MongoDB connection is established
+  await connectDB();
+
   const session = await auth();
 
   return {
-    db,
     session,
     ...opts,
   };
@@ -96,7 +101,7 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   const result = await next();
 
   const end = Date.now();
-  console.log(`[TRPC] ${path} took ${end - start}ms to execute`);
+  log.info({ path, duration: end - start }, `${path} took ${end - start}ms`);
 
   return result;
 });
@@ -110,6 +115,19 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
 
+export const adminProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(({ ctx, next }) => {
+    if (!ctx.session?.user?.admin) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    return next({
+      ctx: {
+        // infers the `session` and `user.admin` as non-nullable
+        session: { ...ctx.session, user: ctx.session.user },
+      },
+    });
+  });
 /**
  * Protected (authenticated) procedure
  *

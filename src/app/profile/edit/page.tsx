@@ -1,10 +1,128 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { api } from "~/trpc/react";
 import Image from "next/image";
+import Link from "next/link";
+import { toast } from "sonner";
+import { api } from "~/trpc/react";
+
+function ImageUploadField({
+  label,
+  currentUrl,
+  onUrlChange,
+  type,
+  previewClass,
+}: {
+  label: string;
+  currentUrl: string;
+  onUrlChange: (url: string) => void;
+  type: "profile" | "banner";
+  previewClass: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileSelect = useCallback(
+    async (file: File) => {
+      setIsUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("type", type);
+
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error ?? "Upload failed");
+        }
+
+        const { url } = await res.json();
+        onUrlChange(url);
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast.error(
+          error instanceof Error ? error.message : "Failed to upload image",
+        );
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [type, onUrlChange],
+  );
+
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium text-foreground/80">
+        {label}
+      </label>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void handleFileSelect(file);
+          e.target.value = "";
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={isUploading}
+        className={`group relative w-full overflow-hidden rounded-xl border-2 border-dashed border-foreground/20 transition-colors hover:border-gold/50 ${previewClass}`}
+      >
+        {currentUrl ? (
+          <>
+            <Image
+              fill
+              src={currentUrl}
+              alt={`${label} preview`}
+              className="h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/40">
+              <span className="rounded-lg bg-black/60 px-3 py-1.5 text-sm font-medium text-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                {isUploading ? "Uploading..." : "Change Image"}
+              </span>
+            </div>
+          </>
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-2 text-foreground/40">
+            {isUploading ? (
+              <>
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-foreground/20 border-t-gold" />
+                <span className="text-sm">Uploading...</span>
+              </>
+            ) : (
+              <>
+                <svg
+                  className="h-8 w-8"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                <span className="text-sm">Click to upload</span>
+                <span className="text-xs">JPEG, PNG, WebP, GIF (max 5MB)</span>
+              </>
+            )}
+          </div>
+        )}
+      </button>
+    </div>
+  );
+}
 
 export default function EditProfilePage() {
   const router = useRouter();
@@ -29,27 +147,27 @@ export default function EditProfilePage() {
       router.push(`/profile/${profile?.id}`);
     },
     onError: (error) => {
-      alert(error.message);
+      toast.error(error.message);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateProfile.mutate({
-      username: username ?? undefined,
-      bio: bio ?? undefined,
-      profileImg: profileImg ?? null,
-      bannerImg: bannerImg ?? null,
+      username: username || undefined,
+      bio: bio || undefined,
+      profileImg: profileImg || null,
+      bannerImg: bannerImg || null,
     });
   };
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
         <div className="flex h-64 items-center justify-center">
           <div className="text-center">
-            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500" />
-            <p className="text-white/60">Loading...</p>
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-foreground/20 border-t-gold" />
+            <p className="text-foreground/60">Loading...</p>
           </div>
         </div>
       </main>
@@ -58,12 +176,12 @@ export default function EditProfilePage() {
 
   if (!profile) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold text-white">Please sign in</h1>
+          <h1 className="text-2xl font-bold text-foreground">Please sign in</h1>
           <Link
-            href="/api/auth/signin"
-            className="mt-4 inline-block text-emerald-400 hover:underline"
+            href="/sign-in"
+            className="mt-4 inline-block text-gold-300 hover:underline"
           >
             Sign in
           </Link>
@@ -73,13 +191,13 @@ export default function EditProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
       <div className="container mx-auto max-w-2xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <Link
             href={`/profile/${profile.id}`}
-            className="mb-2 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
+            className="mb-2 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
           >
             <svg
               className="h-4 w-4"
@@ -96,41 +214,59 @@ export default function EditProfilePage() {
             </svg>
             Back to Profile
           </Link>
-          <h1 className="text-3xl font-bold text-white">Edit Profile</h1>
+          <h1 className="text-3xl font-bold text-foreground">Edit Profile</h1>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Preview */}
-          <div className="overflow-hidden rounded-2xl bg-slate-800">
+          {/* Live Preview */}
+          <div className="overflow-hidden rounded-2xl bg-surface-800">
             <div
               className="h-32 bg-cover bg-center"
               style={{
                 backgroundImage: bannerImg
                   ? `url(${bannerImg})`
-                  : "linear-gradient(to right, #059669, #0891b2)",
+                  : "linear-gradient(135deg, #059669, #0891b2, #6366f1)",
               }}
             />
             <div className="relative -mt-12 px-6 pb-6">
-              <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-slate-800 bg-slate-700">
+              <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-surface-600 bg-surface-600">
                 <Image
                   width={96}
                   height={96}
-                  src={profileImg ?? profile.image ?? "/default-avatar.png"}
+                  src={profileImg || profile.image || "/default-avatar.png"}
                   alt="Preview"
-                  className="object-cover"
+                  className="h-full w-full object-cover"
                 />
               </div>
-              <p className="mt-2 font-semibold text-white">
-                {username ?? profile.name ?? "Your Name"}
+              <p className="mt-2 font-semibold text-foreground">
+                {username || profile.name || "Your Name"}
               </p>
-              {bio && <p className="text-sm text-white/60">{bio}</p>}
+              {bio && <p className="text-sm text-foreground/60">{bio}</p>}
             </div>
           </div>
 
+          {/* Banner Image Upload */}
+          <ImageUploadField
+            label="Banner Image"
+            currentUrl={bannerImg}
+            onUrlChange={setBannerImg}
+            type="banner"
+            previewClass="h-32"
+          />
+
+          {/* Profile Image Upload */}
+          <ImageUploadField
+            label="Profile Image"
+            currentUrl={profileImg}
+            onUrlChange={setProfileImg}
+            type="profile"
+            previewClass="mx-auto h-32 w-32 rounded-full"
+          />
+
           {/* Username */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-white/80">
+            <label className="mb-2 block text-sm font-medium text-foreground/80">
               Username
             </label>
             <input
@@ -138,16 +274,16 @@ export default function EditProfilePage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter a unique username"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full rounded-lg border border-foreground/10 bg-foreground/5 px-4 py-3 text-foreground placeholder-foreground/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
               minLength={3}
               maxLength={30}
             />
-            <p className="mt-1 text-xs text-white/50">3-30 characters</p>
+            <p className="mt-1 text-xs text-foreground/50">3-30 characters</p>
           </div>
 
           {/* Bio */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-white/80">
+            <label className="mb-2 block text-sm font-medium text-foreground/80">
               Bio
             </label>
             <textarea
@@ -155,52 +291,24 @@ export default function EditProfilePage() {
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell us about yourself..."
               rows={3}
-              className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full resize-none rounded-lg border border-foreground/10 bg-foreground/5 px-4 py-3 text-foreground placeholder-foreground/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
               maxLength={250}
             />
-            <p className="mt-1 text-xs text-white/50">{bio.length}/250</p>
-          </div>
-
-          {/* Profile Image URL */}
-          <div>
-            <label className="mb-2 block text-sm font-medium text-white/80">
-              Profile Image URL
-            </label>
-            <input
-              type="url"
-              value={profileImg}
-              onChange={(e) => setProfileImg(e.target.value)}
-              placeholder="https://example.com/your-image.jpg"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            />
-          </div>
-
-          {/* Banner Image URL */}
-          <div>
-            <label className="mb-2 block text-sm font-medium text-white/80">
-              Banner Image URL
-            </label>
-            <input
-              type="url"
-              value={bannerImg}
-              onChange={(e) => setBannerImg(e.target.value)}
-              placeholder="https://example.com/your-banner.jpg"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-            />
+            <p className="mt-1 text-xs text-foreground/50">{bio.length}/250</p>
           </div>
 
           {/* Submit */}
           <div className="flex gap-3 pt-4">
             <Link
               href={`/profile/${profile.id}`}
-              className="flex-1 rounded-lg bg-white/10 py-3 text-center font-medium text-white transition-colors hover:bg-white/20"
+              className="flex-1 rounded-lg bg-foreground/10 py-3 text-center font-medium text-foreground transition-colors hover:bg-foreground/20"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={updateProfile.isPending}
-              className="flex-1 rounded-lg bg-emerald-600 py-3 font-semibold text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+              className="flex-1 rounded-lg bg-gold py-3 font-semibold text-black transition-colors hover:bg-gold-light disabled:opacity-50"
             >
               {updateProfile.isPending ? "Saving..." : "Save Changes"}
             </button>
@@ -210,4 +318,3 @@ export default function EditProfilePage() {
     </main>
   );
 }
-

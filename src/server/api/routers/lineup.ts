@@ -1,4 +1,9 @@
+import { TRPCError } from "@trpc/server";
+import mongoose from "mongoose";
 import { z } from "zod";
+import { lineupPopulateFields } from "~/server/lib/lineup-queries";
+import { buildLineupSort } from "~/server/services/lineup";
+import { logger } from "~/lib/logger";
 
 import {
   createTRPCRouter,
@@ -6,367 +11,249 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 
-const BUDGET_LIMIT = 15;
+const log = logger.child({ module: "lineup" });
+import {
+  LineupModel,
+  PlayerModel,
+  RatingModel,
+  type PlayerDoc,
+} from "~/server/models";
+import { lineupOutput, gambleResultOutput, populated } from "~/server/api/schemas/output";
+import {
+  BUDGET_LIMIT,
+  DAILY_GAMBLE_LIMIT,
+  GAMBLE_COOLDOWN_MS,
+  selectWeightedValue,
+  getOutcomeTier,
+  calculateStreakChange,
+  shouldResetDailyGambles,
+} from "./lineup-utils";
 
-// Helper to calculate total votes
-async function recalculateTotalVotes(db: any, lineupId: string) {
-  const votes = await db.vote.findMany({
-    where: { lineupId },
-  });
-
-  let total = 0;
-  for (const vote of votes) {
-    if (vote.type === "upvote") total += 1;
-    if (vote.type === "downvote") total -= 1;
-  }
-
-  await db.lineup.update({
-    where: { id: lineupId },
-    data: { totalVotes: total },
-  });
-
-  return total;
-}
-
-// Helper to calculate average rating
-async function recalculateAvgRating(db: any, lineupId: string) {
-  const ratings = await db.rating.findMany({
-    where: { lineupId },
-  });
-
-  if (ratings.length === 0) {
-    await db.lineup.update({
-      where: { id: lineupId },
-      data: { avgRating: 0 },
-    });
-    return 0;
-  }
-
-  const sum = ratings.reduce((acc: number, r: { value: number }) => acc + r.value, 0);
-  const avg = sum / ratings.length;
-
-  await db.lineup.update({
-    where: { id: lineupId },
-    data: { avgRating: avg },
-  });
-
-  return avg;
-}
+import { playerSchema } from "~/server/api/schemas/lineup";
 
 export const lineupRouter = createTRPCRouter({
   // Create a new lineup (protected - requires auth)
   create: protectedProcedure
     .input(
       z.object({
-        pgId: z.string(),
-        sgId: z.string(),
-        sfId: z.string(),
-        pfId: z.string(),
-        cId: z.string(),
-      })
+        players: z.object({
+          pg: playerSchema,
+          sg: playerSchema,
+          sf: playerSchema,
+          pf: playerSchema,
+          c: playerSchema,
+        }),
+      }),
     )
+    .output(lineupOutput.nullable())
     .mutation(async ({ ctx, input }) => {
-      const { pgId, sgId, sfId, pfId, cId } = input;
-      const playerIds = [pgId, sgId, sfId, pfId, cId];
-
+      const { players } = input;
+      const { pg, sg, sf, pf, c } = players;
+      const playerIds = [pg._id, sg._id, sf._id, pf._id, c._id];
       // Check for duplicate players
       const uniqueIds = new Set(playerIds);
       if (uniqueIds.size !== playerIds.length) {
-        throw new Error("Duplicate players found. Each position must have a unique player.");
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Duplicate players found. Each position must have a unique player.",
+        });
       }
 
-      // Fetch all selected players and validate budget
-      const players = await ctx.db.player.findMany({
-        where: { id: { in: playerIds } },
-      });
-
-      if (players.length !== 5) {
-        throw new Error("One or more selected players not found.");
+      if (Object.values(players).length !== 5) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "One or more selected players not found.",
+        });
       }
 
-      const totalValue = players.reduce((sum, player) => sum + player.value, 0);
+      const totalValue = Object.values(players).reduce(
+        (sum, player) => sum + player.value,
+        0,
+      );
       if (totalValue > BUDGET_LIMIT) {
-        throw new Error(
-          `Lineup exceeds $${BUDGET_LIMIT} budget. Total value: $${totalValue}`
-        );
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Lineup exceeds $${BUDGET_LIMIT} budget. Total value: $${totalValue}`,
+        });
       }
 
       // Create the lineup
-      return ctx.db.lineup.create({
-        data: {
-          pgId,
-          sgId,
-          sfId,
-          pfId,
-          cId,
-          ownerId: ctx.session.user.id,
-          featured: false,
+      const lineup = await LineupModel.create({
+        players: {
+          pg: players.pg._id,
+          sg: players.sg._id,
+          sf: players.sf._id,
+          pf: players.pf._id,
+          c: players.c._id,
         },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
+        owner: ctx.session.user.id,
       });
+
+      return populated(
+        await LineupModel.findById(lineup._id)
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 
   // Get current user's lineups (protected)
-  getByCurrentUser: protectedProcedure
+  getLineupsByCurrentUser: protectedProcedure
+    .output(z.array(lineupOutput))
     .input(
-      z.object({
-        sort: z.enum(["newest", "oldest", "highest-rated", "most-votes"]).optional().default("newest"),
-      }).optional()
+      z
+        .object({
+          sort: z
+            .enum(["newest", "oldest", "highest-rated", "most-rated"])
+            .optional()
+            .default("newest"),
+        })
+        .optional(),
     )
     .query(async ({ ctx, input }) => {
-      let orderBy: any = { createdAt: "desc" };
-      
-      switch (input?.sort) {
-        case "oldest":
-          orderBy = { createdAt: "asc" };
-          break;
-        case "highest-rated":
-          orderBy = { avgRating: "desc" };
-          break;
-        case "most-votes":
-          orderBy = { totalVotes: "desc" };
-          break;
-      }
-
-      return ctx.db.lineup.findMany({
-        where: { ownerId: ctx.session.user.id },
-        orderBy,
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-          votes: {
-            where: { userId: ctx.session.user.id },
-          },
-          ratings: {
-            where: { userId: ctx.session.user.id },
-          },
-        },
-      });
+      const data = await LineupModel.find({ owner: ctx.session.user.id })
+        .sort(buildLineupSort(input?.sort))
+        .populate(lineupPopulateFields)
+        .lean();
+      return populated(data);
     }),
 
   // Get a specific user's lineups (public)
-  getByUserId: publicProcedure
-    .input(z.object({ userId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.lineup.findMany({
-        where: { ownerId: input.userId },
-        orderBy: { createdAt: "desc" },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
-    }),
-
-  // Get all lineups (explore - public)
-  getAll: publicProcedure
+  // look into adding pagination similar to players router
+  getLineupsByOtherUsers: publicProcedure
+    .output(z.array(lineupOutput))
     .input(
       z.object({
-        sort: z.enum(["newest", "oldest", "highest-rated", "most-votes"]).optional().default("newest"),
-      }).optional()
+        userId: z.string(),
+        sort: z
+          .enum(["newest", "oldest", "highest-rated", "most-rated"])
+          .optional()
+          .default("newest"),
+      }),
     )
-    .query(async ({ ctx, input }) => {
-      let orderBy: any = { createdAt: "desc" };
-      
-      switch (input?.sort) {
-        case "oldest":
-          orderBy = { createdAt: "asc" };
-          break;
-        case "highest-rated":
-          orderBy = { avgRating: "desc" };
-          break;
-        case "most-votes":
-          orderBy = { totalVotes: "desc" };
-          break;
-      }
-
-      return ctx.db.lineup.findMany({
-        orderBy,
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
+    .query(async ({ input }) => {
+      return populated(
+        await LineupModel.find({
+          owner: { $ne: new mongoose.Types.ObjectId(input.userId) },
+        })
+          .sort(buildLineupSort(input?.sort))
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 
-  // Get a single lineup by ID
-  getById: publicProcedure
+  getAllLineups: publicProcedure
+    .output(z.array(lineupOutput))
+    .input(
+      z
+        .object({
+          sort: z
+            .enum(["newest", "oldest", "highest-rated"])
+            .optional()
+            .default("newest"),
+        })
+        .optional(),
+    )
+    .query(async ({ input }) => {
+      return populated(
+        await LineupModel.find()
+          .sort(buildLineupSort(input?.sort))
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
+    }),
+
+  getLineupById: publicProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.lineup.findUnique({
-        where: { id: input.id },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
+    .output(lineupOutput.nullable())
+    .query(async ({ input }) => {
+      return populated(
+        await LineupModel.findById(input.id)
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 
   // Delete a lineup (protected - only owner can delete)
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
+    .output(z.unknown().nullable())
     .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.id },
-      });
+      const lineup = await LineupModel.findById(input.id)
+        .select("owner")
+        .lean();
 
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
-      if (lineup.ownerId !== ctx.session.user.id) {
-        throw new Error("You do not have permission to delete this lineup.");
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to delete this lineup.",
+        });
       }
 
-      return ctx.db.lineup.delete({
-        where: { id: input.id },
-      });
+      // Delete related votes and ratings
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const [deletedLineup, _deletedRatings] = await Promise.all([
+        LineupModel.findByIdAndDelete(input.id).lean(),
+        RatingModel.deleteMany({ lineupId: input.id }),
+      ]);
+      return deletedLineup;
     }),
 
   // Toggle featured status (protected - only owner)
   toggleFeatured: protectedProcedure
     .input(z.object({ id: z.string() }))
+    .output(lineupOutput.nullable())
     .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.id },
-      });
+      const lineup = await LineupModel.findById(input.id)
+        .select("owner featured")
+        .lean();
 
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
-      if (lineup.ownerId !== ctx.session.user.id) {
-        throw new Error("You do not have permission to modify this lineup.");
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to modify this lineup.",
+        });
       }
 
       // Check if user already has 3 featured lineups
       if (!lineup.featured) {
-        const featuredCount = await ctx.db.lineup.count({
-          where: { ownerId: ctx.session.user.id, featured: true },
+        const featuredCount = await LineupModel.countDocuments({
+          owner: ctx.session.user.id,
+          featured: true,
         });
 
         if (featuredCount >= 3) {
-          throw new Error(
-            "Maximum 3 featured lineups allowed. Remove one to add another."
-          );
-        }
-      }
-
-      return ctx.db.lineup.update({
-        where: { id: input.id },
-        data: { featured: !lineup.featured },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
-    }),
-
-  // ============================================
-  // VOTING SYSTEM
-  // ============================================
-
-  // Vote on a lineup (upvote or downvote)
-  vote: protectedProcedure
-    .input(
-      z.object({
-        lineupId: z.string(),
-        type: z.enum(["upvote", "downvote"]),
-      })
-    )
-    .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.lineupId },
-      });
-
-      if (!lineup) {
-        throw new Error("Lineup not found.");
-      }
-
-      // Can't vote on your own lineup
-      if (lineup.ownerId === ctx.session.user.id) {
-        throw new Error("You cannot vote on your own lineup.");
-      }
-
-      // Check for existing vote
-      const existingVote = await ctx.db.vote.findUnique({
-        where: {
-          userId_lineupId: {
-            userId: ctx.session.user.id,
-            lineupId: input.lineupId,
-          },
-        },
-      });
-
-      if (existingVote) {
-        if (existingVote.type === input.type) {
-          // Same vote type - remove the vote
-          await ctx.db.vote.delete({
-            where: { id: existingVote.id },
-          });
-        } else {
-          // Different vote type - update the vote
-          await ctx.db.vote.update({
-            where: { id: existingVote.id },
-            data: { type: input.type },
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message:
+              "Maximum 3 featured lineups allowed. Remove one to add another.",
           });
         }
-      } else {
-        // No existing vote - create new
-        await ctx.db.vote.create({
-          data: {
-            type: input.type,
-            userId: ctx.session.user.id,
-            lineupId: input.lineupId,
-          },
-        });
       }
 
-      // Recalculate total votes
-      const newTotal = await recalculateTotalVotes(ctx.db, input.lineupId);
-
-      return { totalVotes: newTotal };
-    }),
-
-  // Get current user's vote on a lineup
-  getUserVote: protectedProcedure
-    .input(z.object({ lineupId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.vote.findUnique({
-        where: {
-          userId_lineupId: {
-            userId: ctx.session.user.id,
-            lineupId: input.lineupId,
-          },
-        },
-      });
+      return populated(
+        await LineupModel.findByIdAndUpdate(
+          input.id,
+          { featured: !lineup.featured },
+          { new: true },
+        )
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 
   // ============================================
@@ -374,63 +261,96 @@ export const lineupRouter = createTRPCRouter({
   // ============================================
 
   // Rate a lineup (1-10)
+  // look at the way we handle async and try to use this pattern more
+  // when we have stuff that does not deepend on other things, we can fire without await and use await at the end.
   rate: protectedProcedure
     .input(
       z.object({
         lineupId: z.string(),
-        value: z.number().min(1).max(10),
-      })
+        value: z.number().min(0.01).max(10),
+      }),
     )
+    .output(z.object({ avgRating: z.number() }))
+    // can also do a mongodb lookup to get just the field we need
+    // our db is very relationship oriented so it may be better for sql tables and fk
+    // mongo is better when the data coming in can be unpredictable vs knowing exactly what is needed
     .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.lineupId },
-      });
+      const lineup = await LineupModel.findById(input.lineupId)
+        .select({ owner: 1 })
+        .lean();
 
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
       // Can't rate your own lineup
-      if (lineup.ownerId === ctx.session.user.id) {
-        throw new Error("You cannot rate your own lineup.");
+      if (lineup.owner.toString() === ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You cannot rate your own lineup.",
+        });
       }
-
+      // look into have a .then to consolidate the awaits on the functions
       // Upsert rating
-      await ctx.db.rating.upsert({
-        where: {
-          userId_lineupId: {
-            userId: ctx.session.user.id,
-            lineupId: input.lineupId,
+
+      const newRating = input.value;
+      // upsert the rating, await the values so we can use them to update the lineup
+      const existingRating = await RatingModel.findOneAndUpdate(
+        {
+          user: ctx.session.user.id,
+          lineup: input.lineupId,
+        },
+        {
+          value: newRating,
+        },
+      );
+
+      const isNewRating = !existingRating;
+      const oldRating = existingRating?.value ?? 0;
+      const sumDelta = newRating - oldRating;
+      const countDelta = isNewRating ? 1 : 0;
+
+      // update the lineup with the new rating atomically and in one pass
+      const updatedLineup = await LineupModel.findByIdAndUpdate(
+        lineup._id,
+
+        [
+          // step one: update the rating sum and count (treat missing/null as 0)
+          {
+            $set: {
+              ratingSum: {
+                $add: [{ $ifNull: ["$ratingSum", 0] }, sumDelta],
+              },
+              ratingCount: {
+                $add: [{ $ifNull: ["$ratingCount", 0] }, countDelta],
+              },
+            },
           },
-        },
-        create: {
-          value: input.value,
-          userId: ctx.session.user.id,
-          lineupId: input.lineupId,
-        },
-        update: {
-          value: input.value,
-        },
-      });
-
-      // Recalculate average rating
-      const newAvg = await recalculateAvgRating(ctx.db, input.lineupId);
-
-      return { avgRating: newAvg };
-    }),
-
-  // Get current user's rating on a lineup
-  getUserRating: protectedProcedure
-    .input(z.object({ lineupId: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.rating.findUnique({
-        where: {
-          userId_lineupId: {
-            userId: ctx.session.user.id,
-            lineupId: input.lineupId,
+          // step two: update the average rating
+          {
+            $set: {
+              avgRating: {
+                $cond: {
+                  if: {
+                    $gt: ["$ratingCount", 0],
+                  },
+                  then: {
+                    $divide: ["$ratingSum", "$ratingCount"],
+                  },
+                  else: 0,
+                },
+              },
+            },
           },
-        },
-      });
+        ],
+        // { new: true },
+        { updatePipeline: true, new: true },
+      );
+      log.debug({ updatedLineup }, "updatedLineup");
+      return { avgRating: updatedLineup?.avgRating ?? 0 };
     }),
 
   // ============================================
@@ -442,159 +362,281 @@ export const lineupRouter = createTRPCRouter({
     .input(
       z.object({
         lineupId: z.string(),
-        pgId: z.string(),
-        sgId: z.string(),
-        sfId: z.string(),
-        pfId: z.string(),
-        cId: z.string(),
-      })
+        players: z.object({
+          pg: playerSchema,
+          sg: playerSchema,
+          sf: playerSchema,
+          pf: playerSchema,
+          c: playerSchema,
+        }),
+      }),
     )
+    .output(lineupOutput.nullable())
     .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.lineupId },
-        include: { pg: true, sg: true, sf: true, pf: true, c: true },
-      });
+      const lineup = await LineupModel.findById(input.lineupId)
+        .populate(lineupPopulateFields)
+        .lean();
 
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
-      if (lineup.ownerId !== ctx.session.user.id) {
-        throw new Error("You do not have permission to edit this lineup.");
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to edit this lineup.",
+        });
       }
 
-      // Validate that all provided IDs are from the original lineup
       const originalIds = new Set([
-        lineup.pgId,
-        lineup.sgId,
-        lineup.sfId,
-        lineup.pfId,
-        lineup.cId,
+        lineup.players.pg._id.toString(),
+        lineup.players.sg._id.toString(),
+        lineup.players.sf._id.toString(),
+        lineup.players.pf._id.toString(),
+        lineup.players.c._id.toString(),
       ]);
-      const newIds = [input.pgId, input.sgId, input.sfId, input.pfId, input.cId];
+      const newIds = [
+        input.players.pg._id.toString(),
+        input.players.sg._id.toString(),
+        input.players.sf._id.toString(),
+        input.players.pf._id.toString(),
+        input.players.c._id.toString(),
+      ];
 
       // Check for duplicates
       const uniqueNewIds = new Set(newIds);
       if (uniqueNewIds.size !== 5) {
-        throw new Error("Duplicate players found. Each position must have a unique player.");
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Duplicate players found. Each position must have a unique player.",
+        });
       }
 
       // Check that we're only rearranging existing players
       for (const id of newIds) {
         if (!originalIds.has(id)) {
-          throw new Error("You can only reorder existing players in the lineup.");
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "You can only reorder existing players in the lineup.",
+          });
         }
       }
 
-      return ctx.db.lineup.update({
-        where: { id: input.lineupId },
-        data: {
-          pgId: input.pgId,
-          sgId: input.sgId,
-          sfId: input.sfId,
-          pfId: input.pfId,
-          cId: input.cId,
-        },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
+      return populated(
+        await LineupModel.findByIdAndUpdate(
+          input.lineupId,
+          {
+            players: {
+              pg: input.players.pg,
+              sg: input.players.sg,
+              sf: input.players.sf,
+              pf: input.players.pf,
+              c: input.players.c,
+            },
+          },
+          { new: true },
+        )
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 
   // ============================================
   // GAMBLING MECHANICS
   // ============================================
 
-  // Gamble a player for a random player of similar value
+  /**
+   * Gamble a player for a random player with weighted probability.
+   *
+   * Probability system:
+   * - Lower value players have lower chance of upgrade (high risk, high reward potential)
+   * - Higher value players have higher chance of maintaining value (low risk, low reward)
+   *
+   * Features:
+   * - Weighted probability matrix for fair risk/reward
+   * - Daily gamble limit (5 per day per lineup)
+   * - Cooldown between gambles (30 seconds)
+   * - Streak tracking for consecutive upgrades/downgrades
+   * - Outcome tiers for visual feedback (jackpot, upgrade, neutral, downgrade, etc.)
+   */
   gamble: protectedProcedure
     .input(
       z.object({
         lineupId: z.string(),
         position: z.enum(["pg", "sg", "sf", "pf", "c"]),
-      })
+      }),
     )
+    .output(gambleResultOutput)
     .mutation(async ({ ctx, input }) => {
-      const lineup = await ctx.db.lineup.findUnique({
-        where: { id: input.lineupId },
-        include: { pg: true, sg: true, sf: true, pf: true, c: true },
-      });
+      const lineup = await LineupModel.findById(input.lineupId).populate([
+        { path: "players.pg", model: "Player" },
+        { path: "players.sg", model: "Player" },
+        { path: "players.sf", model: "Player" },
+        { path: "players.pf", model: "Player" },
+        { path: "players.c", model: "Player" },
+        { path: "owner", model: "User", select: "_id" },
+      ]);
 
+      //       const {owner} = await LineupModel.findById(input.lineupId).select("owner").lean();
+      // const ownerId = owner._id.toString();
       if (!lineup) {
-        throw new Error("Lineup not found.");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Lineup not found.",
+        });
       }
 
-      if (lineup.ownerId !== ctx.session.user.id) {
-        throw new Error("You do not have permission to gamble on this lineup.");
+      if (lineup.owner._id.toString() !== ctx.session.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to gamble on this lineup.",
+        });
       }
 
-      const currentPlayer = lineup[input.position];
+      // Check cooldown
+      const now = new Date();
+      const lastGambleAt = lineup.lastGambleAt;
+      if (lastGambleAt) {
+        const timeSinceLastGamble = now.getTime() - lastGambleAt.getTime();
+        if (timeSinceLastGamble < GAMBLE_COOLDOWN_MS) {
+          const remainingSeconds = Math.ceil(
+            (GAMBLE_COOLDOWN_MS - timeSinceLastGamble) / 1000,
+          );
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: `Please wait ${remainingSeconds} seconds before gambling again.`,
+          });
+        }
+      }
+
+      // Check and reset daily gamble limit if needed
+      let dailyGamblesUsed = lineup.dailyGamblesUsed ?? 0;
+      let dailyGamblesResetAt = lineup.dailyGamblesResetAt;
+
+      if (shouldResetDailyGambles(dailyGamblesResetAt)) {
+        dailyGamblesUsed = 0;
+        dailyGamblesResetAt = now;
+      }
+
+      if (dailyGamblesUsed >= DAILY_GAMBLE_LIMIT) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: `Daily gamble limit reached (${DAILY_GAMBLE_LIMIT}). Try again tomorrow!`,
+        });
+      }
+
+      // Get the current player at the position
+      const positionField = input.position;
+      // After population, players are Player objects, not ObjectIds
+      const currentPlayer = lineup.players[positionField] as unknown as PlayerDoc;
+
+      if (!currentPlayer?.value) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Current player not found.",
+        });
+      }
+
       const currentValue = currentPlayer.value;
 
-      // Determine possible values for the new player
-      let possibleValues: number[];
-      if (currentValue === 1) {
-        // Value 1 can only get value 1
-        possibleValues = [1];
-      } else if (currentValue === 5) {
-        // Value 5 can get 4 or 5
-        possibleValues = [4, 5];
-      } else {
-        // Values 2-4 can get -1, same, or +1
-        possibleValues = [currentValue - 1, currentValue, currentValue + 1];
-      }
+      // Use weighted probability to determine target value
+      const targetValue = selectWeightedValue(currentValue);
 
-      // Get all player IDs currently in the lineup
+      // Convert string IDs to ObjectIds for proper MongoDB $nin comparison
       const currentLineupPlayerIds = [
-        lineup.pgId,
-        lineup.sgId,
-        lineup.sfId,
-        lineup.pfId,
-        lineup.cId,
-      ];
+        lineup.players.pg._id.toString(),
+        lineup.players.sg._id.toString(),
+        lineup.players.sf._id.toString(),
+        lineup.players.pf._id.toString(),
+        lineup.players.c._id.toString(),
+      ]
+        .filter((id): id is string => Boolean(id))
+        .map((id) => new mongoose.Types.ObjectId(id));
 
-      // Find eligible players (matching value, not already in lineup)
-      const eligiblePlayers = await ctx.db.player.findMany({
-        where: {
-          value: { in: possibleValues },
-          id: { notIn: currentLineupPlayerIds },
+      // Find a random player at the target value (not already in lineup)
+      let [newPlayer] = await PlayerModel.aggregate<PlayerDoc>([
+        {
+          $match: {
+            value: targetValue,
+            _id: { $nin: currentLineupPlayerIds },
+          },
         },
-      });
+        { $sample: { size: 1 } },
+      ]);
 
-      if (eligiblePlayers.length === 0) {
-        throw new Error("No eligible players available for gambling.");
+      // Fallback: if no player found at target value, try adjacent values
+      if (!newPlayer) {
+        const fallbackValues = [1, 2, 3, 4, 5].filter((v) => v !== targetValue);
+        [newPlayer] = await PlayerModel.aggregate<PlayerDoc>([
+          {
+            $match: {
+              value: { $in: fallbackValues },
+              _id: { $nin: currentLineupPlayerIds },
+            },
+          },
+          { $sample: { size: 1 } },
+        ]);
       }
 
-      // Pick a random player
-      const randomIndex = Math.floor(Math.random() * eligiblePlayers.length);
-      const newPlayer = eligiblePlayers[randomIndex]!;
+      if (!newPlayer) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No eligible players available for gambling.",
+        });
+      }
 
-      // Update the lineup with the new player
-      const positionField = `${input.position}Id`;
-      const updatedLineup = await ctx.db.lineup.update({
-        where: { id: input.lineupId },
-        data: {
-          [positionField]: newPlayer.id,
-          timesGambled: { increment: 1 },
-        },
-        include: {
-          pg: true,
-          sg: true,
-          sf: true,
-          pf: true,
-          c: true,
-          owner: true,
-        },
-      });
+      // Calculate outcome metrics
+      const newPlayerValue = newPlayer.value;
+      const valueChange = newPlayerValue - currentValue;
+      const outcomeTier = getOutcomeTier(valueChange);
+      const currentStreak = lineup.gambleStreak ?? 0;
+      const newStreak = calculateStreakChange(currentStreak, valueChange);
 
-      return {
+      // Build the last gamble result
+      const lastGambleResult = {
+        previousValue: currentValue,
+        newValue: newPlayerValue,
+        valueChange,
+        outcomeTier,
+        position: input.position,
+        timestamp: now,
+      };
+
+      // Update the lineup with the new player and gambling stats
+      const updatedLineup = await LineupModel.findByIdAndUpdate(
+        input.lineupId,
+        {
+          [`players.${positionField}`]: newPlayer._id,
+          $inc: { timesGambled: 1 },
+          $set: {
+            lastGambleResult,
+            gambleStreak: newStreak,
+            lastGambleAt: now,
+            dailyGamblesUsed: dailyGamblesUsed + 1,
+            dailyGamblesResetAt,
+          },
+        },
+        { new: true },
+      ).populate(lineupPopulateFields);
+
+      return populated({
         lineup: updatedLineup,
         previousPlayer: currentPlayer,
-        newPlayer: newPlayer,
-      };
+        newPlayer,
+        outcome: {
+          previousValue: currentValue,
+          newValue: newPlayerValue,
+          valueChange,
+          outcomeTier,
+          streak: newStreak,
+          dailyGamblesRemaining: DAILY_GAMBLE_LIMIT - (dailyGamblesUsed + 1),
+          cooldownSeconds: GAMBLE_COOLDOWN_MS / 1000,
+        },
+      });
     }),
+
 });

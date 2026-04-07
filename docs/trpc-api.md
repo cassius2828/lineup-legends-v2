@@ -1,6 +1,6 @@
 # tRPC API
 
-Lineup Legends v2 uses **tRPC** to provide end-to-end type-safe APIs. This means TypeScript types flow from the server to the client without manual type definitions.
+Lineup Legends v2 uses **tRPC** to provide end-to-end type-safe APIs. TypeScript types flow from the server to the client without manual type definitions.
 
 ## Overview
 
@@ -9,7 +9,7 @@ tRPC provides:
 - **Type safety**: Input/output types are automatically inferred on the client
 - **No code generation**: Types come directly from server code
 - **React Query integration**: Built-in hooks for data fetching
-- **Middleware support**: Authentication, logging, timing
+- **Middleware support**: Authentication, admin authorization, logging, timing
 
 ## Architecture
 
@@ -17,30 +17,46 @@ tRPC provides:
 src/
 ├── server/
 │   └── api/
-│       ├── root.ts       # Root router (combines all routers)
-│       ├── trpc.ts       # tRPC configuration and procedures
+│       ├── root.ts              # Root router (combines all 10 routers)
+│       ├── trpc.ts              # tRPC configuration and procedures
+│       ├── schemas/             # Shared Zod schemas
+│       │   ├── common.ts
+│       │   ├── comment.ts
+│       │   ├── feedback.ts
+│       │   ├── lineup.ts
+│       │   ├── pagination.ts
+│       │   └── player.ts
 │       └── routers/
-│           ├── lineup.ts # Lineup-related endpoints
-│           └── player.ts # Player-related endpoints
+│           ├── admin.ts         # Admin dashboard stats
+│           ├── bookmark.ts      # Lineup bookmarks
+│           ├── comment.ts       # Comments and threads
+│           ├── feedback.ts      # User feedback
+│           ├── follow.ts        # Follow system
+│           ├── lineup.ts        # Lineups (CRUD, rating, gamble)
+│           ├── lineup-utils.ts  # Gamble odds, budget constants
+│           ├── player.ts        # Player data
+│           ├── profile.ts       # User profiles
+│           ├── requestedPlayer.ts # Player requests
+│           └── video.ts         # Getting Technical videos
 └── trpc/
-    ├── react.tsx         # React client setup
-    ├── query-client.ts   # React Query client config
-    └── server.ts         # Server-side caller
+    ├── react.tsx                # React client setup
+    ├── query-client.ts          # React Query client config
+    └── server.ts                # Server-side caller
 ```
 
 ## tRPC Configuration (`src/server/api/trpc.ts`)
 
 ### Context
 
-The context provides access to the database and session:
+The context establishes the MongoDB connection and provides the session:
 
 ```typescript
 export const createTRPCContext = async (opts: { headers: Headers }) => {
+  await connectDB();
   const session = await auth();
 
   return {
-    db,      // Prisma client
-    session, // NextAuth session (may be null)
+    session,
     ...opts,
   };
 };
@@ -94,9 +110,28 @@ export const protectedProcedure = t.procedure
   });
 ```
 
+#### Admin Procedure
+
+Requires authentication **and** the `admin` flag; throws `FORBIDDEN` if not an admin:
+
+```typescript
+export const adminProcedure = t.procedure
+  .use(timingMiddleware)
+  .use(({ ctx, next }) => {
+    if (!ctx.session?.user?.admin) {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    return next({
+      ctx: {
+        session: { ...ctx.session, user: ctx.session.user },
+      },
+    });
+  });
+```
+
 ### Timing Middleware
 
-Logs execution time and adds artificial delay in development:
+Logs execution time via Pino and adds artificial delay in development:
 
 ```typescript
 const timingMiddleware = t.middleware(async ({ next, path }) => {
@@ -108,66 +143,51 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
   }
 
   const result = await next();
-  console.log(`[TRPC] ${path} took ${end - start}ms`);
+  const end = Date.now();
+  log.info({ path, duration: end - start }, `${path} took ${end - start}ms`);
   return result;
 });
 ```
 
 ## Root Router (`src/server/api/root.ts`)
 
-Combines all feature routers:
+Combines all 10 feature routers:
 
 ```typescript
-import { createTRPCRouter } from "~/server/api/trpc";
-import { playerRouter } from "./routers/player";
-import { lineupRouter } from "./routers/lineup";
-
 export const appRouter = createTRPCRouter({
   player: playerRouter,
   lineup: lineupRouter,
+  comment: commentRouter,
+  profile: profileRouter,
+  follow: followRouter,
+  requestedPlayer: requestedPlayerRouter,
+  feedback: feedbackRouter,
+  admin: adminRouter,
+  video: videoRouter,
+  bookmark: bookmarkRouter,
 });
 
 export type AppRouter = typeof appRouter;
 ```
 
-## Creating a Router
+## Router Summary
 
-Example router structure:
-
-```typescript
-import { z } from "zod";
-import { createTRPCRouter, publicProcedure, protectedProcedure } from "~/server/api/trpc";
-
-export const exampleRouter = createTRPCRouter({
-  // Public query
-  getAll: publicProcedure.query(async ({ ctx }) => {
-    return ctx.db.example.findMany();
-  }),
-
-  // Query with input validation
-  getById: publicProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ ctx, input }) => {
-      return ctx.db.example.findUnique({ where: { id: input.id } });
-    }),
-
-  // Protected mutation
-  create: protectedProcedure
-    .input(z.object({ name: z.string().min(1) }))
-    .mutation(async ({ ctx, input }) => {
-      return ctx.db.example.create({
-        data: {
-          name: input.name,
-          ownerId: ctx.session.user.id,
-        },
-      });
-    }),
-});
-```
+| Router            | Namespace          | Key Procedures                                                    |
+| ----------------- | ------------------ | ----------------------------------------------------------------- |
+| `playerRouter`    | `api.player`       | `getAll`, `getById`, `getRandomByValue`, `search`, `create`, `update`, `delete` |
+| `lineupRouter`    | `api.lineup`       | `create`, `getLineupsByCurrentUser`, `getLineupsByOtherUsers`, `getAllLineups`, `getLineupById`, `delete`, `toggleFeatured`, `rate`, `reorder`, `gamble` |
+| `commentRouter`   | `api.comment`      | `getComments`, `getThreads`, `getCommentCount`, `getMyCommentVotes`, `getMyThreadVotes`, `addComment`, `addThreadReply`, `deleteComment`, `deleteThread`, `voteComment`, `voteThread` |
+| `profileRouter`   | `api.profile`      | `getById`, `getMe`, `update`, `getFeaturedLineups`               |
+| `followRouter`    | `api.follow`       | `toggleFollow`, `isFollowing`, `getFollowers`, `getFollowing`, `searchUsers` |
+| `requestedPlayerRouter` | `api.requestedPlayer` | `searchDuplicates`, `getAll`, `getById`, `create`, `delete` |
+| `feedbackRouter`  | `api.feedback`     | `create`, `getAll`, `updateStatus`                               |
+| `adminRouter`     | `api.admin`        | `getStats`                                                       |
+| `videoRouter`     | `api.video`        | `getAll`, `create`, `delete`                                     |
+| `bookmarkRouter`  | `api.bookmark`     | `toggle`, `isBookmarked`, `getBookmarkedLineups`                 |
 
 ## Input Validation with Zod
 
-All inputs are validated using Zod schemas:
+All inputs are validated using Zod schemas. Shared schemas are organized in `src/server/api/schemas/`:
 
 ```typescript
 import { z } from "zod";
@@ -175,23 +195,26 @@ import { z } from "zod";
 // Simple validation
 .input(z.object({ id: z.string() }))
 
-// Complex validation
+// Player positions as full objects
 .input(z.object({
-  pgId: z.string(),
-  sgId: z.string(),
-  sfId: z.string(),
-  pfId: z.string(),
-  cId: z.string(),
+  players: z.object({
+    pg: playerSchema,
+    sg: playerSchema,
+    sf: playerSchema,
+    pf: playerSchema,
+    c: playerSchema,
+  }),
 }))
 
-// Optional with default
+// Enum with default
 .input(z.object({
-  sort: z.enum(["newest", "oldest"]).optional().default("newest"),
-}).optional())
+  sort: z.enum(["newest", "oldest", "highest-rated", "most-rated"]).default("newest"),
+}))
 
-// Number constraints
+// Cursor-based pagination
 .input(z.object({
-  value: z.number().min(1).max(5).optional()
+  cursor: z.string().optional(),
+  limit: z.number().min(1).max(50).default(20),
 }))
 ```
 
@@ -244,8 +267,14 @@ const { data, isLoading, error } = api.player.getAll.useQuery();
 // Query with input
 const { data } = api.player.getById.useQuery({ id: "..." });
 
-// Optional input
-const { data } = api.lineup.getByCurrentUser.useQuery({ sort: "newest" });
+// Lineup sort options
+const { data } = api.lineup.getAllLineups.useQuery({ sort: "highest-rated" });
+
+// Cursor-based pagination (infinite query)
+const { data, fetchNextPage } = api.comment.getComments.useInfiniteQuery(
+  { lineupId },
+  { getNextPageParam: (lastPage) => lastPage.nextCursor },
+);
 ```
 
 #### Mutations
@@ -255,8 +284,7 @@ const utils = api.useUtils();
 
 const createLineup = api.lineup.create.useMutation({
   onSuccess: () => {
-    // Invalidate cache to refetch
-    void utils.lineup.getByCurrentUser.invalidate();
+    void utils.lineup.getLineupsByCurrentUser.invalidate();
     router.push("/lineups");
   },
   onError: (error) => {
@@ -264,17 +292,7 @@ const createLineup = api.lineup.create.useMutation({
   },
 });
 
-// Call the mutation
-createLineup.mutate({
-  pgId: "...",
-  sgId: "...",
-  // ...
-});
-
-// Check loading state
-if (createLineup.isPending) {
-  // Show loading...
-}
+createLineup.mutate({ players: { pg, sg, sf, pf, c } });
 ```
 
 #### Cache Invalidation
@@ -285,7 +303,7 @@ Use `useUtils()` to access cache manipulation:
 const utils = api.useUtils();
 
 // Invalidate specific query
-void utils.lineup.getByCurrentUser.invalidate();
+void utils.lineup.getLineupsByCurrentUser.invalidate();
 
 // Invalidate all lineup queries
 void utils.lineup.invalidate();
@@ -301,25 +319,7 @@ Use type helpers for type inference:
 import type { RouterInputs, RouterOutputs } from "~/trpc/react";
 
 type CreateLineupInput = RouterInputs["lineup"]["create"];
-type LineupWithRelations = RouterOutputs["lineup"]["getByCurrentUser"][0];
-```
-
-### Example Component Types
-
-```typescript
-type LineupWithRelations = Lineup & {
-  pg: Player;
-  sg: Player;
-  sf: Player;
-  pf: Player;
-  c: Player;
-  owner: User;
-};
-
-interface LineupCardProps {
-  lineup: LineupWithRelations;
-  showOwner?: boolean;
-}
+type LineupList = RouterOutputs["lineup"]["getLineupsByCurrentUser"];
 ```
 
 ## API Routes
@@ -374,9 +374,10 @@ Common tRPC error codes:
 | Code              | HTTP Status | Usage                         |
 | ----------------- | ----------- | ----------------------------- |
 | `UNAUTHORIZED`    | 401         | Not authenticated             |
-| `FORBIDDEN`       | 403         | Not authorized                |
+| `FORBIDDEN`       | 403         | Not authorized (or not admin) |
 | `NOT_FOUND`       | 404         | Resource doesn't exist        |
 | `BAD_REQUEST`     | 400         | Invalid input                 |
+| `CONFLICT`        | 409         | Duplicate resource            |
 | `INTERNAL_SERVER_ERROR` | 500   | Unexpected error              |
 
 ### Client-Side Error Handling
@@ -384,10 +385,8 @@ Common tRPC error codes:
 ```typescript
 const mutation = api.lineup.create.useMutation({
   onError: (error) => {
-    // error.message contains the error text
     console.error(error.message);
 
-    // Zod validation errors are available
     if (error.data?.zodError) {
       console.error(error.data.zodError);
     }
@@ -399,9 +398,9 @@ const mutation = api.lineup.create.useMutation({
 
 1. **Use Zod for all inputs**: Provides runtime validation and TypeScript types
 2. **Use `protectedProcedure` for user-specific actions**: Ensures authentication
-3. **Validate ownership in mutations**: Check `ctx.session.user.id` against resource owner
-4. **Invalidate cache after mutations**: Keep UI in sync with database
-5. **Handle errors gracefully**: Show user-friendly messages
-6. **Use SuperJSON for complex types**: Enables Date serialization
-
-
+3. **Use `adminProcedure` for admin-only actions**: Ensures both auth and admin status
+4. **Validate ownership in mutations**: Check `ctx.session.user.id` against resource owner
+5. **Invalidate cache after mutations**: Keep UI in sync with database
+6. **Handle errors gracefully**: Show user-friendly messages via toast notifications
+7. **Use SuperJSON for complex types**: Enables Date serialization
+8. **Use shared Zod schemas**: Keep validation consistent between related endpoints

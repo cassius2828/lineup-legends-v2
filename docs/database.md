@@ -1,6 +1,6 @@
 # Database
 
-Lineup Legends v2 uses **Prisma ORM** with **MongoDB** as the database. This document covers the schema design, database operations, and management.
+Lineup Legends v2 uses **Mongoose ODM** with **MongoDB** as the database. This document covers the schema design, database operations, and management.
 
 ## Overview
 
@@ -9,22 +9,28 @@ The database stores:
 - **Players**: Basketball players with value tiers (1-5)
 - **Lineups**: User-created fantasy lineups with 5 positions
 - **Users**: Authenticated user accounts with profile customization
-- **Votes**: Upvotes/downvotes on lineups
 - **Ratings**: 1-10 ratings on lineups
+- **Comments**: User comments on lineups with vote tracking
+- **Threads**: Threaded replies to comments
+- **CommentVotes / ThreadVotes**: Upvotes/downvotes on comments and threads
+- **Follows**: User-to-user follow relationships
+- **Bookmarks**: Saved lineups per user
+- **Feedback**: User-submitted feedback with status tracking
+- **RequestedPlayers**: User requests for new players to be added
+- **Videos**: YouTube videos for the Getting Technical page
 - **Auth data**: Sessions, accounts, verification tokens (managed by NextAuth)
 
 ## Environment Variables
 
 ```env
-# MongoDB connection string (used by Prisma)
-DATABASE_URL="mongodb://localhost:27017/lineup-legends"
-
-# MongoDB connection string (validated by app at runtime)
+# MongoDB connection string (used by Mongoose)
 MONGODB_URI="mongodb://localhost:27017/lineup-legends"
 
 # For MongoDB Atlas (cloud)
-DATABASE_URL="mongodb+srv://user:password@cluster.mongodb.net/lineup-legends?retryWrites=true&w=majority"
 MONGODB_URI="mongodb+srv://user:password@cluster.mongodb.net/lineup-legends?retryWrites=true&w=majority"
+
+# Redis connection string (used by ioredis for caching)
+REDIS_URL="redis://localhost:6379"
 ```
 
 ### Type-Safe Environment Validation
@@ -38,6 +44,7 @@ import { z } from "zod";
 export const env = createEnv({
   server: {
     MONGODB_URI: z.string().url(),
+    REDIS_URL: z.string().url(),
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     // ... other variables
   },
@@ -45,38 +52,124 @@ export const env = createEnv({
 });
 ```
 
-Additionally, `src/lib/ensureEnvs.ts` provides runtime validation:
-
-```typescript
-export function ensureEnvs() {
-  if (!env.MONGODB_URI) {
-    throw new Error("MONGODB_URI is not set");
-  }
-  // ... other checks
-}
-```
-
 This ensures the app fails fast if required database configuration is missing.
 
-## Schema Location
+## Model Locations
 
-The Prisma schema is located at `prisma/schema.prisma`.
+All Mongoose models live in `src/server/models/` with a barrel export at `src/server/models/index.ts`.
 
-## Generator Configuration
+Each model file exports:
+- An **API type** (e.g. `Player`) — used in responses and client-side code
+- A **Doc type** (e.g. `PlayerDoc`) — used in database operations (extends Mongoose `Document`)
+- A **Model** (e.g. `PlayerModel`) — the Mongoose model instance
 
-```prisma
-generator client {
-    provider = "prisma-client-js"
-    output   = "../generated/prisma"
-}
+## Redis Caching Layer
 
-datasource db {
-    provider = "mongodb"
-    url      = env("DATABASE_URL")
+Lineup Legends uses **Redis** as a server-side cache via the `ioredis` client. The cache sits at the tRPC API layer, reducing MongoDB load for shared, rarely-changing data.
+
+### Redis Connection
+
+The Redis client is managed in `src/server/redis.ts` using the same `globalThis` singleton pattern as the Mongoose connection to survive HMR in development:
+
+```typescript
+import { Redis } from "ioredis";
+import { env } from "~/env.js";
+
+export const redis = ((globalThis as unknown as { redis: Redis }).redis ??= new Redis(env.REDIS_URL)) as Redis;
+```
+
+### Caching Strategies
+
+Three caching strategies are used depending on the data characteristics:
+
+#### Cache-Aside (Players)
+
+Used for shared, rarely-changing data with explicit invalidation on writes.
+
+| Cache Key  | Data              | TTL     | Invalidated By                           |
+| ---------- | ----------------- | ------- | ---------------------------------------- |
+| `players`  | All player data   | 24 hrs  | `player.create`, `player.update`, `player.delete` |
+
+- All player read endpoints (`getAll`, `getById`, `search`) pull from the same `players` cache key
+- Filtering and lookups are performed in-memory on the cached data
+- Admin mutations (`create`, `update`, `delete`) call `redis.del("players")` to invalidate
+- The next read after invalidation repopulates the cache from MongoDB
+
+#### Cache-Aside (User Profiles)
+
+Used for individual user profile data with per-user cache keys.
+
+| Cache Key      | Data               | TTL     | Invalidated By           |
+| -------------- | ------------------ | ------- | ------------------------ |
+| `user:{userId}`| User profile data  | varies  | `profile.update`         |
+
+#### TTL-Only (Admin Stats)
+
+Used for expensive aggregations with many write paths where explicit invalidation would be impractical.
+
+| Cache Key     | Data              | TTL     | Invalidated By |
+| ------------- | ----------------- | ------- | -------------- |
+| `admin:stats` | Dashboard counts  | 5 min   | TTL expiry only |
+
+- The admin dashboard runs 13 parallel queries across 8 collections
+- Rather than tracking invalidation across 10+ mutations in 6 routers, the cache simply expires
+- A few minutes of staleness is acceptable for aggregate dashboard counts
+
+### Running Redis Locally
+
+Use Docker to run a local Redis instance:
+
+```bash
+docker run -d --name redis -p 6379:6379 redis:alpine
+```
+
+Verify the connection:
+
+```bash
+docker exec redis redis-cli ping
+# PONG
+```
+
+For production, use a managed service like **Upstash** (serverless, HTTP-based) or **AWS ElastiCache**.
+
+## Database Connection
+
+The connection is managed in `src/server/db.ts` with a cached singleton pattern:
+
+```typescript
+import mongoose from "mongoose";
+import { env } from "~/env";
+import { logger } from "~/lib/logger";
+
+const log = logger.child({ module: "db" });
+
+export async function connectDB(): Promise<typeof mongoose> {
+  if (cached.conn) return cached.conn;
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      bufferCommands: false,
+      family: 4,
+      serverSelectionTimeoutMS: 10000,
+    })
+      .then((mongoose) => {
+        log.info("Connected to MongoDB via Mongoose");
+        return mongoose;
+      });
+  }
+
+  cached.conn = await cached.promise;
+  return cached.conn;
 }
 ```
 
-The Prisma client is output to `generated/prisma/` for explicit imports.
+**Key details:**
+- Singleton pattern prevents multiple connections in development (stored in `globalThis`)
+- `bufferCommands: false` ensures operations fail immediately if disconnected
+- `family: 4` forces IPv4 connections
+- `serverSelectionTimeoutMS: 10000` sets a 10-second timeout for server selection
+- A separate `getMongoClient()` function provides a raw `MongoClient` for the NextAuth MongoDB adapter
+- Logging uses pino via `~/lib/logger`
 
 ## Models
 
@@ -84,491 +177,372 @@ The Prisma client is output to `generated/prisma/` for explicit imports.
 
 Basketball players with value tiers:
 
-```prisma
-model Player {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    firstName String
-    lastName  String
-    imgUrl    String
-    value     Int      // 1-5 representing player cost
+```typescript
+// src/server/models/player.ts
+const PlayerSchema = new Schema<PlayerDoc>({
+  firstName: { type: String, required: true },
+  lastName:  { type: String, required: true },
+  imgUrl:    { type: String, required: true },
+  value:     { type: Number, required: true, min: 1, max: 5 },
+}, { timestamps: false });
 
-    // Lineup position references
-    lineupsAsPg Lineup[] @relation("PgPlayer")
-    lineupsAsSg Lineup[] @relation("SgPlayer")
-    lineupsAsSf Lineup[] @relation("SfPlayer")
-    lineupsAsPf Lineup[] @relation("PfPlayer")
-    lineupsAsC  Lineup[] @relation("CPlayer")
-}
+PlayerSchema.index({ firstName: "text", lastName: "text", value: 1 });
 ```
 
-**Notes:**
-
-- `@map("_id")` uses MongoDB's default ID field name
-- `@db.ObjectId` specifies MongoDB ObjectId type
-- Multiple relations for each basketball position
+**Fields:**
+| Field       | Type   | Description                    |
+| ----------- | ------ | ------------------------------ |
+| `firstName` | String | Player's first name            |
+| `lastName`  | String | Player's last name             |
+| `imgUrl`    | String | URL to player headshot         |
+| `value`     | Number | Player cost tier (1-5)         |
 
 ### Lineup
 
-Fantasy lineups with 5 players and engagement tracking:
+Fantasy lineups with 5 basketball positions, rating tracking, and gambling state:
 
-```prisma
-model Lineup {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    featured  Boolean  @default(false)
+```typescript
+// src/server/models/lineup.ts
+const LineupSchema = new Schema<LineupDoc>({
+  featured:            { type: Boolean, default: false },
+  players: {
+    pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    c:  { type: Schema.Types.ObjectId, ref: "Player", required: true },
+  },
+  owner:               { type: Schema.Types.ObjectId, ref: "User", required: true },
+  avgRating:           { type: Number, default: 0 },
+  ratingSum:           { type: Number, default: 0 },
+  ratingCount:         { type: Number, default: 0 },
+  timesGambled:        { type: Number, default: 0 },
+  lastGambleResult:    { type: LastGambleResultSchema, default: undefined },
+  gambleStreak:        { type: Number, default: 0 },
+  lastGambleAt:        { type: Date, default: undefined },
+  dailyGamblesUsed:    { type: Number, default: 0 },
+  dailyGamblesResetAt: { type: Date, default: undefined },
+}, { timestamps: true });
 
-    // Position references
-    pgId String  @db.ObjectId
-    pg   Player  @relation("PgPlayer", fields: [pgId], references: [id])
-
-    sgId String  @db.ObjectId
-    sg   Player  @relation("SgPlayer", fields: [sgId], references: [id])
-
-    sfId String  @db.ObjectId
-    sf   Player  @relation("SfPlayer", fields: [sfId], references: [id])
-
-    pfId String  @db.ObjectId
-    pf   Player  @relation("PfPlayer", fields: [pfId], references: [id])
-
-    cId String  @db.ObjectId
-    c   Player  @relation("CPlayer", fields: [cId], references: [id])
-
-    // Owner reference
-    ownerId String @db.ObjectId
-    owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-    // Voting and rating aggregates
-    totalVotes   Int     @default(0)
-    avgRating    Float   @default(0)
-    timesGambled Int     @default(0)
-
-    // Relations
-    votes   Vote[]
-    ratings Rating[]
-}
+LineupSchema.index({ owner: 1, createdAt: -1 });
+LineupSchema.index({ owner: 1, updatedAt: -1 });
+LineupSchema.index({ featured: 1, createdAt: -1 });
+LineupSchema.index({ avgRating: -1 });
+LineupSchema.index({ ratingCount: -1 });
+LineupSchema.index({ createdAt: -1 });
 ```
 
 **Notes:**
-
-- Each position has its own relation for type safety
-- `onDelete: Cascade` removes lineups when user is deleted
-- `@updatedAt` automatically tracks modification time
-- Voting/rating aggregates are denormalized for query performance
-
-### Vote
-
-User votes on lineups (upvote/downvote):
-
-```prisma
-model Vote {
-    id       String   @id @default(auto()) @map("_id") @db.ObjectId
-    type     String   // "upvote" or "downvote"
-    
-    userId   String   @db.ObjectId
-    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    
-    lineupId String   @db.ObjectId
-    lineup   Lineup   @relation(fields: [lineupId], references: [id], onDelete: Cascade)
-
-    createdAt DateTime @default(now())
-
-    @@unique([userId, lineupId])
-}
-```
-
-**Notes:**
-
-- Compound unique constraint prevents duplicate votes
-- `type` is either "upvote" or "downvote"
-- Cascade delete removes votes when user or lineup is deleted
+- Players are stored as a nested `players` subdocument with ObjectId refs (populated on read)
+- `timestamps: true` auto-manages `createdAt` / `updatedAt`
+- Rating fields (`avgRating`, `ratingSum`, `ratingCount`) are updated atomically when a user rates
+- Gambling fields track daily limits, cooldown, streaks, and the last gamble outcome
+- Multiple indexes optimize explore/feed query patterns
 
 ### Rating
 
 User ratings on lineups (1-10 scale):
 
-```prisma
-model Rating {
-    id       String   @id @default(auto()) @map("_id") @db.ObjectId
-    value    Int      // 1-10
-    
-    userId   String   @db.ObjectId
-    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-    
-    lineupId String   @db.ObjectId
-    lineup   Lineup   @relation(fields: [lineupId], references: [id], onDelete: Cascade)
+```typescript
+// src/server/models/rating.ts
+const RatingSchema = new Schema<RatingDoc>({
+  value:  { type: Number, required: true, min: 1, max: 10 },
+  user:   { type: Schema.Types.ObjectId, ref: "User", required: true },
+  lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
+}, { timestamps: true });
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@unique([userId, lineupId])
-}
+RatingSchema.index({ user: 1, lineup: 1 }, { unique: true });
 ```
 
-**Notes:**
+### Comment
 
-- Compound unique constraint ensures one rating per user per lineup
-- `value` is constrained to 1-10 range (validated at application level)
-- `@updatedAt` tracks when rating was last changed
+User comments on lineups with vote tracking:
+
+```typescript
+// src/server/models/comment.ts
+const CommentSchema = new Schema<CommentDoc>({
+  text:       { type: String, required: true },
+  user:       { type: Schema.Types.ObjectId, ref: "User", required: true },
+  lineup:     { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
+  totalVotes: { type: Number, default: 0 },
+}, { timestamps: true });
+
+CommentSchema.index({ lineup: 1, createdAt: -1 });
+CommentSchema.index({ user: 1, createdAt: -1 });
+```
+
+### Thread
+
+Threaded replies to comments:
+
+```typescript
+// src/server/models/threads.ts
+const ThreadSchema = new Schema<ThreadDoc>({
+  text:       { type: String, required: true },
+  user:       { type: Schema.Types.ObjectId, ref: "User", required: true },
+  comment:    { type: Schema.Types.ObjectId, ref: "Comment", required: true },
+  totalVotes: { type: Number, default: 0 },
+}, { timestamps: true });
+
+ThreadSchema.index({ user: 1, comment: 1, createdAt: -1 });
+```
+
+### CommentVote / ThreadVote
+
+Upvotes and downvotes on comments and threads:
+
+```typescript
+// src/server/models/commentVote.ts
+const CommentVoteSchema = new Schema<CommentVoteDoc>({
+  type:    { type: String, enum: ["upvote", "downvote"], required: true },
+  user:    { type: Schema.Types.ObjectId, ref: "User", required: true },
+  comment: { type: Schema.Types.ObjectId, ref: "Comment", required: true },
+  createdAt: { type: Date, default: Date.now },
+}, { timestamps: false });
+
+CommentVoteSchema.index({ user: 1, comment: 1 }, { unique: true });
+```
+
+ThreadVote follows the same pattern, with a `thread` reference instead of `comment`.
 
 ### User
 
 User accounts with profile customization (managed by NextAuth):
 
-```prisma
-model User {
-    id            String    @id @default(auto()) @map("_id") @db.ObjectId
-    name          String?
-    username      String?   @unique
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    
-    // Profile fields
-    bio           String?   // Max 250 chars
-    profileImg    String?   // Custom profile image URL
-    bannerImg     String?   // Profile banner image URL
-    
-    accounts      Account[]
-    sessions      Session[]
-    lineups       Lineup[]
-    votes         Vote[]
-    ratings       Rating[]
-}
+```typescript
+// src/server/models/user.ts
+const UserSchema = new Schema<UserDoc>({
+  name:                   { type: String, required: true },
+  password:               { type: String, required: false, default: null },
+  username:               { type: String, required: false, unique: true, sparse: true },
+  email:                  { type: String, required: true, unique: true },
+  emailVerified:          { type: Date, default: null },
+  image:                  { type: String, default: null },
+  bio:                    { type: String, default: null, maxlength: 250 },
+  profileImg:             { type: String, default: null },
+  bannerImg:              { type: String, default: null },
+  socialMedia:            { type: SocialMediaSchema, default: null },
+  followerCount:          { type: Number, default: 0 },
+  followingCount:         { type: Number, default: 0 },
+  newEmail:               { type: String, default: null },
+  emailConfirmationToken: { type: String, default: null },
+  admin:                  { type: Boolean, default: false },
+}, { timestamps: false });
 ```
 
 **Notes:**
+- `username` uses `sparse: true` so null values don't conflict with the unique constraint
+- `socialMedia` is an embedded subdocument with `twitter`, `instagram`, `facebook`
+- `followerCount` / `followingCount` are denormalized for query performance
+- `password` stores bcrypt hashes for credentials-based auth (null for OAuth-only users)
 
-- `username` is unique for user profiles
-- Profile fields (`bio`, `profileImg`, `bannerImg`) allow user customization
-- Relations to `Vote` and `Rating` track user engagement
+### Follow
 
-### Account
-
-OAuth provider connections (managed by NextAuth):
-
-```prisma
-model Account {
-    id                       String  @id @default(auto()) @map("_id") @db.ObjectId
-    userId                   String  @db.ObjectId
-    type                     String
-    provider                 String
-    providerAccountId        String
-    refresh_token            String?
-    access_token             String?
-    expires_at               Int?
-    token_type               String?
-    scope                    String?
-    id_token                 String?
-    session_state            String?
-    user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-    refresh_token_expires_in Int?
-
-    @@unique([provider, providerAccountId])
-}
-```
-
-### Session
-
-Active user sessions (managed by NextAuth):
-
-```prisma
-model Session {
-    id           String   @id @default(auto()) @map("_id") @db.ObjectId
-    sessionToken String   @unique
-    userId       String   @db.ObjectId
-    expires      DateTime
-    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-```
-
-### VerificationToken
-
-Email verification tokens (managed by NextAuth):
-
-```prisma
-model VerificationToken {
-    id         String   @id @default(auto()) @map("_id") @db.ObjectId
-    identifier String
-    token      String   @unique
-    expires    DateTime
-
-    @@unique([identifier, token])
-}
-```
-
-## Database Client
-
-The Prisma client is instantiated in `src/server/db.ts`:
+User-to-user follow relationships:
 
 ```typescript
-import { env } from "~/env";
-import { PrismaClient } from "../../generated/prisma";
+// src/server/models/follow.ts
+const FollowSchema = new Schema<FollowDoc>({
+  follower:  { type: Schema.Types.ObjectId, ref: "User", required: true },
+  following: { type: Schema.Types.ObjectId, ref: "User", required: true },
+}, { timestamps: true });
 
-const createPrismaClient = () =>
-  new PrismaClient({
-    log:
-      env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
-  });
-
-const globalForPrisma = globalThis as unknown as {
-  prisma: ReturnType<typeof createPrismaClient> | undefined;
-};
-
-export const db = globalForPrisma.prisma ?? createPrismaClient();
-
-if (env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+FollowSchema.index({ follower: 1, following: 1 }, { unique: true });
+FollowSchema.index({ following: 1 });
+FollowSchema.index({ follower: 1 });
+FollowSchema.index({ follower: 1, createdAt: -1 });
+FollowSchema.index({ following: 1, createdAt: -1 });
 ```
 
-**Notes:**
+### Bookmark
 
-- Uses type-safe `env` from `~/env` instead of `process.env` for environment variable access
-- Singleton pattern prevents multiple clients in development (stored in `globalThis`)
-- Query logging (`query`, `error`, `warn`) enabled in development mode
-- Only error logging in production for performance
+Saved lineups per user:
+
+```typescript
+// src/server/models/bookmark.ts
+const BookmarkSchema = new Schema<BookmarkDoc>({
+  user:   { type: Schema.Types.ObjectId, ref: "User", required: true },
+  lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
+}, { timestamps: true });
+
+BookmarkSchema.index({ user: 1, lineup: 1 }, { unique: true });
+BookmarkSchema.index({ user: 1, createdAt: -1 });
+```
+
+### Feedback
+
+User-submitted feedback with status tracking:
+
+```typescript
+// src/server/models/feedback.ts
+const FeedbackSchema = new Schema<FeedbackDoc>({
+  name:    { type: String, required: true, maxlength: 100 },
+  email:   { type: String, required: true, maxlength: 255 },
+  subject: { type: String, required: true, maxlength: 200 },
+  message: { type: String, required: true, maxlength: 2000 },
+  status:  { type: String, enum: ["new", "read", "resolved"], default: "new" },
+}, { timestamps: true });
+```
+
+### RequestedPlayer
+
+User requests for new players to be added:
+
+```typescript
+// src/server/models/requestedPlayer.ts
+const RequestedPlayerSchema = new Schema<RequestedPlayerDoc>({
+  firstName:    { type: String, required: true },
+  lastName:     { type: String, required: true },
+  descriptions: [ValueDescriptionSchema],
+}, { timestamps: true });
+
+RequestedPlayerSchema.index(
+  { firstName: 1, lastName: 1 },
+  { unique: true, collation: { locale: "en", strength: 2 } },
+);
+```
+
+### Video
+
+YouTube videos for the Getting Technical page:
+
+```typescript
+// src/server/models/video.ts
+const VideoSchema = new Schema<VideoDoc>({
+  youtubeId:    { type: String, required: true, unique: true },
+  title:        { type: String, required: true, maxlength: 500 },
+  description:  { type: String, default: "" },
+  thumbnailUrl: { type: String, required: true },
+  duration:     { type: String, default: "" },
+  timestamps:   { type: [VideoTimestampSchema], default: [] },
+  addedBy:      { type: Schema.Types.ObjectId, ref: "User", required: true },
+}, { timestamps: true });
+```
+
+**Fields:**
+| Field          | Type               | Description                          |
+| -------------- | ------------------ | ------------------------------------ |
+| `youtubeId`    | String (unique)    | YouTube video ID                     |
+| `title`        | String             | Video title (max 500 chars)          |
+| `description`  | String             | Video description                    |
+| `thumbnailUrl` | String             | YouTube thumbnail URL                |
+| `duration`     | String             | Video duration                       |
+| `timestamps`   | VideoTimestamp[]    | Chapter markers (time + label)       |
+| `addedBy`      | ObjectId → User    | Admin who added the video            |
+
+### Auth Models (Account, Session, VerificationToken)
+
+Managed by NextAuth. These follow standard NextAuth adapter patterns:
+
+- **Account** — OAuth provider connections (`provider + providerAccountId` compound unique)
+- **Session** — Active user sessions (`sessionToken` unique)
+- **VerificationToken** — Email verification tokens (`identifier + token` compound unique)
+
+## Model Conventions
+
+All models follow a consistent pattern:
+
+1. **Virtual `id` field** — Maps `_id.toHexString()` to `id` for clean API responses
+2. **`toJSON` / `toObject` virtuals enabled** — Ensures `id` is included in serialized output
+3. **Singleton model registration** — Uses `mongoose.models.X ?? mongoose.model(...)` to prevent re-registration during HMR in development
+4. **Separate API and Doc types** — `Player` (API, with `id: string`) vs `PlayerDoc` (DB, extends `Document`)
 
 ## Common Operations
 
-### Querying with Relations
+### Querying with Population
 
 ```typescript
-// Get lineup with all players and owner
-const lineup = await db.lineup.findUnique({
-  where: { id },
-  include: {
-    pg: true,
-    sg: true,
-    sf: true,
-    pf: true,
-    c: true,
-    owner: true,
-  },
-});
+const lineup = await LineupModel.findById(id)
+  .populate("players.pg players.sg players.sf players.pf players.c")
+  .populate("owner")
+  .lean();
 ```
 
 ### Filtering and Sorting
 
 ```typescript
-// Get user's lineups, sorted by creation date
-const lineups = await db.lineup.findMany({
-  where: { ownerId: userId },
-  orderBy: { createdAt: "desc" },
-  include: { pg: true, sg: true, sf: true, pf: true, c: true },
-});
+const lineups = await LineupModel.find({ owner: userId })
+  .sort({ createdAt: -1 })
+  .populate("players.pg players.sg players.sf players.pf players.c")
+  .lean();
 ```
 
 ### Creating Records
 
 ```typescript
-const lineup = await db.lineup.create({
-  data: {
-    pgId,
-    sgId,
-    sfId,
-    pfId,
-    cId,
-    ownerId: session.user.id,
-    featured: false,
-  },
+const lineup = await LineupModel.create({
+  players: { pg: pgId, sg: sgId, sf: sfId, pf: pfId, c: cId },
+  owner: session.user.id,
+  featured: false,
 });
 ```
 
 ### Updating Records
 
 ```typescript
-const lineup = await db.lineup.update({
-  where: { id },
-  data: { featured: true },
-});
+const lineup = await LineupModel.findByIdAndUpdate(
+  id,
+  { featured: true },
+  { new: true },
+);
 ```
 
 ### Deleting Records
 
 ```typescript
-await db.lineup.delete({
-  where: { id },
-});
+await LineupModel.findByIdAndDelete(id);
 ```
 
 ### Counting Records
 
 ```typescript
-const featuredCount = await db.lineup.count({
-  where: { ownerId: userId, featured: true },
+const featuredCount = await LineupModel.countDocuments({
+  owner: userId,
+  featured: true,
 });
 ```
 
 ### Bulk Operations
 
 ```typescript
-// Seed players
-const result = await db.player.createMany({
-  data: playersData,
-});
-
-// Clear all players
-await db.player.deleteMany();
+await PlayerModel.insertMany(playersData);
+await PlayerModel.deleteMany();
 ```
 
 ## Database Commands
 
-### Push Schema
-
-Push schema changes to database without migrations:
-
-```bash
-npm run db:push
-```
-
-### Generate Client
-
-Regenerate the Prisma client after schema changes:
-
-```bash
-npx prisma generate
-```
-
-### Create Migration
-
-Create a new migration (for production deployments):
-
-```bash
-npm run db:generate
-```
-
-### Deploy Migrations
-
-Apply pending migrations:
-
-```bash
-npm run db:migrate
-```
-
-### Prisma Studio
-
-Open the visual database browser:
-
-```bash
-npm run db:studio
-```
-
 ### Seed Database
 
-Populate the database with initial data:
+Populate the database with initial player data:
 
 ```bash
 npm run db:seed
 ```
+
+The seed script is located at `src/server/seed.ts` and uses a standalone Mongoose connection (not the app's cached connection).
 
 ## Seeding
 
-### Seed Script Location
+### Seed Script
 
-`prisma/seed.ts`
+`src/server/seed.ts`
 
-### Running Seeds
+The seed script:
+1. Connects directly to MongoDB using `MONGODB_URI` from `.env`
+2. Clears all existing players
+3. Inserts ~200 basketball players across 5 value tiers
+4. Logs a summary of players seeded per tier
 
 ```bash
 npm run db:seed
-```
-
-### Seed Configuration
-
-In `package.json`:
-
-```json
-{
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
-  }
-}
-```
-
-### Writing Seeds
-
-```typescript
-import { PrismaClient } from "../generated/prisma";
-
-const prisma = new PrismaClient();
-
-async function main() {
-  // Clear existing data
-  await prisma.player.deleteMany();
-
-  // Insert new data
-  await prisma.player.createMany({
-    data: [
-      { firstName: "LeBron", lastName: "James", value: 5, imgUrl: "..." },
-      // ...
-    ],
-  });
-}
-
-main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (e) => {
-    console.error(e);
-    await prisma.$disconnect();
-    process.exit(1);
-  });
-```
-
-## MongoDB-Specific Considerations
-
-### ObjectId Type
-
-MongoDB uses ObjectId for primary keys:
-
-```prisma
-id String @id @default(auto()) @map("_id") @db.ObjectId
-```
-
-### Relations
-
-Foreign keys in MongoDB require `@db.ObjectId`:
-
-```prisma
-ownerId String @db.ObjectId
-owner   User   @relation(fields: [ownerId], references: [id])
-```
-
-### Unique Constraints
-
-Compound unique indexes:
-
-```prisma
-@@unique([provider, providerAccountId])
-@@unique([identifier, token])
-```
-
-### Case-Insensitive Search
-
-Use `mode: "insensitive"` for case-insensitive queries:
-
-```typescript
-const players = await db.player.findMany({
-  where: {
-    OR: [
-      { firstName: { contains: query, mode: "insensitive" } },
-      { lastName: { contains: query, mode: "insensitive" } },
-    ],
-  },
-});
+# Runs: tsx src/server/seed.ts
 ```
 
 ## Local Development
 
 ### Starting MongoDB
 
-Use the provided script to start a local MongoDB container:
-
-```bash
-./start-database.sh
-```
-
-Or use Docker directly:
+Use Docker to run a local MongoDB instance:
 
 ```bash
 docker run -d --name mongodb -p 27017:27017 mongo:7
@@ -579,15 +553,15 @@ docker run -d --name mongodb -p 27017:27017 mongo:7
 For local development:
 
 ```env
-DATABASE_URL="mongodb://localhost:27017/lineup-legends"
+MONGODB_URI="mongodb://localhost:27017/lineup-legends"
 ```
 
 ## Production Considerations
 
-1. **Use MongoDB Atlas**: Managed MongoDB service with backups
+1. **Use MongoDB Atlas**: Managed MongoDB service with automated backups
 2. **Enable authentication**: Never expose MongoDB without auth in production
-3. **Use connection pooling**: Prisma handles this automatically
-4. **Index frequently queried fields**: Add `@index` or `@@index` as needed
-5. **Monitor query performance**: Use Prisma's logging in development
-
-
+3. **Connection pooling**: Mongoose manages this via the cached singleton in `db.ts`
+4. **Index strategy**: All models define indexes for their common query patterns (see individual model sections)
+5. **Denormalized aggregates**: Fields like `avgRating`, `ratingCount`, `totalVotes`, `followerCount` are stored directly on documents for read performance and updated atomically during writes
+6. **Redis caching**: Shared, rarely-changing data (players) uses cache-aside with explicit invalidation; expensive aggregations (admin stats) use TTL-only caching; user profiles use per-key caching
+7. **Managed Redis**: Use Upstash or AWS ElastiCache instead of self-hosted Redis in production

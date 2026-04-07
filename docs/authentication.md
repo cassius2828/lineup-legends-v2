@@ -1,14 +1,16 @@
 # Authentication
 
-Lineup Legends v2 uses **NextAuth.js v5** (Auth.js) for secure OAuth-based authentication. This document explains how authentication is configured and used throughout the application.
+Lineup Legends v2 uses **NextAuth.js v5** (Auth.js) for authentication, supporting both **Google OAuth** and **email/username + password credentials**. This document explains how authentication is configured and used throughout the application.
 
 ## Overview
 
 The authentication system provides:
 
-- OAuth provider support (Google configured by default)
-- Session management with database persistence
-- Protected API routes via tRPC middleware
+- Google OAuth and credentials-based (email/username + password) sign-in
+- JWT-based session strategy (required for credentials provider compatibility)
+- MongoDB adapter for persisting accounts and user data
+- Custom sign-in page at `/sign-in`
+- Protected API routes via tRPC middleware (`protectedProcedure`, `adminProcedure`)
 - Server-side session access in React Server Components
 - Runtime environment validation via `ensureEnvs()`
 
@@ -16,35 +18,62 @@ The authentication system provides:
 
 ### Auth Config (`src/server/auth/config.ts`)
 
-The authentication configuration uses the Prisma adapter to persist sessions and accounts to MongoDB:
+The authentication configuration uses the MongoDB adapter and JWT session strategy:
 
 ```typescript
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import { MongoDBAdapter } from "@auth/mongodb-adapter";
+import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import { env } from "~/env";
-import { ensureEnvs } from "~/lib/ensureEnvs";
-import { db } from "~/server/db";
+import { connectDB, getMongoClient } from "~/server/db";
+import { UserModel } from "../models";
 
 ensureEnvs();
+
+const clientPromise = getMongoClient();
+
 export const authConfig = {
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/sign-in",
+  },
   providers: [
     GoogleProvider({
       clientId: env.AUTH_GOOGLE_CLIENT_ID,
       clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET,
     }),
-  ],
-  adapter: PrismaAdapter(db),
-  callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        identifier: { label: "Email or Username", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        // Validates identifier + password against UserModel (bcrypt)
+        // Returns { id, name, username, email, image, profileImg }
       },
     }),
-  },
+  ],
+  adapter: MongoDBAdapter(clientPromise),
+  callbacks: { jwt, session },
 } satisfies NextAuthConfig;
 ```
+
+### Providers
+
+#### Google OAuth
+
+Standard OAuth flow via `next-auth/providers/google`. Requires `AUTH_GOOGLE_CLIENT_ID` and `AUTH_GOOGLE_CLIENT_SECRET`.
+
+#### Credentials (Email/Username + Password)
+
+Users can sign in with either their email address or username, plus a password. The `authorize` function:
+
+1. Validates that `identifier` and `password` are non-empty strings
+2. Looks up the user by email (if `@` present) or username (lowercased)
+3. Compares the input password against the stored bcrypt hash via `bcrypt.compare`
+4. Returns the user object on success, or throws on failure
 
 ### Auth Module (`src/server/auth/index.ts`)
 
@@ -68,15 +97,41 @@ export { auth, handlers, signIn, signOut };
 - `signIn`: Function to initiate sign in
 - `signOut`: Function to sign out
 
-### Session Callback
+### JWT Callback
 
-The `session` callback adds the user's database ID to the session object, making it available on both client and server:
+On initial sign-in or session update (`trigger === "update"`), the JWT callback fetches the user from MongoDB by email and stores key fields in the token:
 
 ```typescript
-session.user.id; // MongoDB ObjectId string
-session.user.name; // Display name from OAuth provider
-session.user.email; // Email from OAuth provider
-session.user.image; // Avatar URL from OAuth provider
+async jwt({ token, user, trigger }) {
+  if (user || trigger === "update") {
+    await connectDB();
+    const dbUser = await UserModel.findOne({ email: user.email }).lean();
+    if (dbUser) {
+      token.id = dbUser._id.toString();
+      token.admin = dbUser.admin ?? false;
+      token.username = dbUser.username ?? null;
+      token.profileImg = dbUser.profileImg ?? null;
+      token.email = dbUser.email ?? null;
+      token.name = dbUser.name ?? null;
+      token.image = dbUser.image ?? null;
+    }
+  }
+  return token;
+}
+```
+
+### Session Callback
+
+The session callback maps JWT token fields to the session user object:
+
+```typescript
+session.user.id;         // MongoDB ObjectId string
+session.user.name;       // Display name
+session.user.email;      // Email address
+session.user.image;      // Avatar URL (from OAuth provider)
+session.user.admin;      // Boolean admin flag
+session.user.username;   // Username (nullable)
+session.user.profileImg; // Custom profile image URL (nullable)
 ```
 
 ## Environment Variables
@@ -91,7 +146,7 @@ AUTH_SECRET="your-generated-secret"
 AUTH_GOOGLE_CLIENT_ID="your-google-client-id"
 AUTH_GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
-# MongoDB connection string (validated by ensureEnvs)
+# MongoDB connection string
 MONGODB_URI="mongodb://localhost:27017/lineup-legends"
 ```
 
@@ -113,25 +168,7 @@ npx auth secret
 
 ### Environment Validation (`src/lib/ensureEnvs.ts`)
 
-The `ensureEnvs()` function validates required environment variables at runtime:
-
-```typescript
-import { env } from "~/env";
-
-export function ensureEnvs() {
-  if (!env.AUTH_GOOGLE_CLIENT_ID) {
-    throw new Error("AUTH_GOOGLE_CLIENT_ID is not set");
-  }
-  if (!env.AUTH_GOOGLE_CLIENT_SECRET) {
-    throw new Error("AUTH_GOOGLE_CLIENT_SECRET is not set");
-  }
-  if (!env.MONGODB_URI) {
-    throw new Error("MONGODB_URI is not set");
-  }
-}
-```
-
-This function is called in `src/server/auth/config.ts` before the auth configuration is created, ensuring the app fails fast if required variables are missing.
+The `ensureEnvs()` function validates required environment variables at runtime. It is called in `src/server/auth/config.ts` before the auth configuration is created, ensuring the app fails fast if required variables are missing.
 
 ## Usage
 
@@ -155,36 +192,43 @@ export default async function Page() {
 
 ### tRPC Procedures
 
-#### Public Procedures
+Three procedure types are available:
 
-Public procedures can be accessed by anyone, but still have access to the session if the user is logged in:
+#### Public Procedure
+
+Available to all users (authenticated or not), but still has access to the session if the user is logged in:
 
 ```typescript
 export const playerRouter = createTRPCRouter({
   getAll: publicProcedure.query(async ({ ctx }) => {
     // ctx.session may be null
-    return ctx.db.player.findMany();
   }),
 });
 ```
 
-#### Protected Procedures
+#### Protected Procedure
 
-Protected procedures require authentication. The middleware automatically throws `UNAUTHORIZED` if no session exists:
+Requires authentication. The middleware throws `UNAUTHORIZED` if no session exists:
 
 ```typescript
 export const lineupRouter = createTRPCRouter({
   create: protectedProcedure
-    .input(z.object({ pgId: z.string() /* ... */ }))
+    .input(z.object({ /* ... */ }))
     .mutation(async ({ ctx, input }) => {
       // ctx.session.user is guaranteed to exist
-      return ctx.db.lineup.create({
-        data: {
-          ...input,
-          ownerId: ctx.session.user.id,
-        },
-      });
     }),
+});
+```
+
+#### Admin Procedure
+
+Requires authentication **and** the `admin` flag on the user. Throws `FORBIDDEN` if the user is not an admin:
+
+```typescript
+export const adminRouter = createTRPCRouter({
+  getStats: adminProcedure.query(async ({ ctx }) => {
+    // ctx.session.user.admin is guaranteed true
+  }),
 });
 ```
 
@@ -198,64 +242,38 @@ Authentication requires these models (managed by NextAuth):
 
 ### User
 
-```prisma
-model User {
-    id            String    @id @default(auto()) @map("_id") @db.ObjectId
-    name          String?
-    username      String?   @unique
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    
-    // Profile fields
-    bio           String?   // Max 250 chars
-    profileImg    String?   // Custom profile image URL
-    bannerImg     String?   // Profile banner image URL
-    
-    accounts      Account[]
-    sessions      Session[]
-    lineups       Lineup[]
-    votes         Vote[]
-    ratings       Rating[]
-}
+```typescript
+// src/server/models/user.ts
+const UserSchema = new Schema<UserDoc>({
+  name:                   { type: String, required: true },
+  password:               { type: String, required: false, default: null },
+  username:               { type: String, required: false, unique: true, sparse: true },
+  email:                  { type: String, required: true, unique: true },
+  emailVerified:          { type: Date, default: null },
+  image:                  { type: String, default: null },
+  bio:                    { type: String, default: null, maxlength: 250 },
+  profileImg:             { type: String, default: null },
+  bannerImg:              { type: String, default: null },
+  socialMedia:            { type: SocialMediaSchema, default: null },
+  followerCount:          { type: Number, default: 0 },
+  followingCount:         { type: Number, default: 0 },
+  newEmail:               { type: String, default: null },
+  emailConfirmationToken: { type: String, default: null },
+  admin:                  { type: Boolean, default: false },
+});
 ```
 
-See [Database Documentation](./database.md) for full schema details including Vote and Rating models.
+See [Database Documentation](./database.md) for full schema details.
 
 ### Account
 
-Stores OAuth provider credentials:
-
-```prisma
-model Account {
-    id                String  @id @default(auto()) @map("_id") @db.ObjectId
-    userId            String  @db.ObjectId
-    type              String
-    provider          String
-    providerAccountId String
-    access_token      String?
-    refresh_token     String?
-    expires_at        Int?
-    // ... other OAuth fields
-    user              User    @relation(fields: [userId], references: [id])
-
-    @@unique([provider, providerAccountId])
-}
-```
+Stores OAuth provider credentials (standard NextAuth pattern):
+- `provider + providerAccountId` compound unique index
+- Links to User via `userId`
 
 ### Session
 
-Stores active user sessions:
-
-```prisma
-model Session {
-    id           String   @id @default(auto()) @map("_id") @db.ObjectId
-    sessionToken String   @unique
-    userId       String   @db.ObjectId
-    expires      DateTime
-    user         User     @relation(fields: [userId], references: [id])
-}
-```
+Managed by NextAuth. Note: with JWT strategy, sessions are primarily stored in the JWT token rather than the database.
 
 ## Auth Routes
 
@@ -269,58 +287,39 @@ export const { GET, POST } = handlers;
 
 | Route                      | Purpose                       |
 | -------------------------- | ----------------------------- |
-| `/api/auth/signin`         | Sign in page                  |
+| `/api/auth/signin`         | Sign in page (redirects to `/sign-in`) |
 | `/api/auth/signout`        | Sign out page                 |
 | `/api/auth/callback/google`| Google OAuth callback         |
 | `/api/auth/session`        | Get current session (JSON)    |
+
+### Custom Sign-In Page
+
+The app uses a custom sign-in page at `/sign-in` (configured via `pages.signIn` in auth config) that supports both Google OAuth and credentials-based login with email/username + password fields.
 
 ## Adding More Providers
 
 To add additional OAuth providers:
 
 1. Install the provider (usually included in `next-auth`)
-2. Add to `authConfig.providers`:
-
-```typescript
-import DiscordProvider from "next-auth/providers/discord";
-import GitHubProvider from "next-auth/providers/github";
-
-export const authConfig = {
-  providers: [
-    GoogleProvider({
-      clientId: env.AUTH_GOOGLE_CLIENT_ID,
-      clientSecret: env.AUTH_GOOGLE_CLIENT_SECRET,
-    }),
-    GitHubProvider({
-      clientId: env.AUTH_GITHUB_CLIENT_ID,
-      clientSecret: env.AUTH_GITHUB_CLIENT_SECRET,
-    }),
-    DiscordProvider({
-      clientId: env.AUTH_DISCORD_CLIENT_ID,
-      clientSecret: env.AUTH_DISCORD_CLIENT_SECRET,
-    }),
-  ],
-  // ...
-};
-```
-
+2. Add to `authConfig.providers` array
 3. Add the required environment variables for each provider
 4. Update `ensureEnvs()` to validate the new environment variables
 
 ## Type Safety
 
-The auth module extends NextAuth types to include the user ID:
+The auth module extends NextAuth types to include additional user fields:
 
 ```typescript
 declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
+      admin?: boolean;
+      username?: string | null;
+      profileImg?: string | null;
     } & DefaultSession["user"];
   }
 }
 ```
 
-This ensures TypeScript knows `session.user.id` is always available when a session exists.
-
-
+This ensures TypeScript knows `session.user.id`, `session.user.admin`, `session.user.username`, and `session.user.profileImg` are available when a session exists.

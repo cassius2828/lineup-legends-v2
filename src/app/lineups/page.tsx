@@ -1,91 +1,85 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { LineupCard } from "~/app/_components/LineupCard";
+import { useState } from "react";
+import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
+import { getId } from "~/lib/types";
+import { SORT_OPTIONS, type SortOption } from "~/lib/constants";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
-
-type SortOption = "newest" | "oldest" | "highest-rated" | "most-votes";
+import LineupsHeader from "../_components/Header/LineupsHeader";
+import LineupCardGrid from "../_components/common/LineupCardGrid";
+import { ConfirmModal } from "../_components/common/ConfirmModal";
 
 export default function MyLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const utils = api.useUtils();
 
-  const { data: lineups, isLoading } = api.lineup.getByCurrentUser.useQuery({ sort });
-  const { data: session } = api.profile.getMe.useQuery(undefined, { retry: false });
+  const { data: usersLineups, isLoading } =
+    api.lineup.getLineupsByCurrentUser.useQuery({
+      sort,
+    });
+  const { data: session } = api.profile.getMe.useQuery(undefined, {
+    retry: false,
+  });
 
   const deleteLineup = api.lineup.delete.useMutation({
     onSuccess: () => {
-      void utils.lineup.getByCurrentUser.invalidate();
+      void utils.lineup.getLineupsByCurrentUser.invalidate();
     },
     onError: (error) => {
-      alert(error.message);
+      toast.error(error.message);
     },
   });
 
   const toggleFeatured = api.lineup.toggleFeatured.useMutation({
     onSuccess: () => {
-      void utils.lineup.getByCurrentUser.invalidate();
+      void utils.lineup.getLineupsByCurrentUser.invalidate();
     },
     onError: (error) => {
-      alert(error.message);
+      toast.error(error.message);
     },
   });
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this lineup?")) {
-      deleteLineup.mutate({ id });
+    setDeleteTarget(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      deleteLineup.mutate({ id: deleteTarget });
+      setDeleteTarget(null);
     }
   };
 
   const handleToggleFeatured = (id: string) => {
     toggleFeatured.mutate({ id });
   };
-
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-white">My Lineups</h1>
-            <p className="mt-1 text-white/60">
-              Manage your fantasy basketball lineups
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <Link
-              href="/lineups/explore"
-              className="rounded-lg bg-white/10 px-4 py-2 font-medium text-white transition-colors hover:bg-white/20"
-            >
-              Explore Lineups
-            </Link>
-            <Link
-              href="/lineups/new"
-              className="rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white transition-colors hover:bg-emerald-500"
-            >
-              + Create Lineup
-            </Link>
-          </div>
-        </div>
+        <LineupsHeader
+          title="My Lineups"
+          description="Manage your fantasy basketball lineups"
+          exploreLink="/lineups/explore"
+          createLink="/lineups/new"
+          exploreLinkText="Explore Lineups"
+          createLinkText="+ Create Lineup"
+          extraLinks={[{ href: "/lineups/bookmarked", label: "Bookmarked" }]}
+        />
 
         {/* Sort Controls */}
         <div className="mb-6 flex gap-2">
-          {(
-            [
-              { value: "newest", label: "Newest" },
-              { value: "oldest", label: "Oldest" },
-              { value: "highest-rated", label: "Highest Rated" },
-              { value: "most-votes", label: "Most Votes" },
-            ] as const
-          ).map((option) => (
+          {SORT_OPTIONS.map((option) => (
             <button
               key={option.value}
               onClick={() => setSort(option.value)}
               className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                 sort === option.value
-                  ? "bg-emerald-600 text-white"
-                  : "bg-white/10 text-white/70 hover:bg-white/20"
+                  ? "bg-gold text-black"
+                  : "bg-foreground/10 text-foreground/70 hover:bg-foreground/20"
               }`}
             >
               {option.label}
@@ -97,29 +91,29 @@ export default function MyLineupsPage() {
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <div className="text-center">
-              <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500 mx-auto" />
-              <p className="text-white/60">Loading lineups...</p>
+              <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-foreground/20 border-t-gold" />
+              <p className="text-foreground/60">Loading lineups...</p>
             </div>
           </div>
-        ) : lineups && lineups.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            {lineups.map((lineup) => (
+        ) : usersLineups && usersLineups.length > 0 ? (
+          <LineupCardGrid>
+            {usersLineups.map((lineup) => (
               <LineupCard
-                key={lineup.id}
+                key={lineup._id?.toString() ?? ""}
                 lineup={lineup}
                 showOwner={false}
                 isOwner={true}
-                currentUserId={session?.id}
+                currentUserId={getId(session)}
                 onDelete={handleDelete}
                 onToggleFeatured={handleToggleFeatured}
               />
             ))}
-          </div>
+          </LineupCardGrid>
         ) : (
-          <div className="rounded-2xl bg-white/5 p-12 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/10">
+          <div className="rounded-2xl bg-foreground/5 p-12 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-foreground/10">
               <svg
-                className="h-8 w-8 text-white/40"
+                className="h-8 w-8 text-foreground/40"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -132,15 +126,15 @@ export default function MyLineupsPage() {
                 />
               </svg>
             </div>
-            <h3 className="mb-2 text-xl font-semibold text-white">
+            <h3 className="mb-2 text-xl font-semibold text-foreground">
               No lineups yet
             </h3>
-            <p className="mb-6 text-white/60">
+            <p className="mb-6 text-foreground/60">
               Create your first lineup to get started!
             </p>
             <Link
               href="/lineups/new"
-              className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-emerald-500"
+              className="inline-flex items-center gap-2 rounded-lg bg-gold px-6 py-3 font-semibold text-black transition-colors hover:bg-gold-light"
             >
               <svg
                 className="h-5 w-5"
@@ -160,6 +154,17 @@ export default function MyLineupsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Delete Lineup?"
+        description="Are you sure you want to delete this lineup? This action cannot be undone."
+        confirmLabel={deleteLineup.isPending ? "Deleting..." : "Delete"}
+        variant="danger"
+        loading={deleteLineup.isPending}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </main>
   );
 }

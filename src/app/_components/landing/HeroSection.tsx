@@ -19,17 +19,17 @@ const containerVariants = {
 };
 
 const titleVariants = {
-  hidden: { 
-    opacity: 0, 
+  hidden: {
+    opacity: 0,
     y: 60,
     scale: 0.9,
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     scale: 1,
-    transition: { 
-      duration: 0.8, 
+    transition: {
+      duration: 0.8,
       ease: [0.25, 0.46, 0.45, 0.94] as const,
     },
   },
@@ -37,8 +37,8 @@ const titleVariants = {
 
 const fadeUpVariants = {
   hidden: { opacity: 0, y: 30 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { duration: 0.6, ease: "easeOut" as const },
   },
@@ -56,8 +56,8 @@ const buttonContainerVariants = {
 
 const buttonVariants = {
   hidden: { opacity: 0, y: 20, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     scale: 1,
     transition: { duration: 0.5, ease: "easeOut" as const },
@@ -87,48 +87,48 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
           backgroundImage: `url(${cdnUrl("jordan-vs-lebron.png")})`,
         }}
       />
-      
+
       {/* Dark Overlay with gold tint */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-slate-900" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-surface-950" />
+      <div className="absolute inset-0 bg-gradient-to-t from-surface-950/80 via-transparent to-transparent" />
 
       {/* Content */}
-      <motion.div 
+      <motion.div
         className="relative z-10 flex flex-col items-center px-4 text-center"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
         {/* Animated Title */}
-        <motion.h1 
-          className="font-stencil text-6xl uppercase tracking-wider text-white sm:text-8xl md:text-9xl"
+        <motion.h1
+          className="font-stencil text-6xl tracking-wider text-foreground uppercase sm:text-8xl md:text-9xl"
           variants={titleVariants}
         >
           Lineup
         </motion.h1>
-        <motion.h1 
-          className="font-stencil -mt-2 text-6xl uppercase tracking-wider sm:-mt-4 sm:text-8xl md:text-9xl"
+        <motion.h1
+          className="font-stencil -mt-2 text-6xl tracking-wider uppercase sm:-mt-4 sm:text-8xl md:text-9xl"
           variants={titleVariants}
         >
           <span className="text-gradient-gold">Legends</span>
         </motion.h1>
 
         {/* Tagline */}
-        <motion.p 
-          className="mt-8 max-w-md text-lg text-white/80 sm:text-xl"
+        <motion.p
+          className="mt-8 max-w-md text-lg text-foreground/80 sm:text-xl"
           variants={fadeUpVariants}
         >
           Build. Share. Dominate.
         </motion.p>
 
         {/* Decorative Line */}
-        <motion.div 
-          className="mt-6 h-px w-32 bg-gradient-to-r from-transparent via-gold to-transparent"
+        <motion.div
+          className="via-gold mt-6 h-px w-32 bg-gradient-to-r from-transparent to-transparent"
           variants={fadeUpVariants}
         />
 
         {/* Buttons */}
-        <motion.div 
+        <motion.div
           className="mt-10 flex flex-col gap-4 sm:flex-row"
           variants={buttonContainerVariants}
         >
@@ -136,7 +136,7 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
             <motion.div variants={buttonVariants}>
               <Link
                 href="/lineups/new"
-                className="group relative inline-block overflow-hidden rounded-none border-2 border-gold bg-gold/10 px-10 py-4 font-stencil text-lg uppercase tracking-wide text-gold transition-all duration-300 hover:bg-gold hover:text-black hover:glow-gold"
+                className="group border-gold bg-gold/10 font-stencil hover:bg-gold hover:text-black hover:glow-gold relative inline-block overflow-hidden rounded-none border-2 px-10 py-4 text-lg tracking-wide text-foreground uppercase transition-all duration-300"
               >
                 <span className="relative z-10">Create Now</span>
               </Link>
@@ -145,16 +145,16 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
             <>
               <motion.div variants={buttonVariants}>
                 <Link
-                  href="/api/auth/signin"
-                  className="inline-block rounded-none border-2 border-white/60 bg-white/5 px-10 py-4 font-stencil text-lg uppercase tracking-wide text-white backdrop-blur-sm transition-all duration-300 hover:border-white hover:bg-white hover:text-black"
+                  href="/sign-in?mode=signup"
+                  className="font-stencil inline-block rounded-none border-2 border-foreground/60 bg-foreground/5 px-10 py-4 text-lg tracking-wide text-foreground uppercase backdrop-blur-sm transition-all duration-300 hover:border-foreground hover:bg-foreground hover:text-background"
                 >
                   Sign Up
                 </Link>
               </motion.div>
               <motion.div variants={buttonVariants}>
                 <Link
-                  href="/api/auth/signin"
-                  className="inline-block rounded-none border-2 border-gold bg-gold px-10 py-4 font-stencil text-lg uppercase tracking-wide text-black transition-all duration-300 hover:bg-white hover:glow-gold"
+                  href="/sign-in"
+                  className="border-gold bg-gold font-stencil hover:glow-gold inline-block rounded-none border-2 px-10 py-4 text-lg tracking-wide text-black uppercase transition-all duration-300 hover:bg-foreground hover:text-background"
                 >
                   Sign In
                 </Link>
@@ -165,26 +165,26 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
       </motion.div>
 
       {/* Scroll Indicator with pulsing glow */}
-      <motion.div 
+      <motion.div
         className="absolute bottom-8 left-1/2 -translate-x-1/2"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.5, duration: 0.6 }}
       >
         <motion.div
-          animate={{ 
+          animate={{
             y: [0, 8, 0],
           }}
-          transition={{ 
-            duration: 1.5, 
-            repeat: Infinity, 
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
             ease: "easeInOut",
           }}
           className="relative"
         >
-          <div className="absolute inset-0 animate-pulse rounded-full bg-gold/20 blur-xl" />
+          <div className="bg-gold/20 absolute inset-0 animate-pulse rounded-full blur-xl" />
           <svg
-            className="relative h-8 w-8 text-gold"
+            className="text-gold relative h-8 w-8"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -200,10 +200,10 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
       </motion.div>
 
       {/* Subtle corner accents */}
-      <div className="pointer-events-none absolute left-8 top-24 h-32 w-px bg-gradient-to-b from-gold/40 to-transparent" />
-      <div className="pointer-events-none absolute left-8 top-24 h-px w-32 bg-gradient-to-r from-gold/40 to-transparent" />
-      <div className="pointer-events-none absolute right-8 top-24 h-32 w-px bg-gradient-to-b from-gold/40 to-transparent" />
-      <div className="pointer-events-none absolute right-8 top-24 h-px w-32 bg-gradient-to-l from-gold/40 to-transparent" />
+      <div className="from-gold/40 pointer-events-none absolute top-24 left-8 h-32 w-px bg-gradient-to-b to-transparent" />
+      <div className="from-gold/40 pointer-events-none absolute top-24 left-8 h-px w-32 bg-gradient-to-r to-transparent" />
+      <div className="from-gold/40 pointer-events-none absolute top-24 right-8 h-32 w-px bg-gradient-to-b to-transparent" />
+      <div className="from-gold/40 pointer-events-none absolute top-24 right-8 h-px w-32 bg-gradient-to-l to-transparent" />
     </section>
   );
 }

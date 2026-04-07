@@ -16,7 +16,7 @@ export const env = createEnv({
     AUTH_GOOGLE_CLIENT_SECRET: z.string(),
 
     // Database (sensitive)
-    MONGODB_URI: z.string().url(),
+    MONGODB_URI: z.string().startsWith("mongodb"),
 
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -27,6 +27,12 @@ export const env = createEnv({
     AWS_ACCESS_KEY_ID: z.string(),
     AWS_SECRET_ACCESS_KEY: z.string(),
     BUCKET_NAME: z.string(),
+
+    // Resend (email service)
+    RESEND_API_KEY: z.string(),
+    REDIS_URL: z.string().url(),
+
+    YOUTUBE_API_KEY: z.string(),
   },
 
   /**
@@ -37,6 +43,7 @@ export const env = createEnv({
   client: {
     // CloudFront URL is safe to expose - it's a public CDN endpoint
     NEXT_PUBLIC_CLOUDFRONT_URL: z.string().url(),
+    NEXT_PUBLIC_GIPHY_API_KEY: z.string(),
   },
 
   /**
@@ -59,8 +66,13 @@ export const env = createEnv({
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
     BUCKET_NAME: process.env.BUCKET_NAME,
 
+    // Resend (server-only)
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    REDIS_URL: process.env.REDIS_URL,
+    YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
     // Public (safe for client exposure)
     NEXT_PUBLIC_CLOUDFRONT_URL: process.env.NEXT_PUBLIC_CLOUDFRONT_URL,
+    NEXT_PUBLIC_GIPHY_API_KEY: process.env.NEXT_PUBLIC_GIPHY_API_KEY,
   },
 
   /**

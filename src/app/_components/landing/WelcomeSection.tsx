@@ -33,7 +33,7 @@ const imageVariants = {
 
 export function WelcomeSection() {
   return (
-    <section className="relative overflow-hidden bg-slate-900 px-4 py-24 sm:px-8 lg:px-16">
+    <section className="relative overflow-hidden bg-surface-950 px-4 py-24 sm:px-8 lg:px-16">
       {/* Subtle gradient accent */}
       <div className="pointer-events-none absolute -left-64 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-gold/5 blur-3xl" />
       
@@ -74,13 +74,13 @@ export function WelcomeSection() {
           viewport={{ once: true, margin: "-100px" }}
         >
           <motion.h2 
-            className="font-stencil text-4xl uppercase tracking-wide text-white/60 sm:text-5xl lg:text-6xl"
+            className="font-stencil text-4xl uppercase tracking-wide text-foreground/60 sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
             Welcome to
           </motion.h2>
           <motion.h2 
-            className="font-stencil text-4xl uppercase tracking-wide text-white sm:text-5xl lg:text-6xl"
+            className="font-stencil text-4xl uppercase tracking-wide text-foreground sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
             Lineup
@@ -98,7 +98,7 @@ export function WelcomeSection() {
           />
 
           <motion.p 
-            className="mt-8 max-w-xl text-lg leading-relaxed text-white/70"
+            className="mt-8 max-w-xl text-lg leading-relaxed text-foreground/70"
             variants={textVariants}
           >
             The ultimate fantasy basketball lineup creation and management

@@ -1,0 +1,113 @@
+import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+
+import {
+  adminProcedure,
+  createTRPCRouter,
+  publicProcedure,
+} from "~/server/api/trpc";
+import { feedbackStatusSchema } from "~/server/api/schemas/feedback";
+import { FeedbackModel } from "~/server/models";
+import { sendFeedbackEmail } from "~/server/email";
+import { logger } from "~/lib/logger";
+import { feedbackListItemOutput, populated } from "~/server/api/schemas/output";
+
+const log = logger.child({ module: "feedback" });
+
+export const feedbackRouter = createTRPCRouter({
+  create: publicProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(100),
+        email: z.string().email().max(255).optional(),
+        subject: z.string().min(1).max(200),
+        message: z.string().min(1).max(2000),
+      }),
+    )
+    .output(z.object({ id: z.string(), success: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const email = ctx.session?.user?.email ?? input.email;
+      if (!email) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "An email address is required to submit feedback",
+        });
+      }
+
+      const feedback = await FeedbackModel.create({
+        name: input.name.trim(),
+        email,
+        subject: input.subject.trim(),
+        message: input.message.trim(),
+      });
+
+      try {
+        await sendFeedbackEmail({
+          name: input.name.trim(),
+          email,
+          subject: input.subject.trim(),
+          message: input.message.trim(),
+        });
+      } catch (error) {
+        log.error({ err: error }, "Email notification failed, feedback still saved");
+      }
+
+      return {
+        id: feedback._id.toHexString(),
+        success: true,
+      };
+    }),
+
+  // Get all feedback (admin only — for future admin dashboard)
+  getAll: adminProcedure
+    .input(
+      z
+        .object({
+          status: feedbackStatusSchema.optional(),
+        })
+        .optional(),
+    )
+    .output(z.array(feedbackListItemOutput))
+    .query(async ({ input }) => {
+      const filter = input?.status ? { status: input.status } : {};
+      const feedbacks = await FeedbackModel.find(filter)
+        .sort({ createdAt: -1 })
+        .lean();
+
+      return populated(
+        feedbacks.map((f) => ({
+          ...f,
+          id: f._id.toHexString(),
+        })),
+      );
+    }),
+
+  // Update feedback status (admin only — for future admin dashboard)
+  updateStatus: adminProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        status: feedbackStatusSchema,
+      }),
+    )
+    .output(z.object({ id: z.string(), status: z.string() }))
+    .mutation(async ({ input }) => {
+      const feedback = await FeedbackModel.findByIdAndUpdate(
+        input.id,
+        { status: input.status },
+        { new: true },
+      );
+
+      if (!feedback) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Feedback not found",
+        });
+      }
+
+      return {
+        id: feedback._id.toHexString(),
+        status: feedback.status,
+      };
+    }),
+});

@@ -1,50 +1,56 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { PlayerCard } from "~/app/_components/PlayerCard";
+import { RATING_MIN, RATING_MAX, RATING_STEP, RATING_DEFAULT } from "~/lib/constants";
+import { getRatingColor } from "~/lib/rating-color";
 
 export default function RateLineupPage() {
   const params = useParams();
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user;
   const lineupId = params.id as string;
 
-  const [selectedRating, setSelectedRating] = useState<number | null>(null);
+  const [selectedRating, setSelectedRating] = useState<number>(RATING_DEFAULT);
 
-  const { data: lineup, isLoading } = api.lineup.getById.useQuery({ id: lineupId });
-  const { data: existingRating } = api.lineup.getUserRating.useQuery(
-    { lineupId },
-    { enabled: !!lineupId }
-  );
+  const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery({
+    id: lineupId,
+  });
 
   const rateMutation = api.lineup.rate.useMutation({
     onSuccess: () => {
       router.push("/lineups/explore");
     },
     onError: (error) => {
-      alert(error.message);
+      toast.error(error.message);
     },
   });
 
-  // Set initial rating from existing
-  useState(() => {
-    if (existingRating) {
-      setSelectedRating(existingRating.value);
+  useEffect(() => {
+    if (lineup?.avgRating != null && lineup.avgRating > 0) {
+      setSelectedRating(
+        Math.min(RATING_MAX, Math.max(RATING_MIN, lineup.avgRating)),
+      );
     }
-  });
+  }, [lineup?.avgRating]);
 
   const handleSubmit = () => {
-    if (selectedRating === null) return;
     rateMutation.mutate({ lineupId, value: selectedRating });
   };
 
+  const ratingColor = getRatingColor(selectedRating);
+
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
         <div className="flex h-64 items-center justify-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-emerald-500" />
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-foreground/20 border-t-gold" />
         </div>
       </main>
     );
@@ -52,10 +58,13 @@ export default function RateLineupPage() {
 
   if (!lineup) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold text-white">Lineup not found</h1>
-          <Link href="/lineups/explore" className="mt-4 text-emerald-400 hover:underline">
+          <h1 className="text-2xl font-bold text-foreground">Lineup not found</h1>
+          <Link
+            href="/lineups/explore"
+            className="mt-4 text-gold-300 hover:underline"
+          >
             Back to Explore
           </Link>
         </div>
@@ -64,42 +73,53 @@ export default function RateLineupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
       <div className="container mx-auto max-w-2xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/lineups/explore"
-            className="mb-2 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white/80"
+            className="mb-2 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Back to Explore
           </Link>
-          <h1 className="text-3xl font-bold text-white">Rate Lineup</h1>
-          <p className="mt-1 text-white/60">
+          <h1 className="text-3xl font-bold text-foreground">Rate Lineup</h1>
+          <p className="mt-1 text-foreground/60">
             by {lineup.owner.name ?? lineup.owner.username ?? "Anonymous"}
           </p>
         </div>
 
         {/* Lineup Preview */}
-        <div className="mb-8 rounded-2xl bg-slate-800/50 p-6">
+        <div className="mb-8 rounded-2xl bg-surface-800/50 p-6">
           <div className="grid grid-cols-5 gap-3">
             {(["pg", "sg", "sf", "pf", "c"] as const).map((pos) => (
               <div key={pos} className="text-center">
-                <span className="mb-1 block text-xs font-bold uppercase text-white/50">
+                <span className="mb-1 block text-xs font-bold text-foreground/50 uppercase">
                   {pos.toUpperCase()}
                 </span>
-                <PlayerCard player={lineup[pos]} compact />
+                <PlayerCard player={lineup.players[pos]} compact />
               </div>
             ))}
           </div>
 
           {/* Current stats */}
-          <div className="mt-4 flex justify-center gap-6 text-sm text-white/60">
+          <div className="mt-4 flex justify-center gap-6 text-sm text-foreground/60">
             <span>
-              Votes: <strong className="text-white">{lineup.totalVotes}</strong>
+              Number of ratings:{" "}
+              <strong className="text-foreground">{lineup.ratingCount}</strong>
             </span>
             <span>
               Avg Rating:{" "}
@@ -110,53 +130,69 @@ export default function RateLineupPage() {
           </div>
         </div>
 
-        {/* Rating Selector */}
-        <div className="mb-8">
-          <h2 className="mb-4 text-center text-lg font-semibold text-white">
+        {/* Rating Slider */}
+        <div
+          className="mb-8"
+          style={{ ["--rating-color"]: ratingColor } as React.CSSProperties}
+        >
+          <h2 className="mb-4 text-center text-lg font-semibold text-foreground">
             How would you rate this lineup?
           </h2>
-          <div className="flex flex-wrap justify-center gap-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-              <button
-                key={value}
-                onClick={() => setSelectedRating(value)}
-                className={`flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold transition-all ${
-                  selectedRating === value
-                    ? "bg-gold text-black scale-110"
-                    : existingRating?.value === value
-                      ? "bg-gold/30 text-gold"
-                      : "bg-white/10 text-white/70 hover:bg-white/20"
-                }`}
-              >
-                {value}
-              </button>
-            ))}
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-foreground/50">{RATING_MIN}</span>
+              <input
+                type="range"
+                min={RATING_MIN}
+                max={RATING_MAX}
+                step={RATING_STEP}
+                value={selectedRating}
+                onChange={(e) => setSelectedRating(parseFloat(e.target.value))}
+                style={{ accentColor: ratingColor }}
+                className="h-3 flex-1 appearance-none rounded-full bg-foreground/20 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[var(--rating-color)] [&::-moz-range-thumb]:bg-stone-100 [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[var(--rating-color)] [&::-webkit-slider-thumb]:bg-stone-100 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:transition-colors [&::-webkit-slider-thumb]:hover:scale-110"
+              />
+              <span className="text-sm text-foreground/50">{RATING_MAX}</span>
+            </div>
+            <p
+              className="text-center text-2xl font-bold tabular-nums transition-colors duration-150"
+              style={{ color: ratingColor }}
+            >
+              {selectedRating.toFixed(2)}
+            </p>
           </div>
-          {existingRating && (
-            <p className="mt-3 text-center text-sm text-white/50">
-              Your previous rating: {existingRating.value}
+          {lineup?.avgRating != null && lineup.avgRating > 0 && (
+            <p className="mt-3 text-center text-sm text-foreground/50">
+              Lineup average: {lineup.avgRating.toFixed(2)}
             </p>
           )}
         </div>
 
         {/* Submit */}
-        <div className="flex gap-3">
-          <Link
-            href="/lineups/explore"
-            className="flex-1 rounded-lg bg-white/10 py-3 text-center font-medium text-white transition-colors hover:bg-white/20"
-          >
-            Cancel
-          </Link>
-          <button
-            onClick={handleSubmit}
-            disabled={selectedRating === null || rateMutation.isPending}
-            className="flex-1 rounded-lg bg-gold py-3 font-semibold text-black transition-colors hover:bg-gold-light disabled:opacity-50"
-          >
-            {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
-          </button>
-        </div>
+        {isAuthenticated ? (
+          <div className="flex gap-3">
+            <Link
+              href="/lineups/explore"
+              className="flex-1 rounded-lg bg-foreground/10 py-3 text-center font-medium text-foreground transition-colors hover:bg-foreground/20"
+            >
+              Cancel
+            </Link>
+            <button
+              onClick={handleSubmit}
+              disabled={rateMutation.isPending}
+              className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:opacity-50"
+            >
+              {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-foreground/10 p-6 text-center">
+            <p className="text-sm text-foreground/50">
+              <a href="/api/auth/signin" className="font-medium text-gold hover:text-gold-light">Sign in</a>
+              {" "}to rate this lineup
+            </p>
+          </div>
+        )}
       </div>
     </main>
   );
 }
-

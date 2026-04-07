@@ -1,11 +1,12 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { type DefaultSession, type NextAuthConfig } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import CredentialsProvider from "next-auth/providers/credentials";
+import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import bcrypt from "bcryptjs";
+import { type DefaultSession, type NextAuthConfig } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { env } from "~/env";
 import { ensureEnvs } from "~/lib/ensureEnvs";
-import { db } from "~/server/db";
+import { connectDB, getMongoClient } from "~/server/db";
+import { UserModel } from "../models";
 
 /**
  * Module augmentation for `next-auth` types.
@@ -15,6 +16,9 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
+      admin?: boolean;
+      username?: string | null;
+      profileImg?: string | null;
     } & DefaultSession["user"];
   }
 }
@@ -37,14 +41,16 @@ function isEmail(identifier: string): boolean {
 }
 
 /**
- * Finds a user by email or username.
+ * Finds a user by email or username using Mongoose.
  */
 async function findUserByIdentifier(identifier: string) {
-  return db.user.findFirst({
-    where: isEmail(identifier)
-      ? { email: identifier }
-      : { username: identifier },
-  });
+  await connectDB();
+
+  const query = isEmail(identifier)
+    ? { email: identifier }
+    : { username: identifier.toLowerCase() };
+
+  return UserModel.findOne(query).lean();
 }
 
 /**
@@ -62,7 +68,18 @@ async function verifyPassword(
 
 ensureEnvs();
 
+// Get the MongoDB client promise for the adapter
+const clientPromise = getMongoClient();
+
 export const authConfig = {
+  // Use JWT strategy - required for Credentials provider to work with sessions
+  // Database strategy doesn't work with Credentials because it doesn't persist sessions
+  session: {
+    strategy: "jwt",
+  },
+  pages: {
+    signIn: "/sign-in",
+  },
   providers: [
     GoogleProvider({
       clientId: env.AUTH_GOOGLE_CLIENT_ID,
@@ -87,29 +104,66 @@ export const authConfig = {
 
         const user = await findUserByIdentifier(identifier);
         if (!user) {
-          throw new Error("Invalid credentials");
+          throw new Error("Invalid credentials1");
         }
 
         const isValidPassword = await verifyPassword(
           password,
-          user.password as string | null,
+          user.password ?? null,
         );
         if (!isValidPassword) {
-          throw new Error("Invalid credentials");
+          throw new Error("Invalid credentials2");
         }
 
-        return user;
+        // Return user object with id as string
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          username: user.username,
+          email: user.email,
+          image: user.image,
+          profileImg: user.profileImg,
+        };
       },
     }),
   ],
-  adapter: PrismaAdapter(db),
+  adapter: MongoDBAdapter(clientPromise),
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        id: user.id,
-      },
-    }),
+    async jwt({ token, user, trigger }) {
+      // On initial sign-in, user object is available
+      // Store the user id in the token
+      if (user || trigger === "update") {
+        // Fetch admin status from database
+        await connectDB();
+        const dbUser = await UserModel.findOne({ email: user.email }).lean();
+        if (dbUser) {
+          token.id = dbUser?._id.toString() ?? "";
+          token.admin = dbUser?.admin ?? false;
+          token.username = dbUser?.username ?? null;
+          token.profileImg = dbUser?.profileImg ?? null;
+          token.email = dbUser?.email ?? null;
+          token.name = dbUser?.name ?? null;
+          token.image = dbUser?.image ?? null;
+        }
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (typeof token.id !== "string") {
+        throw new Error("User ID is not a string");
+      }
+
+      // Fetch fresh user data from database (in case it changed)
+
+      session.user.admin = (token.admin as boolean) ?? false;
+      session.user.username = (token.username as string | null) ?? null;
+      session.user.profileImg = (token.profileImg as string | null) ?? null;
+      session.user.id = token.id;
+      session.user.email = token.email!;
+      session.user.name = (token.name as string | null) ?? null;
+      session.user.image = (token.image as string | null) ?? null;
+
+      return session;
+    },
   },
 } satisfies NextAuthConfig;
