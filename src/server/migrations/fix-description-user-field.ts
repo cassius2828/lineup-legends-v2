@@ -14,7 +14,7 @@ import { env } from "~/env";
 async function migrateDescriptionUserField() {
   console.log("Starting descriptions.userId -> descriptions.user rename...\n");
 
-  await mongoose.connect(env.DATABASE_URL);
+  await mongoose.connect(env.MONGODB_URI);
   console.log("Connected to MongoDB\n");
 
   const db = mongoose.connection.db;

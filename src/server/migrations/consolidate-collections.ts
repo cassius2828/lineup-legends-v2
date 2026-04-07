@@ -46,7 +46,7 @@ async function consolidateCollections() {
   console.log("🚀 Starting collection consolidation...\n");
 
   // Connect to MongoDB
-  await mongoose.connect(env.DATABASE_URL);
+  await mongoose.connect(env.MONGODB_URI);
   console.log("✅ Connected to MongoDB\n");
 
   const db = mongoose.connection.db;
@@ -155,7 +155,7 @@ if (isDryRun) {
   console.log("🔍 DRY RUN MODE - No changes will be made\n");
 
   mongoose
-    .connect(env.DATABASE_URL)
+    .connect(env.MONGODB_URI)
     .then(async () => {
       const collections = await listCollections();
       console.log("📂 Current collections:");
