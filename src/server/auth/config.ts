@@ -24,12 +24,6 @@ declare module "next-auth" {
   }
 }
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    admin?: boolean;
-  }
-}
-
 /**
  * Validates that a value is a non-empty string.
  */
