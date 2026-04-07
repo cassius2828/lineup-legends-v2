@@ -118,12 +118,11 @@ export const publicProcedure = t.procedure.use(timingMiddleware);
 export const adminProcedure = t.procedure
   .use(timingMiddleware)
   .use(({ ctx, next }) => {
-    if (!ctx.session?.user?.admin) {
+    if (!ctx.session || ctx.session.user.admin !== true) {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
     return next({
       ctx: {
-        // infers the `session` and `user.admin` as non-nullable
         session: { ...ctx.session, user: ctx.session.user },
       },
     });

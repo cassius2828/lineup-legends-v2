@@ -16,6 +16,7 @@ declare module "next-auth" {
   interface Session extends DefaultSession {
     user: {
       id: string;
+      /** Present and `true` only when the user is an admin (omit when not). */
       admin?: boolean;
       username?: string | null;
       profileImg?: string | null;
@@ -135,10 +136,24 @@ export const authConfig = {
       if (user || trigger === "update") {
         // Fetch admin status from database
         await connectDB();
-        const dbUser = await UserModel.findOne({ email: user.email }).lean();
+        const email =
+          typeof user?.email === "string"
+            ? user.email
+            : typeof token.email === "string"
+              ? token.email
+              : null;
+        if (!email) {
+          return token;
+        }
+        const dbUser = await UserModel.findOne({ email }).lean();
         if (dbUser) {
           token.id = dbUser?._id.toString() ?? "";
-          token.admin = dbUser?.admin ?? false;
+          // Only store true on the JWT; missing/false/undefined in DB → no flag
+          if (dbUser.admin === true) {
+            token.admin = true;
+          } else {
+            delete token.admin;
+          }
           token.username = dbUser?.username ?? null;
           token.profileImg = dbUser?.profileImg ?? null;
           token.email = dbUser?.email ?? null;
@@ -155,7 +170,11 @@ export const authConfig = {
 
       // Fetch fresh user data from database (in case it changed)
 
-      session.user.admin = (token.admin as boolean) ?? false;
+      if (token.admin === true) {
+        session.user.admin = true;
+      } else {
+        delete session.user.admin;
+      }
       session.user.username = (token.username as string | null) ?? null;
       session.user.profileImg = (token.profileImg as string | null) ?? null;
       session.user.id = token.id;
