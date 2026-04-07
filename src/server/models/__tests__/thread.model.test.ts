@@ -15,14 +15,14 @@ describe("ThreadModel", () => {
       expect(error).toBeUndefined();
     });
 
-    it("should require text", () => {
+    it("should default text to null when omitted", () => {
       const thread = new ThreadModel({
         user: mockObjectId(),
         comment: mockObjectId(),
       });
       const error = thread.validateSync();
-      expect(error).toBeDefined();
-      expect(error!.errors.text).toBeDefined();
+      expect(error).toBeUndefined();
+      expect(thread.text).toBeNull();
     });
 
     it("should require user", () => {

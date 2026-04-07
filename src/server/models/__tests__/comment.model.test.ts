@@ -15,14 +15,14 @@ describe("CommentModel", () => {
       expect(error).toBeUndefined();
     });
 
-    it("should require text", () => {
+    it("should default text to null when omitted", () => {
       const comment = new CommentModel({
         user: mockObjectId(),
         lineup: mockObjectId(),
       });
       const error = comment.validateSync();
-      expect(error).toBeDefined();
-      expect(error!.errors.text).toBeDefined();
+      expect(error).toBeUndefined();
+      expect(comment.text).toBeNull();
     });
 
     it("should require user", () => {

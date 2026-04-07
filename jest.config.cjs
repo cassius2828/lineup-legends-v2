@@ -18,7 +18,10 @@ module.exports = {
   collectCoverageFrom: [
     "src/lib/**/*.ts",
     "src/server/api/routers/lineup-utils.ts",
+    "src/server/api/schemas/**/*.ts",
     "src/server/models/**/*.ts",
+    "src/server/services/**/*.ts",
+    "src/server/lib/**/*.ts",
     "!src/**/*.d.ts",
     "!src/**/index.ts",
   ],
