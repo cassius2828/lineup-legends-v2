@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
-import type { LineupType } from "~/lib/types";
+import type { LineupOutput } from "~/server/api/schemas/output";
 
 export function LineupCardStatsBar({
   lineup,
   isOwner,
 }: {
-  lineup: LineupType;
+  lineup: LineupOutput;
   isOwner: boolean;
 }) {
   const { data: session } = useSession();

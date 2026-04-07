@@ -10,6 +10,11 @@ import {
 } from "~/server/api/trpc";
 import { PlayerModel, RequestedPlayerModel, UserModel } from "~/server/models";
 import { getPlayersFromCacheOrDb } from "~/server/services/player-cache";
+import {
+  requestedPlayerListItemOutput,
+  requestedPlayerDetailOutput,
+  populated,
+} from "~/server/api/schemas/output";
 
 export const requestedPlayerRouter = createTRPCRouter({
   searchDuplicates: publicProcedure
@@ -18,6 +23,18 @@ export const requestedPlayerRouter = createTRPCRouter({
         firstName: z.string().min(1),
         lastName: z.string().min(1),
       }),
+    )
+    .output(
+      z.array(
+        z.object({
+          firstName: z.string(),
+          lastName: z.string(),
+          value: z.number(),
+          imgUrl: z.string(),
+          source: z.literal("pool"),
+          matchPercent: z.number(),
+        }),
+      ),
     )
     .query(async ({ input }) => {
       const query = `${input.firstName.trim()} ${input.lastName.trim()}`;
@@ -53,21 +70,24 @@ export const requestedPlayerRouter = createTRPCRouter({
     }),
 
   // Get all requested players with description counts
-  getAll: publicProcedure.query(async () => {
+  getAll: publicProcedure.output(z.array(requestedPlayerListItemOutput)).query(async () => {
     const requestedPlayers = await RequestedPlayerModel.find()
       .sort({ updatedAt: -1 })
       .lean();
 
-    return requestedPlayers.map((rp) => ({
-      ...rp,
-      id: rp._id,
-      descriptionCount: rp.descriptions.length,
-    }));
+    return populated(
+      requestedPlayers.map((rp) => ({
+        ...rp,
+        id: rp._id,
+        descriptionCount: rp.descriptions.length,
+      })),
+    );
   }),
 
   // Get a single requested player by ID with populated user info
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
+    .output(requestedPlayerDetailOutput)
     .query(async ({ input }) => {
       const requestedPlayer = await RequestedPlayerModel.findById(
         input.id,
@@ -105,11 +125,11 @@ export const requestedPlayerRouter = createTRPCRouter({
         };
       });
 
-      return {
+      return populated({
         ...requestedPlayer,
         id: requestedPlayer._id,
         descriptions: descriptionsWithUsers,
-      };
+      });
     }),
 
   // Create or add description to existing requested player
@@ -122,6 +142,7 @@ export const requestedPlayerRouter = createTRPCRouter({
         note: z.string().max(500).optional(),
       }),
     )
+    .output(requestedPlayerListItemOutput.extend({ descriptionCount: z.number().optional() }))
     .mutation(async ({ ctx, input }) => {
       const firstName = input.firstName.trim();
       const lastName = input.lastName.trim();
@@ -150,15 +171,16 @@ export const requestedPlayerRouter = createTRPCRouter({
         { upsert: true, new: true },
       );
 
-      return {
+      return populated({
         ...result.toObject(),
         id: result._id,
-      };
+      });
     }),
 
   // Delete a requested player entirely
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
+    .output(z.object({ success: z.boolean(), id: z.string() }))
     .mutation(async ({ input }) => {
       const requestedPlayer = await RequestedPlayerModel.findById(input.id);
 

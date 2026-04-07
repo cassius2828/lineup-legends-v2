@@ -10,11 +10,19 @@ import {
 } from "~/server/api/trpc";
 import { LineupModel, UserModel } from "~/server/models";
 import { redis } from "~/server/redis";
+import {
+  profileOutput,
+  profileMeOutput,
+  userOutput,
+  lineupOutput,
+  populated,
+} from "~/server/api/schemas/output";
 
 export const profileRouter = createTRPCRouter({
   // Get a user's profile by ID (includes lineups + stats)
   getById: publicProcedure
     .input(z.object({ userId: z.string() }))
+    .output(profileOutput.nullable())
     .query(async ({ input }) => {
       const cachedUser = await redis.get(`user:${input.userId}`);
       if (cachedUser) {
@@ -73,7 +81,7 @@ export const profileRouter = createTRPCRouter({
           .lean();
       }
 
-      return {
+      return populated({
         ...user,
         id: user._id?.toString(),
         lineups,
@@ -87,11 +95,11 @@ export const profileRouter = createTRPCRouter({
         _count: {
           lineups: totalLineups,
         },
-      };
+      });
     }),
 
   // Get current user's profile
-  getMe: protectedProcedure.query(async ({ ctx }) => {
+  getMe: protectedProcedure.output(profileMeOutput.nullable()).query(async ({ ctx }) => {
     const cachedUser = await redis.get(`user:${ctx.session.user.id}`);
     if (cachedUser) {
       return JSON.parse(cachedUser);
@@ -104,14 +112,15 @@ export const profileRouter = createTRPCRouter({
 
     if (!user) return null;
 
-    return {
+    return populated({
       ...user,
       id: user._id?.toString(),
-    };
+    });
   }),
 
   // Update current user's profile
   update: protectedProcedure
+    .output(userOutput.nullable())
     .input(
       z.object({
         username: z.string().min(3).max(30).optional(),
@@ -170,19 +179,22 @@ export const profileRouter = createTRPCRouter({
         { new: true },
       );
       await redis.del(`user:${ctx.session.user.id}`);
-      return updatedUser ?? null;
+      return populated(updatedUser ?? null);
     }),
 
   // Get featured lineups for a user
   getFeaturedLineups: publicProcedure
     .input(z.object({ userId: z.string() }))
+    .output(z.array(lineupOutput))
     .query(async ({ input }) => {
-      return await LineupModel.find({
-        owner: input.userId,
-        featured: true,
-      })
-        .limit(3)
-        .populate(lineupPopulateFields)
-        .lean();
+      return populated(
+        await LineupModel.find({
+          owner: input.userId,
+          featured: true,
+        })
+          .limit(3)
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 });

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import useSound from "use-sound";
 import { getOutcomeCategory } from "./gamble-reveal-utils";
-import type { GambleOutcomeTier } from "~/server/models";
+import type { GambleOutcomeTier } from "~/server/api/schemas/output";
 
 const SOUND_BASE = "/sounds/gamble";
 

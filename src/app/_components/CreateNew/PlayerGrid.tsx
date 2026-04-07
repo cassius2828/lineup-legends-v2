@@ -1,6 +1,6 @@
 import { DraggablePlayerCard } from "../DraggablePlayerCard";
 import { getId } from "~/lib/types";
-import { type PlayerType } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 
 const PlayerGrid = ({
   allPlayers,
@@ -9,10 +9,10 @@ const PlayerGrid = ({
   canAffordPlayer,
   filledSlots,
 }: {
-  allPlayers: { label: string; players: PlayerType[] }[];
-  isPlayerSelected: (player: PlayerType) => boolean;
-  handlePlayerClick: (player: PlayerType) => void;
-  canAffordPlayer: (player: PlayerType) => boolean;
+  allPlayers: { label: string; players: PlayerOutput[] }[];
+  isPlayerSelected: (player: PlayerOutput) => boolean;
+  handlePlayerClick: (player: PlayerOutput) => void;
+  canAffordPlayer: (player: PlayerOutput) => boolean;
   filledSlots: number;
 }) => {
   return (

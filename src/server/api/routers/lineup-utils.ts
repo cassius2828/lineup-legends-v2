@@ -1,4 +1,4 @@
-import type { GambleOutcomeTier } from "~/server/models";
+import type { GambleOutcomeTier } from "~/server/api/schemas/output";
 import { BUDGET_LIMIT } from "~/lib/constants";
 
 export { BUDGET_LIMIT };

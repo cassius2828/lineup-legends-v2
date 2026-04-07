@@ -16,10 +16,9 @@ import {
   LineupModel,
   PlayerModel,
   RatingModel,
-  type Lineup,
-  type Player,
   type PlayerDoc,
 } from "~/server/models";
+import { lineupOutput, gambleResultOutput, populated } from "~/server/api/schemas/output";
 import {
   BUDGET_LIMIT,
   DAILY_GAMBLE_LIMIT,
@@ -46,6 +45,7 @@ export const lineupRouter = createTRPCRouter({
         }),
       }),
     )
+    .output(lineupOutput.nullable())
     .mutation(async ({ ctx, input }) => {
       const { players } = input;
       const { pg, sg, sf, pf, c } = players;
@@ -90,14 +90,16 @@ export const lineupRouter = createTRPCRouter({
         owner: ctx.session.user.id,
       });
 
-      // Populate and return
-      return await LineupModel.findById(lineup._id)
-        .populate(lineupPopulateFields)
-        .lean();
+      return populated(
+        await LineupModel.findById(lineup._id)
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 
   // Get current user's lineups (protected)
   getLineupsByCurrentUser: protectedProcedure
+    .output(z.array(lineupOutput))
     .input(
       z
         .object({
@@ -113,12 +115,13 @@ export const lineupRouter = createTRPCRouter({
         .sort(buildLineupSort(input?.sort))
         .populate(lineupPopulateFields)
         .lean();
-      return data;
+      return populated(data);
     }),
 
   // Get a specific user's lineups (public)
   // look into adding pagination similar to players router
   getLineupsByOtherUsers: publicProcedure
+    .output(z.array(lineupOutput))
     .input(
       z.object({
         userId: z.string(),
@@ -129,16 +132,18 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
-      return await LineupModel.find({
-        owner: { $ne: new mongoose.Types.ObjectId(input.userId) },
-      })
-        .sort(buildLineupSort(input?.sort))
-        .populate(lineupPopulateFields)
-        .lean();
+      return populated(
+        await LineupModel.find({
+          owner: { $ne: new mongoose.Types.ObjectId(input.userId) },
+        })
+          .sort(buildLineupSort(input?.sort))
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 
-  // Get all lineups (explore - public)
   getAllLineups: publicProcedure
+    .output(z.array(lineupOutput))
     .input(
       z
         .object({
@@ -150,24 +155,29 @@ export const lineupRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ input }) => {
-      return await LineupModel.find()
-        .sort(buildLineupSort(input?.sort))
-        .populate(lineupPopulateFields)
-        .lean();
+      return populated(
+        await LineupModel.find()
+          .sort(buildLineupSort(input?.sort))
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 
-  // Get a single lineup by ID
   getLineupById: publicProcedure
     .input(z.object({ id: z.string() }))
+    .output(lineupOutput.nullable())
     .query(async ({ input }) => {
-      return await LineupModel.findById(input.id)
-        .populate(lineupPopulateFields)
-        .lean();
+      return populated(
+        await LineupModel.findById(input.id)
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 
   // Delete a lineup (protected - only owner can delete)
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
+    .output(z.unknown().nullable())
     .mutation(async ({ ctx, input }) => {
       const lineup = await LineupModel.findById(input.id)
         .select("owner")
@@ -199,6 +209,7 @@ export const lineupRouter = createTRPCRouter({
   // Toggle featured status (protected - only owner)
   toggleFeatured: protectedProcedure
     .input(z.object({ id: z.string() }))
+    .output(lineupOutput.nullable())
     .mutation(async ({ ctx, input }) => {
       const lineup = await LineupModel.findById(input.id)
         .select("owner featured")
@@ -234,13 +245,15 @@ export const lineupRouter = createTRPCRouter({
         }
       }
 
-      return await LineupModel.findByIdAndUpdate(
-        input.id,
-        { featured: !lineup.featured },
-        { new: true },
-      )
-        .populate(lineupPopulateFields)
-        .lean();
+      return populated(
+        await LineupModel.findByIdAndUpdate(
+          input.id,
+          { featured: !lineup.featured },
+          { new: true },
+        )
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 
   // ============================================
@@ -257,7 +270,7 @@ export const lineupRouter = createTRPCRouter({
         value: z.number().min(0.01).max(10),
       }),
     )
-    // look up the projection to ensure we are not fetching anything extra
+    .output(z.object({ avgRating: z.number() }))
     // can also do a mongodb lookup to get just the field we need
     // our db is very relationship oriented so it may be better for sql tables and fk
     // mongo is better when the data coming in can be unpredictable vs knowing exactly what is needed
@@ -337,7 +350,7 @@ export const lineupRouter = createTRPCRouter({
         { updatePipeline: true, new: true },
       );
       log.debug({ updatedLineup }, "updatedLineup");
-      return { avgRating: updatedLineup?.avgRating };
+      return { avgRating: updatedLineup?.avgRating ?? 0 };
     }),
 
   // ============================================
@@ -358,6 +371,7 @@ export const lineupRouter = createTRPCRouter({
         }),
       }),
     )
+    .output(lineupOutput.nullable())
     .mutation(async ({ ctx, input }) => {
       const lineup = await LineupModel.findById(input.lineupId)
         .populate(lineupPopulateFields)
@@ -412,21 +426,23 @@ export const lineupRouter = createTRPCRouter({
         }
       }
 
-      return await LineupModel.findByIdAndUpdate(
-        input.lineupId,
-        {
-          players: {
-            pg: input.players.pg,
-            sg: input.players.sg,
-            sf: input.players.sf,
-            pf: input.players.pf,
-            c: input.players.c,
+      return populated(
+        await LineupModel.findByIdAndUpdate(
+          input.lineupId,
+          {
+            players: {
+              pg: input.players.pg,
+              sg: input.players.sg,
+              sf: input.players.sf,
+              pf: input.players.pf,
+              c: input.players.c,
+            },
           },
-        },
-        { new: true },
-      )
-        .populate(lineupPopulateFields)
-        .lean();
+          { new: true },
+        )
+          .populate(lineupPopulateFields)
+          .lean(),
+      );
     }),
 
   // ============================================
@@ -454,6 +470,7 @@ export const lineupRouter = createTRPCRouter({
         position: z.enum(["pg", "sg", "sf", "pf", "c"]),
       }),
     )
+    .output(gambleResultOutput)
     .mutation(async ({ ctx, input }) => {
       const lineup = await LineupModel.findById(input.lineupId).populate([
         { path: "players.pg", model: "Player" },
@@ -513,19 +530,9 @@ export const lineupRouter = createTRPCRouter({
       }
 
       // Get the current player at the position
-      const positionFieldMap: Record<
-        "pg" | "sg" | "sf" | "pf" | "c",
-        keyof Lineup["players"]
-      > = {
-        pg: "pg",
-        sg: "sg",
-        sf: "sf",
-        pf: "pf",
-        c: "c",
-      };
-      const positionField = positionFieldMap[input.position];
+      const positionField = input.position;
       // After population, players are Player objects, not ObjectIds
-      const currentPlayer = lineup.players[positionField] as unknown as Player;
+      const currentPlayer = lineup.players[positionField] as unknown as PlayerDoc;
 
       if (!currentPlayer?.value) {
         throw new TRPCError({
@@ -616,10 +623,7 @@ export const lineupRouter = createTRPCRouter({
         { new: true },
       ).populate(lineupPopulateFields);
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-
-      /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-      return {
+      return populated({
         lineup: updatedLineup,
         previousPlayer: currentPlayer,
         newPlayer,
@@ -632,8 +636,7 @@ export const lineupRouter = createTRPCRouter({
           dailyGamblesRemaining: DAILY_GAMBLE_LIMIT - (dailyGamblesUsed + 1),
           cooldownSeconds: GAMBLE_COOLDOWN_MS / 1000,
         },
-      };
-      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+      });
     }),
 
 });

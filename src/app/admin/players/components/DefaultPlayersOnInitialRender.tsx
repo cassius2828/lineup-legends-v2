@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { PlayerType } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 // Value-based box-shadow glow colors
 const valueShadows: Record<number, string> = {
@@ -14,7 +14,7 @@ const valueShadows: Record<number, string> = {
 const DefaultPlayersOnInitialRender = ({
   allPlayersData,
 }: {
-  allPlayersData: PlayerType[];
+  allPlayersData: PlayerOutput[];
 }) => {
   return (
     <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">

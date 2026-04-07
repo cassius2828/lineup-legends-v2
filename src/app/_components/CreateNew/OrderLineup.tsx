@@ -1,4 +1,4 @@
-import { type PlayerType } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 import { POSITIONS, type PositionSlots } from "~/lib/constants";
 import {
   Tooltip,
@@ -20,8 +20,8 @@ export default function OrderLineup({
   isAuthenticated = true,
 }: {
   positionSlots: PositionSlots;
-  handleRemovePlayer: (player: PlayerType) => void;
-  activePlayer: PlayerType | null;
+  handleRemovePlayer: (player: PlayerOutput) => void;
+  activePlayer: PlayerOutput | null;
   handleSubmit: () => void;
   canSubmit: boolean;
   isSubmitting: boolean;

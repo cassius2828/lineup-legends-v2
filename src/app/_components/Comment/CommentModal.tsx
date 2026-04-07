@@ -12,8 +12,7 @@ import { LineupCard } from "../LineupCard/LineupCard";
 import ThreadCard from "./ThreadCard";
 import ComposerToolbar from "./ComposerToolbar";
 import type { ComposerMedia } from "./ComposerToolbar";
-import type { LineupType } from "~/lib/types";
-import type { Thread } from "~/server/models/threads";
+import type { LineupOutput } from "~/server/api/schemas/output";
 
 export interface ParentComment {
   _id: string;
@@ -21,8 +20,9 @@ export interface ParentComment {
   image?: string | null;
   gif?: string | null;
   user: {
-    name?: string;
-    username?: string;
+    _id?: string;
+    name?: string | null;
+    username?: string | null;
     image?: string | null;
     profileImg?: string | null;
   };
@@ -185,7 +185,7 @@ export default function CommentModal({
               <div className="border-b border-foreground/10 px-5 py-4">
                 {lineup && (
                   <LineupCard
-                    lineup={lineup as unknown as LineupType}
+                    lineup={lineup as LineupOutput}
                     hideFooter
                   />
                 )}
@@ -310,23 +310,18 @@ export default function CommentModal({
                 </div>
 
                 {/* Thread replies */}
-                {allThreads.map((thread, index) => {
-                  const tid =
-                    (thread as unknown as { _id: string })._id?.toString() ??
-                    "";
-                  return (
+                {allThreads.map((thread, index) => (
                     <ThreadCard
-                      key={tid}
-                      thread={thread as unknown as Thread}
+                      key={thread._id}
+                      thread={thread}
                       lineupId={lineupId}
                       commentId={parentComment._id}
                       currentUserId={currentUserId}
-                      userVote={myThreadVotes?.[tid] ?? null}
+                      userVote={myThreadVotes?.[thread._id] ?? null}
                       replyingTo={parentDisplayName}
                       isLast={index === allThreads.length - 1}
                     />
-                  );
-                })}
+                ))}
                 {hasNextPage && (
                   <div className="flex justify-center py-4">
                     <button

@@ -2,24 +2,23 @@
 
 import { ArrowLeft } from "lucide-react";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
-import type { LineupType } from "~/lib/types";
 import { api } from "~/trpc/react";
 import { useParams, useRouter } from "next/navigation";
 import Loading from "./loading";
 import CommentCard from "~/app/_components/Comment/CommentCard";
-import CommentModal from "~/app/_components/Comment/CommentModal";
 import type { ParentComment } from "~/app/_components/Comment/CommentModal";
 import ComposerToolbar from "~/app/_components/Comment/ComposerToolbar";
 import type { ComposerMedia } from "~/app/_components/Comment/ComposerToolbar";
 import Image from "next/image";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
+import { useCommentModalStore } from "~/stores/commentModal";
 import { useState } from "react";
 
 const LineupCardPage = () => {
     const router = useRouter();
     const [text, setText] = useState("");
     const [media, setMedia] = useState<ComposerMedia>({});
-    const [replyTarget, setReplyTarget] = useState<ParentComment | null>(null);
+    const openReply = useCommentModalStore((s) => s.openReply);
     const { data: session } = api.profile.getMe.useQuery(undefined, {
         retry: false,
     });
@@ -64,7 +63,7 @@ const LineupCardPage = () => {
                 Back
             </button>
             <LineupCard
-                lineup={lineup as unknown as LineupType}
+                lineup={lineup}
                 showOwner={true}
                 isOwner={false}
                 currentUserId={session?.id ?? ""}
@@ -122,28 +121,29 @@ const LineupCardPage = () => {
             {/* Comments list */}
             {allComments.length > 0 && (
                 <div className="mt-2 px-1">
-                    {allComments.map((comment) => {
-                        const cid = comment._id?.toString() ?? "";
-                        return (
+                    {allComments.map((comment) => (
                             <CommentCard
-                                key={cid}
-                                comment={comment as unknown as import("~/server/models").Comment & { threadCount?: number }}
+                                key={comment._id}
+                                comment={comment}
                                 lineupId={lineupId}
                                 currentUserId={session?.id}
-                                userVote={myVotes?.[cid] ?? null}
+                                userVote={myVotes?.[comment._id] ?? null}
                                 onReplyClick={() =>
-                                    setReplyTarget({
-                                        _id: cid,
-                                        text: comment.text,
-                                        image: (comment as unknown as { image?: string | null }).image,
-                                        gif: (comment as unknown as { gif?: string | null }).gif,
-                                        user: comment.user as unknown as ParentComment["user"],
-                                        createdAt: comment.createdAt,
-                                    })
+                                    openReply(
+                                        lineupId,
+                                        {
+                                            _id: comment._id,
+                                            text: comment.text ?? "",
+                                            image: comment.image,
+                                            gif: comment.gif,
+                                            user: comment.user,
+                                            createdAt: comment.createdAt,
+                                        },
+                                        session?.id,
+                                    )
                                 }
                             />
-                        );
-                    })}
+                    ))}
                     {hasNextPage && (
                         <div className="flex justify-center py-4">
                             <button
@@ -159,16 +159,6 @@ const LineupCardPage = () => {
                 </div>
             )}
 
-            {replyTarget && (
-                <CommentModal
-                    open={!!replyTarget}
-                    onClose={() => setReplyTarget(null)}
-                    lineupId={lineupId}
-                    currentUserId={session?.id}
-                    mode="reply"
-                    parentComment={replyTarget}
-                />
-            )}
         </div>
     );
 };

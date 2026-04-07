@@ -19,7 +19,8 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getId, type PlayerType } from "~/lib/types";
+import { getId } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 import {
   POSITIONS_LOWER,
   POSITION_FULL_LABELS,
@@ -32,7 +33,7 @@ import { PlayerImage } from "~/app/_components/PlayerImage";
 interface SortablePositionCardProps {
   pos: PositionLower;
   index: number;
-  player: PlayerType;
+  player: PlayerOutput;
   onSwap: (pos1: PositionLower, pos2: PositionLower) => void;
 }
 
@@ -159,7 +160,7 @@ export default function EditLineupPage() {
   );
 
   // Players are stored in a fixed slot order: [pg, sg, sf, pf, c]
-  const [positionsArray, setPositionsArray] = useState<PlayerType[]>([]);
+  const [positionsArray, setPositionsArray] = useState<PlayerOutput[]>([]);
 
   // Configure sensors with activation constraints to allow button clicks
   const sensors = useSensors(
@@ -182,8 +183,7 @@ export default function EditLineupPage() {
       lineup.players.sf,
       lineup.players.pf,
       lineup.players.c,
-      // improve type later
-    ] as unknown as PlayerType[];
+    ];
     setPositionsArray(players);
   }, [lineup]);
 
@@ -234,7 +234,7 @@ export default function EditLineupPage() {
   const handleSubmit = () => {
     if (positionsArray.length !== 5 || positionsArray.some((p) => !p)) return;
 
-    const toPlayer = (p: PlayerType) => ({
+    const toPlayer = (p: PlayerOutput) => ({
       _id: getId(p) ?? "",
       firstName: p.firstName,
       lastName: p.lastName,

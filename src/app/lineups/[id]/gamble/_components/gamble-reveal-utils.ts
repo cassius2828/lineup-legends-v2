@@ -1,4 +1,4 @@
-import type { GambleOutcomeTier } from "~/server/models";
+import type { GambleOutcomeTier } from "~/server/api/schemas/output";
 
 export const VALUE_COLORS: Record<number, string> = {
   5: "#99fcff",

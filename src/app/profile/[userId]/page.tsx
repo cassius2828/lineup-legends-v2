@@ -61,13 +61,13 @@ function FollowListModal({
             </p>
           ) : (
             items.map((item) => {
-              const user = item.user as any;
+              const user = item.user;
               return (
                 <button
                   key={item.id}
                   onClick={() => {
                     onClose();
-                    router.push(`/profile/${user._id?.toString() ?? user.id}`);
+                    router.push(`/profile/${user._id}`);
                   }}
                   className="flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-foreground/5"
                 >
@@ -421,12 +421,12 @@ export default function ProfilePage() {
             label="Highest Rated"
             value={
               highestRated
-                ? (highestRated as any).avgRating?.toFixed(1) ?? "N/A"
+                ? highestRated.avgRating?.toFixed(1) ?? "N/A"
                 : "N/A"
             }
             subValue={
               highestRated
-                ? `${(highestRated as any).ratingCount ?? 0} ratings`
+                ? `${highestRated.ratingCount ?? 0} ratings`
                 : undefined
             }
             href={
@@ -452,20 +452,7 @@ export default function ProfilePage() {
               {profile.featuredLineups.map((lineup: any) => (
                 <LineupCard
                   key={getId(lineup)}
-                  lineup={{
-                    ...lineup,
-                    owner: {
-                      id: getId(profile),
-                      name: profile.name,
-                      username: profile.username,
-                      image: profile.profileImg ?? profile.image,
-                      email: undefined,
-                      emailVerified: null,
-                      bio: profile.bio,
-                      profileImg: profile.profileImg,
-                      bannerImg: profile.bannerImg,
-                    },
-                  } as any}
+                  lineup={lineup}
                   showOwner={false}
                   isOwner={false}
                   featured
@@ -493,23 +480,10 @@ export default function ProfilePage() {
 
           {profile.lineups.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2">
-              {profile.lineups.map((lineup: any) => (
+              {profile.lineups.map((lineup) => (
                 <LineupCard
                   key={getId(lineup)}
-                  lineup={{
-                    ...lineup,
-                    owner: {
-                      id: getId(profile),
-                      name: profile.name,
-                      username: profile.username,
-                      image: profile.profileImg ?? profile.image,
-                      email: undefined,
-                      emailVerified: null,
-                      bio: profile.bio,
-                      profileImg: profile.profileImg,
-                      bannerImg: profile.bannerImg,
-                    },
-                  } as any}
+                  lineup={lineup}
                   showOwner={false}
                   isOwner={false}
                 />

@@ -3,10 +3,12 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { BookmarkModel, LineupModel } from "~/server/models";
 import { lineupPopulateFields } from "~/server/lib/lineup-queries";
+import { lineupOutput, populated } from "~/server/api/schemas/output";
 
 export const bookmarkRouter = createTRPCRouter({
   toggle: protectedProcedure
     .input(z.object({ lineupId: z.string() }))
+    .output(z.object({ bookmarked: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
 
@@ -30,6 +32,7 @@ export const bookmarkRouter = createTRPCRouter({
 
   isBookmarked: protectedProcedure
     .input(z.object({ lineupId: z.string() }))
+    .output(z.object({ bookmarked: z.boolean() }))
     .query(async ({ ctx, input }) => {
       const existing = await BookmarkModel.findOne({
         user: ctx.session.user.id,
@@ -40,6 +43,7 @@ export const bookmarkRouter = createTRPCRouter({
     }),
 
   getBookmarkedLineups: protectedProcedure
+    .output(z.array(lineupOutput))
     .input(
       z
         .object({
@@ -77,6 +81,6 @@ export const bookmarkRouter = createTRPCRouter({
           (idOrder.get(b._id.toString()) ?? 0),
       );
 
-      return lineups;
+      return populated(lineups);
     }),
 });

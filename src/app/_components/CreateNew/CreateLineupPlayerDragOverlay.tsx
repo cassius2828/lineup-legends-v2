@@ -1,13 +1,13 @@
 "use client";
 
-import type { PlayerType } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 import { VALUE_SHADOWS_LARGE } from "~/lib/constants";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 
 const CreateLineupPlayerDragOverlay = ({
   activePlayer,
 }: {
-  activePlayer: PlayerType;
+  activePlayer: PlayerOutput;
 }) => {
   return (
     <div className="relative flex w-[4.5rem] flex-col items-center opacity-90">

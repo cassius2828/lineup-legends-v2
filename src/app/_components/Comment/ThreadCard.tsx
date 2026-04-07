@@ -8,10 +8,10 @@ import { api } from "~/trpc/react";
 import { formatRelativeTime, getDisplayName } from "~/lib/format";
 import { useVote } from "~/hooks/useVote";
 import ConfirmModal from "~/app/_components/ui/ConfirmModal";
-import type { Thread } from "~/server/models/threads";
+import type { ThreadOutput } from "~/server/api/schemas/output";
 
 interface ThreadCardProps {
-  thread: Thread;
+  thread: ThreadOutput;
   lineupId: string;
   commentId: string;
   currentUserId: string | undefined;
@@ -30,12 +30,8 @@ export default function ThreadCard({
   isLast = true,
 }: ThreadCardProps) {
   const utils = api.useUtils();
-  const threadId =
-    (thread as unknown as { _id: string })._id?.toString() ?? thread.id;
-  const threadOwnerId =
-    typeof thread.user === "object" && thread.user !== null
-      ? ((thread.user as unknown as { _id?: string })._id ?? "")
-      : String(thread.user);
+  const threadId = thread._id;
+  const threadOwnerId = thread.user._id;
   const isOwnThread = !!currentUserId && currentUserId === threadOwnerId;
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);

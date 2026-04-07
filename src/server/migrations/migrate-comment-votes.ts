@@ -36,7 +36,7 @@ async function migrateCommentVotes() {
   console.log("🚀 Starting comment vote migration...\n");
 
   // Connect to MongoDB
-  await mongoose.connect(env.DATABASE_URL);
+  await mongoose.connect(env.MONGODB_URI);
   console.log("✅ Connected to MongoDB\n");
 
   const db = mongoose.connection.db;

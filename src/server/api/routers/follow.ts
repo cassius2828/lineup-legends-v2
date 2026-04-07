@@ -7,10 +7,16 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { FollowModel, UserModel } from "~/server/models";
+import {
+  paginatedFollowOutput,
+  searchUserOutput,
+  populated,
+} from "~/server/api/schemas/output";
 
 export const followRouter = createTRPCRouter({
   toggleFollow: protectedProcedure
     .input(z.object({ targetUserId: z.string() }))
+    .output(z.object({ following: z.boolean() }))
     .mutation(async ({ ctx, input }) => {
       const currentUserId = ctx.session.user.id;
       const { targetUserId } = input;
@@ -71,6 +77,7 @@ export const followRouter = createTRPCRouter({
 
   isFollowing: protectedProcedure
     .input(z.object({ targetUserId: z.string() }))
+    .output(z.object({ following: z.boolean() }))
     .query(async ({ ctx, input }) => {
       const existing = await FollowModel.findOne({
         follower: ctx.session.user.id,
@@ -88,6 +95,7 @@ export const followRouter = createTRPCRouter({
         limit: z.number().min(1).max(50).default(20),
       }),
     )
+    .output(paginatedFollowOutput)
     .query(async ({ input }) => {
       const query: Record<string, unknown> = {
         following: input.userId,
@@ -106,7 +114,7 @@ export const followRouter = createTRPCRouter({
       const hasMore = follows.length > input.limit;
       const items = hasMore ? follows.slice(0, input.limit) : follows;
 
-      return {
+      return populated({
         items: items.map((f) => ({
           id: f._id.toString(),
           user: f.follower,
@@ -115,7 +123,7 @@ export const followRouter = createTRPCRouter({
         nextCursor: hasMore
           ? items[items.length - 1]?._id.toString()
           : undefined,
-      };
+      });
     }),
 
   getFollowing: publicProcedure
@@ -126,6 +134,7 @@ export const followRouter = createTRPCRouter({
         limit: z.number().min(1).max(50).default(20),
       }),
     )
+    .output(paginatedFollowOutput)
     .query(async ({ input }) => {
       const query: Record<string, unknown> = {
         follower: input.userId,
@@ -144,7 +153,7 @@ export const followRouter = createTRPCRouter({
       const hasMore = follows.length > input.limit;
       const items = hasMore ? follows.slice(0, input.limit) : follows;
 
-      return {
+      return populated({
         items: items.map((f) => ({
           id: f._id.toString(),
           user: f.following,
@@ -153,7 +162,7 @@ export const followRouter = createTRPCRouter({
         nextCursor: hasMore
           ? items[items.length - 1]?._id.toString()
           : undefined,
-      };
+      });
     }),
 
   searchUsers: publicProcedure
@@ -163,6 +172,7 @@ export const followRouter = createTRPCRouter({
         limit: z.number().min(1).max(30).default(20),
       }),
     )
+    .output(z.array(searchUserOutput))
     .query(async ({ input }) => {
       const searchRegex = new RegExp(input.query, "i");
 
@@ -173,9 +183,11 @@ export const followRouter = createTRPCRouter({
         .limit(input.limit)
         .lean();
 
-      return users.map((u) => ({
-        ...u,
-        id: u._id.toString(),
-      }));
+      return populated(
+        users.map((u) => ({
+          ...u,
+          id: u._id.toString(),
+        })),
+      );
     }),
 });

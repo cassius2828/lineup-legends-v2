@@ -2,16 +2,16 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import type { PlayerType } from "~/lib/types";
+import type { PlayerOutput } from "~/server/api/schemas/output";
 import { getId } from "~/lib/types";
 import { VALUE_SHADOWS } from "~/lib/constants";
 import { PlayerImage } from "./PlayerImage";
 
 interface DraggablePlayerCardProps {
-  player: PlayerType;
+  player: PlayerOutput;
   selected?: boolean;
   disabled?: boolean;
-  onSelect?: (player: PlayerType) => void;
+  onSelect?: (player: PlayerOutput) => void;
 }
 
 export function DraggablePlayerCard({
