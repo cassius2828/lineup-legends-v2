@@ -22,7 +22,6 @@ import { lineupOutput, gambleResultOutput, populated } from "~/server/api/schema
 import {
   BUDGET_LIMIT,
   DAILY_GAMBLE_LIMIT,
-  GAMBLE_COOLDOWN_MS,
   selectWeightedValue,
   getOutcomeTier,
   calculateStreakChange,
@@ -497,21 +496,7 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      // Check cooldown
       const now = new Date();
-      const lastGambleAt = lineup.lastGambleAt;
-      if (lastGambleAt) {
-        const timeSinceLastGamble = now.getTime() - lastGambleAt.getTime();
-        if (timeSinceLastGamble < GAMBLE_COOLDOWN_MS) {
-          const remainingSeconds = Math.ceil(
-            (GAMBLE_COOLDOWN_MS - timeSinceLastGamble) / 1000,
-          );
-          throw new TRPCError({
-            code: "TOO_MANY_REQUESTS",
-            message: `Please wait ${remainingSeconds} seconds before gambling again.`,
-          });
-        }
-      }
 
       // Check and reset daily gamble limit if needed
       let dailyGamblesUsed = lineup.dailyGamblesUsed ?? 0;
@@ -615,7 +600,6 @@ export const lineupRouter = createTRPCRouter({
           $set: {
             lastGambleResult,
             gambleStreak: newStreak,
-            lastGambleAt: now,
             dailyGamblesUsed: dailyGamblesUsed + 1,
             dailyGamblesResetAt,
           },
@@ -634,7 +618,6 @@ export const lineupRouter = createTRPCRouter({
           outcomeTier,
           streak: newStreak,
           dailyGamblesRemaining: DAILY_GAMBLE_LIMIT - (dailyGamblesUsed + 1),
-          cooldownSeconds: GAMBLE_COOLDOWN_MS / 1000,
         },
       });
     }),
