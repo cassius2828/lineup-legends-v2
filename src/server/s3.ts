@@ -1,25 +1,19 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { env } from "~/env";
 
-/**
- * Create the S3 client with credentials from environment variables
- */
-const createS3Client = () =>
-  new S3Client({
+const globalForS3 = globalThis as unknown as {
+  s3: S3Client | undefined;
+};
+
+function getS3Client(): S3Client {
+  return (globalForS3.s3 ??= new S3Client({
     region: env.AWS_REGION,
     credentials: {
       accessKeyId: env.AWS_ACCESS_KEY_ID,
       secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
     },
-  });
-
-const globalForS3 = globalThis as unknown as {
-  s3: ReturnType<typeof createS3Client> | undefined;
-};
-
-export const s3 = globalForS3.s3 ?? createS3Client();
-
-if (env.NODE_ENV !== "production") globalForS3.s3 = s3;
+  }));
+}
 
 /**
  * Upload a file to S3 and return the public URL
@@ -41,7 +35,7 @@ export async function uploadToS3(
     ContentType: contentType,
   });
 
-  await s3.send(command);
+  await getS3Client().send(command);
 
   return `https://${env.BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/${key}`;
 }

@@ -77,10 +77,12 @@ export async function connectDB(): Promise<typeof mongoose> {
  */
 export function getMongoClient(): Promise<MongoClient> {
   if (!global.mongoClientPromise) {
-    global.mongoClientPromise = Promise.resolve().then(() => {
+    const p = Promise.resolve().then(() => {
       const client = new MongoClient(getMongoUri());
       return client.connect();
     });
+    p.catch(() => {});
+    global.mongoClientPromise = p;
   }
   return global.mongoClientPromise;
 }
