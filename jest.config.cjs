@@ -15,6 +15,7 @@ module.exports = {
     ],
   },
   testMatch: ["**/__tests__/**/*.test.ts"],
+  testPathIgnorePatterns: ["<rootDir>/e2e/"],
   collectCoverageFrom: [
     "src/lib/**/*.ts",
     "src/server/api/routers/lineup-utils.ts",
