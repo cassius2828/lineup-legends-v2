@@ -22,7 +22,7 @@ export default function ExploreLineupsPage() {
   const { data: lineups, isLoading } =
     api.lineup.getLineupsByOtherUsers.useQuery({
       sort,
-      userId: session?.user.id ?? "",
+      userId: session?.user?.id,
     });
   const handlePreFetchLineups = (sort: SortOption) => {
     const userId = session?.user?.id;

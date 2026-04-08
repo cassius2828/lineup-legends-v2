@@ -127,7 +127,7 @@ export const lineupRouter = createTRPCRouter({
     .output(z.array(lineupOutput))
     .input(
       z.object({
-        userId: z.string(),
+        userId: z.string().optional(),
         sort: z
           .enum(["newest", "oldest", "highest-rated", "most-rated"])
           .optional()
@@ -135,10 +135,12 @@ export const lineupRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
+      const filter = input.userId
+        ? { owner: { $ne: new mongoose.Types.ObjectId(input.userId) } }
+        : {};
+
       return populated(
-        await LineupModel.find({
-          owner: { $ne: new mongoose.Types.ObjectId(input.userId) },
-        })
+        await LineupModel.find(filter)
           .sort(buildLineupSort(input?.sort))
           .populate(lineupPopulateFields)
           .lean(),
