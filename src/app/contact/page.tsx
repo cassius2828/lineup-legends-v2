@@ -57,6 +57,7 @@ export default function ContactPage() {
           {/* Right Column */}
           <div className="space-y-8">
             <FeedbackSection />
+            <FAQSection />
           </div>
         </div>
       </motion.div>
@@ -410,6 +411,124 @@ function FeedbackSection() {
           {createFeedback.isPending ? "Sending..." : "Send Feedback"}
         </button>
       </form>
+    </motion.section>
+  );
+}
+
+// ─── FAQ Section ─────────────────────────────────────────────────────────────
+
+const FAQ_ITEMS = [
+  {
+    question: "Why does my lineup show more than $15 in total value?",
+    answer:
+      "The $15 budget is only enforced when you first create a lineup. After that, the total value can increase through two things: gambling a player and receiving a higher-value replacement, or an admin updating a player's value over time. This is by design and part of the fun.",
+  },
+  {
+    question: "How does the gamble mechanic work?",
+    answer:
+      "You can gamble any player in your lineup for a random replacement. The outcome is determined by weighted odds based on your current player's value. Lower-value players have a higher chance of upgrading (but it's risky), while higher-value players are safer to gamble. You get 3 gambles per lineup per day.",
+  },
+  {
+    question: "What do the player dollar values mean?",
+    answer:
+      "$5 players are superstars, $4 are all-stars, $3 are quality starters, $2 are solid contributors, and $1 players are role players. The values are set by the team and may be adjusted over time based on real-world performance.",
+  },
+  {
+    question: "Can I edit my lineup after creating it?",
+    answer:
+      "You can reorder player positions within your lineup at any time. To swap in different players, use the gamble feature. You cannot directly replace a player outside of gambling.",
+  },
+  {
+    question: "How do ratings work?",
+    answer:
+      "Anyone can rate a lineup from 1 to 10. The lineup's displayed rating is the average of all ratings it has received. You cannot rate your own lineup.",
+  },
+  {
+    question: "What are featured lineups?",
+    answer:
+      'You can mark up to 3 of your lineups as "featured" to showcase them at the top of your profile page.',
+  },
+  {
+    question: "How do I request a player that's not in the database?",
+    answer:
+      'Use the "Request a Player" form on this page. Fill in the player\'s name, suggest a value, and optionally add a note. We review requests and add players periodically.',
+  },
+  {
+    question: "Can I follow other users?",
+    answer:
+      'Yes! Visit any user\'s profile and click the follow button. You can find users through the "Find Users" search page. Your followers and following counts are displayed on your profile.',
+  },
+];
+
+function FAQSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const toggle = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
+
+  return (
+    <motion.section
+      className="border-foreground/10 bg-foreground/5 rounded-xl border p-6 backdrop-blur-sm"
+      variants={sectionVariants}
+    >
+      <div className="mb-6">
+        <div className="mb-2 flex items-center gap-3">
+          <div className="bg-gold/20 flex h-10 w-10 items-center justify-center rounded-lg">
+            <svg
+              className="text-gold h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h2 className="text-foreground text-xl font-semibold">FAQs</h2>
+        </div>
+        <p className="text-foreground/60 text-sm">
+          Common questions about how Lineup Legends works.
+        </p>
+      </div>
+
+      <div className="max-h-[28rem] space-y-2 overflow-y-auto pr-1">
+        {FAQ_ITEMS.map((item, index) => (
+          <div key={index} className="border-foreground/10 rounded-lg border">
+            <button
+              type="button"
+              onClick={() => toggle(index)}
+              className="text-foreground hover:bg-foreground/5 flex w-full cursor-pointer items-center justify-between px-4 py-3 text-left text-sm font-medium transition-colors"
+            >
+              <span className="pr-4">{item.question}</span>
+              <svg
+                className={`text-foreground/40 h-4 w-4 shrink-0 transition-transform duration-200 ${
+                  openIndex === index ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            {openIndex === index && (
+              <div className="text-foreground/60 border-foreground/10 border-t px-4 py-3 text-sm leading-relaxed">
+                {item.answer}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </motion.section>
   );
 }

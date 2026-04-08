@@ -20,6 +20,7 @@ export function useSubmitComment({
     onSuccess: () => {
       toast.success("Comment posted");
       void utils.comment.getComments.invalidate({ lineupId });
+      void utils.comment.getCommentCount.invalidate({ lineupId });
       onSuccess?.();
     },
     onError: (err) => toast.error(err.message),

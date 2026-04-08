@@ -7,9 +7,8 @@ The gamble feature lets lineup owners swap a player at a given position for a ne
 - **Scope**: One position per gamble (PG, SG, SF, PF, or C).
 - **Input**: `lineupId`, `position`.
 - **Authorization**: Only the lineup owner can gamble.
-- **Daily limit**: 5 gambles per lineup per day (resets at UTC midnight).
-- **Cooldown**: 30-second cooldown between gambles on the same lineup.
-- **Result**: The lineup is updated with a new player at that position; the previous player is replaced. The API returns the updated lineup, both players, and outcome metadata (value change, outcome tier) for UI feedback.
+- **Daily limit**: 3 gambles per lineup per day (resets at UTC midnight).
+- **Result**: The lineup is updated with a new player at that position; the previous player is replaced. The API returns the updated lineup, both players, and outcome metadata (value change, outcome tier, streak, daily gambles remaining) for UI feedback.
 
 ## Why Weighted Odds?
 
@@ -47,19 +46,18 @@ Odds are defined in `src/server/api/routers/lineup-utils.ts`:
 ```typescript
 export const GAMBLE_ODDS: Record<number, number[]> = {
   // [chance of getting value: 1, 2, 3, 4, 5]
-  1: [70, 15, 8, 6, 1],   // 30% upgrade chance
-  2: [35, 45, 10, 7, 3],  // 20% upgrade, 35% downgrade
-  3: [9, 20, 50, 14, 7],  // 21% upgrade, 29% downgrade
-  4: [5, 8, 17, 45, 25],  // 25% upgrade to 5, 30% downgrade
-  5: [2, 5, 8, 25, 60],   // 60% stay at 5, very safe
+  1: [70, 15, 8, 6, 1], // 30% upgrade chance
+  2: [35, 45, 10, 7, 3], // 20% upgrade, 35% downgrade
+  3: [9, 20, 50, 14, 7], // 21% upgrade, 29% downgrade
+  4: [5, 8, 17, 45, 25], // 25% upgrade to 5, 30% downgrade
+  5: [2, 5, 8, 25, 60], // 60% stay at 5, very safe
 };
 ```
 
 ### Constants
 
 ```typescript
-export const DAILY_GAMBLE_LIMIT = 5;        // Max gambles per day per lineup
-export const GAMBLE_COOLDOWN_MS = 30 * 1000; // 30 seconds between gambles
+export const DAILY_GAMBLE_LIMIT = 3; // Max gambles per day per lineup
 ```
 
 ### Weighted random selection
@@ -88,13 +86,13 @@ The value change is classified into 7 tiers for visual and audio feedback:
 
 ```typescript
 export type GambleOutcomeTier =
-  | "jackpot"    // +3 or +4 value jump
-  | "big_win"    // +2 value jump
-  | "upgrade"    // +1 value jump
-  | "neutral"    // same value
-  | "downgrade"  // -1 value drop
-  | "big_loss"   // -2 value drop
-  | "disaster";  // -3 or -4 value drop
+  | "jackpot" // +3 or +4 value jump
+  | "big_win" // +2 value jump
+  | "upgrade" // +1 value jump
+  | "neutral" // same value
+  | "downgrade" // -1 value drop
+  | "big_loss" // -2 value drop
+  | "disaster"; // -3 or -4 value drop
 
 export function getOutcomeTier(valueChange: number): GambleOutcomeTier {
   if (valueChange >= 3) return "jackpot";
@@ -145,7 +143,7 @@ export function shouldResetDailyGambles(resetAt: Date | undefined): boolean {
 ### Mutation flow
 
 1. **Validate ownership and limits**
-   Load lineup by `lineupId`, ensure ownership, check cooldown (30s since `lastGambleAt`), check daily limit (5 per day, reset at UTC midnight).
+   Load lineup by `lineupId`, ensure ownership, check daily limit (3 per day, reset at UTC midnight).
 
 2. **Resolve current player**
    Get the player at the given position and their `currentValue`.
@@ -160,7 +158,7 @@ export function shouldResetDailyGambles(resetAt: Date | undefined): boolean {
    If no player exists at `targetValue`, expand to adjacent values and pick an eligible player.
 
 6. **Update lineup**
-   Set the position to the new player's ID. Update `timesGambled`, `lastGambleResult`, `gambleStreak`, `lastGambleAt`, `dailyGamblesUsed`, and `dailyGamblesResetAt`.
+   Set the position to the new player's ID. Update `timesGambled`, `lastGambleResult`, `gambleStreak`, `dailyGamblesUsed`, and `dailyGamblesResetAt`.
 
 7. **Return**
    Return the updated lineup, previous player, new player, and outcome (value change, outcome tier) so the UI can show the result.
@@ -216,7 +214,7 @@ The `/admin/gamble-animations` page lets admins test all 7 outcome tiers with mo
 
 - **Procedure**: `lineup.gamble` (protected mutation).
 - **Input**: `{ lineupId: string, position: "pg" | "sg" | "sf" | "pf" | "c" }`.
-- **Errors**: `NOT_FOUND` (lineup or current player), `FORBIDDEN` (not owner), `BAD_REQUEST` (cooldown or daily limit), `NOT_FOUND` (no eligible replacement after fallback).
+- **Errors**: `NOT_FOUND` (lineup or current player), `FORBIDDEN` (not owner), `TOO_MANY_REQUESTS` (daily limit), `NOT_FOUND` (no eligible replacement after fallback).
 
 ## Lineup Model Gambling Fields
 
@@ -226,7 +224,6 @@ The `/admin/gamble-animations` page lets admins test all 7 outcome tiers with mo
   timesGambled:        { type: Number, default: 0 },
   lastGambleResult:    { type: LastGambleResultSchema, default: undefined },
   gambleStreak:        { type: Number, default: 0 },
-  lastGambleAt:        { type: Date, default: undefined },
   dailyGamblesUsed:    { type: Number, default: 0 },
   dailyGamblesResetAt: { type: Date, default: undefined },
 }

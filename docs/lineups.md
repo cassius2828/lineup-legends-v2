@@ -7,7 +7,7 @@ Lineups are the core feature of Lineup Legends. Users create fantasy basketball 
 A lineup consists of:
 
 - **5 positions**: PG (Point Guard), SG (Shooting Guard), SF (Small Forward), PF (Power Forward), C (Center)
-- **Budget constraint**: Total player values must not exceed $15
+- **Budget constraint**: Total player values must not exceed $15 at creation time (see note below)
 - **Ownership**: Each lineup belongs to a user
 - **Featured status**: Users can feature up to 3 lineups
 - **Popularity**: Expressed via **average rating** (`avgRating`) and **number of ratings** (`ratingCount`). Users rate lineups 1–10; comments and thread replies use Reddit-style upvote/downvote.
@@ -16,32 +16,37 @@ A lineup consists of:
 - **Bookmarking**: Users can bookmark lineups for later viewing
 - **Comments**: Users can comment on lineups with threaded replies, images, and GIFs
 
+> **Note on budget:** The $15 budget is enforced only at lineup creation. A lineup's total value can exceed $15 after creation through two mechanisms: (1) **gambling** — swapping a player for a higher-value replacement, and (2) **player value updates** — an admin may adjust a player's value over time, which retroactively changes the total value of any lineup containing that player. This is by design.
+
 ## Data Model
 
 ### Lineup Schema
 
 ```typescript
 // src/server/models/lineup.ts
-const LineupSchema = new Schema<LineupDoc>({
-  featured:            { type: Boolean, default: false },
-  players: {
-    pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    c:  { type: Schema.Types.ObjectId, ref: "Player", required: true },
+const LineupSchema = new Schema<LineupDoc>(
+  {
+    featured: { type: Boolean, default: false },
+    players: {
+      pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      c: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    },
+    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    avgRating: { type: Number, default: 0 },
+    ratingSum: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
+    timesGambled: { type: Number, default: 0 },
+    lastGambleResult: { type: LastGambleResultSchema, default: undefined },
+    gambleStreak: { type: Number, default: 0 },
+    lastGambleAt: { type: Date, default: undefined },
+    dailyGamblesUsed: { type: Number, default: 0 },
+    dailyGamblesResetAt: { type: Date, default: undefined },
   },
-  owner:               { type: Schema.Types.ObjectId, ref: "User", required: true },
-  avgRating:           { type: Number, default: 0 },
-  ratingSum:           { type: Number, default: 0 },
-  ratingCount:         { type: Number, default: 0 },
-  timesGambled:        { type: Number, default: 0 },
-  lastGambleResult:    { type: LastGambleResultSchema, default: undefined },
-  gambleStreak:        { type: Number, default: 0 },
-  lastGambleAt:        { type: Date, default: undefined },
-  dailyGamblesUsed:    { type: Number, default: 0 },
-  dailyGamblesResetAt: { type: Date, default: undefined },
-}, { timestamps: true });
+  { timestamps: true },
+);
 ```
 
 ### Relationships
@@ -78,7 +83,8 @@ const uniqueIds = new Set(playerIds);
 if (uniqueIds.size !== playerIds.length) {
   throw new TRPCError({
     code: "BAD_REQUEST",
-    message: "Duplicate players found. Each position must have a unique player.",
+    message:
+      "Duplicate players found. Each position must have a unique player.",
   });
 }
 ```

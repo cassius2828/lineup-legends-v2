@@ -1,6 +1,7 @@
 "use client";
 
 import type { Session } from "next-auth";
+import { signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -110,13 +111,16 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                         </span>
                       </Link>
                     </div>
-                    <Link
-                      href="/api/auth/signout"
-                      onClick={closeMenu}
-                      className="hover:border-gold/50 hover:bg-gold/10 border-foreground/20 text-foreground/90 hover:text-foreground rounded-none border bg-transparent px-4 py-2 text-sm font-medium capitalize transition-all"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        void signOut({ callbackUrl: "/" });
+                      }}
+                      className="hover:border-gold/50 hover:bg-gold/10 border-foreground/20 text-foreground/90 hover:text-foreground cursor-pointer rounded-none border bg-transparent px-4 py-2 text-sm font-medium capitalize transition-all"
                     >
                       Sign Out
-                    </Link>
+                    </button>
                   </>
                 ) : (
                   <>

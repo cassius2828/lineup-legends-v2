@@ -77,7 +77,13 @@ export default function RootLayout({
                 </div>
                 <div id="global-nav-spacer" className="mb-24 md:mb-16"></div>
                 <div className="flex-1">
-                  <Suspense fallback={<div>Loading...</div>}>
+                  <Suspense
+                    fallback={
+                      <div className="flex h-64 items-center justify-center">
+                        <div className="border-t-gold border-foreground/20 h-12 w-12 animate-spin rounded-full border-4" />
+                      </div>
+                    }
+                  >
                     {children}
                   </Suspense>
                 </div>
