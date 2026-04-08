@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
+import { isValidImageUrl } from "~/lib/utils";
 
 export default function EditPlayerPage() {
   const params = useParams();
@@ -113,7 +114,13 @@ export default function EditPlayerPage() {
       <div className="bg-foreground/5 mb-8 flex items-center gap-6 rounded-lg p-6">
         <div className="h-24 w-24 overflow-hidden rounded-lg bg-[#f2f2f2]">
           <img
-            src={imgUrl || player.imgUrl}
+            src={
+              isValidImageUrl(imgUrl)
+                ? imgUrl
+                : isValidImageUrl(player.imgUrl)
+                  ? player.imgUrl
+                  : "/fallback-player.png"
+            }
             alt={`${firstName} ${lastName}`}
             className="h-full w-full object-cover"
             onError={(e) => {

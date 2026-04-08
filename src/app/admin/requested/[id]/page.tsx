@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { api } from "~/trpc/react";
+import { isValidImageUrl } from "~/lib/utils";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
 import { ConfirmModal } from "~/app/_components/common/ConfirmModal";
@@ -153,7 +154,7 @@ export default function RequestedPlayerDetailPage() {
       <div className="border-foreground/10 bg-foreground/3 mb-8 rounded-xl border p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {playerImgUrl.trim() && !imgPreviewError ? (
+            {isValidImageUrl(playerImgUrl.trim()) && !imgPreviewError ? (
               <img
                 src={playerImgUrl.trim()}
                 alt={`${requestedPlayer.firstName} ${requestedPlayer.lastName}`}

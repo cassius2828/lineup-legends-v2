@@ -6,6 +6,21 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Validates that a string is a well-formed HTTP(S) URL.
+ * Blocks javascript:, data:, vbscript:, and other non-HTTP protocols
+ * to prevent XSS when the value is used in an <img src> or similar attribute.
+ */
+export function isValidImageUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Shared vote delta calculator - O(1) operation
  * Used by both lineup votes and comment votes
  *

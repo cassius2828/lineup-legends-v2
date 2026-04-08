@@ -1,4 +1,4 @@
-import { cn, getVoteDelta } from "../utils";
+import { cn, getVoteDelta, isValidImageUrl } from "../utils";
 import { lineupPopulateFields } from "~/server/lib/lineup-queries";
 
 // ============================================
@@ -73,6 +73,55 @@ describe("getVoteDelta", () => {
     it("should return -2 when switching from upvote to downvote", () => {
       expect(getVoteDelta("downvote", "upvote")).toBe(-2);
     });
+  });
+});
+
+// ============================================
+// isValidImageUrl() - image URL validation
+// ============================================
+describe("isValidImageUrl", () => {
+  it("should accept a valid https URL", () => {
+    expect(isValidImageUrl("https://cdn.example.com/player.png")).toBe(true);
+  });
+
+  it("should accept a valid http URL", () => {
+    expect(isValidImageUrl("http://example.com/image.jpg")).toBe(true);
+  });
+
+  it("should reject javascript: protocol", () => {
+    expect(isValidImageUrl("javascript:alert(1)")).toBe(false);
+  });
+
+  it("should reject data: URIs", () => {
+    expect(isValidImageUrl("data:text/html,<script>alert(1)</script>")).toBe(
+      false,
+    );
+  });
+
+  it("should reject vbscript: protocol", () => {
+    expect(isValidImageUrl("vbscript:msgbox")).toBe(false);
+  });
+
+  it("should reject malformed URLs", () => {
+    expect(isValidImageUrl("not-a-url")).toBe(false);
+  });
+
+  it("should reject empty string", () => {
+    expect(isValidImageUrl("")).toBe(false);
+  });
+
+  it("should reject null", () => {
+    expect(isValidImageUrl(null)).toBe(false);
+  });
+
+  it("should reject undefined", () => {
+    expect(isValidImageUrl(undefined)).toBe(false);
+  });
+
+  it("should accept URLs with query params and fragments", () => {
+    expect(
+      isValidImageUrl("https://cdn.example.com/img.png?w=200&h=200#top"),
+    ).toBe(true);
   });
 });
 

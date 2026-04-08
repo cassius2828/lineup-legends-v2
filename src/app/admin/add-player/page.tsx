@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
+import { isValidImageUrl } from "~/lib/utils";
 
 export default function AddPlayerPage() {
   const router = useRouter();
@@ -81,7 +82,7 @@ export default function AddPlayerPage() {
       {(firstName || lastName || imgUrl) && (
         <div className="bg-foreground/5 mb-8 flex items-center gap-6 rounded-lg p-6">
           <div className="h-24 w-24 overflow-hidden rounded-lg bg-[#f2f2f2]">
-            {imgUrl ? (
+            {isValidImageUrl(imgUrl) ? (
               <img
                 src={imgUrl}
                 alt={`${firstName} ${lastName}`}
