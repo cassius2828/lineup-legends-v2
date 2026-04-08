@@ -26,7 +26,7 @@ export const GAMBLE_ODDS: Record<number, number[]> = {
 };
 
 /** Maximum gambles allowed per day per lineup */
-export const DAILY_GAMBLE_LIMIT = 5;
+export const DAILY_GAMBLE_LIMIT = 3;
 
 /**
  * Selects a target player value based on weighted probabilities.

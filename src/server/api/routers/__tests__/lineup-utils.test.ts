@@ -16,8 +16,8 @@ describe("lineup constants", () => {
     expect(BUDGET_LIMIT).toBe(15);
   });
 
-  it("should have a daily gamble limit of 5", () => {
-    expect(DAILY_GAMBLE_LIMIT).toBe(5);
+  it("should have a daily gamble limit of 3", () => {
+    expect(DAILY_GAMBLE_LIMIT).toBe(3);
   });
 });
 

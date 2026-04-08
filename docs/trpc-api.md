@@ -20,6 +20,7 @@ src/
 │       ├── root.ts              # Root router (combines all 10 routers)
 │       ├── trpc.ts              # tRPC configuration and procedures
 │       ├── schemas/             # Shared Zod schemas
+│       │   ├── output.ts        # Zod output schemas (source of truth for API types)
 │       │   ├── common.ts
 │       │   ├── comment.ts
 │       │   ├── feedback.ts
@@ -74,7 +75,8 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+        zodError:
+          error.cause instanceof ZodError ? error.cause.flatten() : null,
       },
     };
   },
@@ -172,18 +174,18 @@ export type AppRouter = typeof appRouter;
 
 ## Router Summary
 
-| Router            | Namespace          | Key Procedures                                                    |
-| ----------------- | ------------------ | ----------------------------------------------------------------- |
-| `playerRouter`    | `api.player`       | `getAll`, `getById`, `getRandomByValue`, `search`, `create`, `update`, `delete` |
-| `lineupRouter`    | `api.lineup`       | `create`, `getLineupsByCurrentUser`, `getLineupsByOtherUsers`, `getAllLineups`, `getLineupById`, `delete`, `toggleFeatured`, `rate`, `reorder`, `gamble` |
-| `commentRouter`   | `api.comment`      | `getComments`, `getThreads`, `getCommentCount`, `getMyCommentVotes`, `getMyThreadVotes`, `addComment`, `addThreadReply`, `deleteComment`, `deleteThread`, `voteComment`, `voteThread` |
-| `profileRouter`   | `api.profile`      | `getById`, `getMe`, `update`, `getFeaturedLineups`               |
-| `followRouter`    | `api.follow`       | `toggleFollow`, `isFollowing`, `getFollowers`, `getFollowing`, `searchUsers` |
-| `requestedPlayerRouter` | `api.requestedPlayer` | `searchDuplicates`, `getAll`, `getById`, `create`, `delete` |
-| `feedbackRouter`  | `api.feedback`     | `create`, `getAll`, `updateStatus`                               |
-| `adminRouter`     | `api.admin`        | `getStats`                                                       |
-| `videoRouter`     | `api.video`        | `getAll`, `create`, `delete`                                     |
-| `bookmarkRouter`  | `api.bookmark`     | `toggle`, `isBookmarked`, `getBookmarkedLineups`                 |
+| Router                  | Namespace             | Key Procedures                                                                                                                                                                        |
+| ----------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `playerRouter`          | `api.player`          | `getAll`, `getById`, `getRandomByValue`, `search`, `create`, `update`, `delete`                                                                                                       |
+| `lineupRouter`          | `api.lineup`          | `create`, `getLineupsByCurrentUser`, `getLineupsByOtherUsers`, `getAllLineups`, `getLineupById`, `delete`, `toggleFeatured`, `rate`, `reorder`, `gamble`                              |
+| `commentRouter`         | `api.comment`         | `getComments`, `getThreads`, `getCommentCount`, `getMyCommentVotes`, `getMyThreadVotes`, `addComment`, `addThreadReply`, `deleteComment`, `deleteThread`, `voteComment`, `voteThread` |
+| `profileRouter`         | `api.profile`         | `getById`, `getMe`, `update`, `getFeaturedLineups`                                                                                                                                    |
+| `followRouter`          | `api.follow`          | `toggleFollow`, `isFollowing`, `getFollowers`, `getFollowing`, `searchUsers`                                                                                                          |
+| `requestedPlayerRouter` | `api.requestedPlayer` | `searchDuplicates`, `getAll`, `getById`, `create`, `delete`                                                                                                                           |
+| `feedbackRouter`        | `api.feedback`        | `create`, `getAll`, `updateStatus`                                                                                                                                                    |
+| `adminRouter`           | `api.admin`           | `getStats`                                                                                                                                                                            |
+| `videoRouter`           | `api.video`           | `getAll`, `create`, `delete`                                                                                                                                                          |
+| `bookmarkRouter`        | `api.bookmark`        | `toggle`, `isBookmarked`, `getBookmarkedLineups`                                                                                                                                      |
 
 ## Input Validation with Zod
 
@@ -218,6 +220,69 @@ import { z } from "zod";
 }))
 ```
 
+## Output Validation with Zod (Source of Truth)
+
+All procedure outputs are validated at runtime using Zod schemas defined in `src/server/api/schemas/output.ts`. This file is the **single source of truth** for API response types -- client-side code imports inferred types from here instead of from Mongoose models or a separate `types.ts`.
+
+### How it works
+
+Every procedure uses `.output(schema)` which:
+
+1. **Validates** the handler's return value at runtime (catches mismatches between DB shape and expected API shape)
+2. **Infers** the client-side TypeScript type automatically (no manual type definitions needed)
+3. **Strips** unknown fields so the client only sees the declared shape
+
+```typescript
+// Server: validated at runtime
+getAll: publicProcedure
+  .output(z.array(playerOutput))
+  .query(async () => {
+    return populated(await getPlayersFromCacheOrDb());
+  }),
+
+// Client: type is automatically inferred as PlayerOutput[]
+const { data } = api.player.getAll.useQuery();
+```
+
+### Key schemas and types
+
+| Schema               | Inferred Type        | Used by                                     |
+| -------------------- | -------------------- | ------------------------------------------- |
+| `playerOutput`       | `PlayerOutput`       | Player list, lineup players, gamble results |
+| `lineupOutput`       | `LineupOutput`       | Lineup CRUD, explore, bookmarks, profile    |
+| `commentOutput`      | `CommentOutput`      | Comment lists                               |
+| `threadOutput`       | `ThreadOutput`       | Thread replies                              |
+| `userOutput`         | `UserOutput`         | Profile update, lineup owner                |
+| `userSummaryOutput`  | `UserSummaryOutput`  | Populated user refs in comments/threads     |
+| `gambleResultOutput` | `GambleResultOutput` | Gamble mutation return                      |
+
+### The `populated()` helper
+
+Mongoose's `.populate().lean()` returns correct data at runtime, but TypeScript still types populated refs as `ObjectId`. The `populated()` helper bypasses this compile-time mismatch while the Zod `.output()` schema validates the actual shape at runtime:
+
+```typescript
+export const populated = <T>(value: T): any => value;
+
+// Usage in routers:
+return populated(
+  await LineupModel.findById(id).populate(lineupPopulateFields).lean(),
+);
+```
+
+### The `mongoId` preprocessor
+
+MongoDB `ObjectId` values are converted to plain strings at parse time:
+
+```typescript
+const mongoId = z.preprocess((v) => {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object" && "toHexString" in v) {
+    return (v as { toHexString: () => string }).toHexString();
+  }
+  return String(v);
+}, z.string());
+```
+
 ## React Client (`src/trpc/react.tsx`)
 
 ### Provider Setup
@@ -231,13 +296,15 @@ export function TRPCReactProvider({ children }: { children: React.ReactNode }) {
   const [trpcClient] = useState(() =>
     api.createClient({
       links: [
-        loggerLink({ /* ... */ }),
+        loggerLink({
+          /* ... */
+        }),
         httpBatchStreamLink({
           transformer: SuperJSON,
           url: getBaseUrl() + "/api/trpc",
         }),
       ],
-    })
+    }),
   );
 
   return (
@@ -371,14 +438,14 @@ throw new TRPCError({
 
 Common tRPC error codes:
 
-| Code              | HTTP Status | Usage                         |
-| ----------------- | ----------- | ----------------------------- |
-| `UNAUTHORIZED`    | 401         | Not authenticated             |
-| `FORBIDDEN`       | 403         | Not authorized (or not admin) |
-| `NOT_FOUND`       | 404         | Resource doesn't exist        |
-| `BAD_REQUEST`     | 400         | Invalid input                 |
-| `CONFLICT`        | 409         | Duplicate resource            |
-| `INTERNAL_SERVER_ERROR` | 500   | Unexpected error              |
+| Code                    | HTTP Status | Usage                         |
+| ----------------------- | ----------- | ----------------------------- |
+| `UNAUTHORIZED`          | 401         | Not authenticated             |
+| `FORBIDDEN`             | 403         | Not authorized (or not admin) |
+| `NOT_FOUND`             | 404         | Resource doesn't exist        |
+| `BAD_REQUEST`           | 400         | Invalid input                 |
+| `CONFLICT`              | 409         | Duplicate resource            |
+| `INTERNAL_SERVER_ERROR` | 500         | Unexpected error              |
 
 ### Client-Side Error Handling
 
