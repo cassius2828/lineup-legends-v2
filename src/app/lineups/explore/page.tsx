@@ -18,7 +18,8 @@ import { api } from "~/trpc/react";
 export default function ExploreLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const utils = api.useUtils();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === "authenticated";
   const { data: lineups, isLoading } =
     api.lineup.getLineupsByOtherUsers.useQuery({
       sort,
@@ -46,12 +47,12 @@ export default function ExploreLineupsPage() {
         <LineupsHeader
           title="Explore Lineups"
           description="Discover lineups from the community"
-          exploreLink={session ? "/lineups" : ""}
-          createLink={session ? "/lineups/new" : ""}
-          exploreLinkText={session ? "My Lineups" : ""}
-          createLinkText={session ? "+ Create Lineup" : ""}
+          exploreLink={isAuthenticated ? "/lineups" : ""}
+          createLink={isAuthenticated ? "/lineups/new" : ""}
+          exploreLinkText={isAuthenticated ? "My Lineups" : ""}
+          createLinkText={isAuthenticated ? "+ Create Lineup" : ""}
           extraLinks={
-            session
+            isAuthenticated
               ? [{ href: "/lineups/bookmarked", label: "Bookmarked" }]
               : []
           }

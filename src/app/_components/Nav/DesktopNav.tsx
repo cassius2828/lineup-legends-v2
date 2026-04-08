@@ -1,8 +1,11 @@
+"use client";
+
 import type { Session } from "next-auth";
+import { signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { IoIosLogOut } from "react-icons/io";
-import { signOut } from "~/server/auth";
+
 const DesktopNav = ({ session }: { session: Session | null }) => {
   return (
     <div className="hidden items-center gap-6 md:flex">
@@ -70,16 +73,13 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
               {session.user.name}
             </span>
           </Link>
-          <form
-            action={async () => {
-              "use server";
-              await signOut({ redirectTo: "/" });
-            }}
+          <button
+            type="button"
+            onClick={() => void signOut({ callbackUrl: "/" })}
+            className="cursor-pointer"
           >
-            <button type="submit" className="cursor-pointer">
-              <IoIosLogOut className="hover:text-gold text-foreground text-2xl transition-colors duration-100" />
-            </button>
-          </form>
+            <IoIosLogOut className="hover:text-gold text-foreground text-2xl transition-colors duration-100" />
+          </button>
         </>
       ) : (
         <>
