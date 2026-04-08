@@ -67,10 +67,9 @@ async function verifyPassword(
   return bcrypt.compare(inputPassword, storedPassword);
 }
 
-ensureEnvs();
-
-// Get the MongoDB client promise for the adapter
-const clientPromise = getMongoClient();
+if (!process.env.SKIP_ENV_VALIDATION) {
+  ensureEnvs();
+}
 
 export const authConfig = {
   // Use JWT strategy - required for Credentials provider to work with sessions
@@ -128,7 +127,7 @@ export const authConfig = {
       },
     }),
   ],
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: MongoDBAdapter(getMongoClient()),
   callbacks: {
     async jwt({ token, user, trigger }) {
       // On initial sign-in, user object is available
