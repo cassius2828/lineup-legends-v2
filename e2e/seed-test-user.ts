@@ -40,7 +40,7 @@ async function seedTestUser() {
 
   const hashedPassword = await bcrypt.hash(TEST_PASSWORD, 12);
 
-  const user = await User.findOneAndUpdate(
+  const user = (await User.findOneAndUpdate(
     { email: TEST_USER.email },
     {
       $set: {
@@ -53,10 +53,10 @@ async function seedTestUser() {
         followingCount: 0,
       },
     },
-    { upsert: true, new: true },
-  );
+    { upsert: true, new: true, lean: true },
+  )) as { _id: mongoose.Types.ObjectId } | null;
 
-  console.log(`E2E test user ready: ${user._id} (${TEST_USER.email})`);
+  console.log(`E2E test user ready: ${user?._id} (${TEST_USER.email})`);
 
   await mongoose.disconnect();
 }
