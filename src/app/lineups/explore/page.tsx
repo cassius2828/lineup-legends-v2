@@ -26,10 +26,8 @@ export default function ExploreLineupsPage() {
       userId: session?.user?.id,
     });
   const handlePreFetchLineups = (sort: SortOption) => {
-    const userId = session?.user?.id;
-    if (!userId) return;
     void utils.lineup.getLineupsByOtherUsers.ensureData(
-      { sort, userId },
+      { sort, userId: session?.user?.id },
       {
         staleTime: 1000 * 60 * 5, // 5 minutes
       },
