@@ -119,13 +119,13 @@ describe("RequestedPlayerModel", () => {
     it("should include virtuals in toJSON", () => {
       const rp = new RequestedPlayerModel(validData());
       const json = rp.toJSON();
-      expect(json).toHaveProperty('id');
+      expect(json).toHaveProperty("id");
     });
 
     it("should include virtuals in toObject", () => {
       const rp = new RequestedPlayerModel(validData());
       const obj = rp.toObject();
-      expect(obj).toHaveProperty('id');
+      expect(obj).toHaveProperty("id");
     });
   });
 

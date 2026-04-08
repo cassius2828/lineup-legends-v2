@@ -16,7 +16,7 @@ export function LineupCardPlayersGrid({ players }: LineupCardPlayersGridProps) {
           key={position}
           className="flex min-w-[5rem] shrink-0 grow basis-0 flex-col items-center"
         >
-          <span className="mb-1 text-xs font-bold text-foreground/50 uppercase">
+          <span className="text-foreground/50 mb-1 text-xs font-bold uppercase">
             {POSITION_LABELS[position]}
           </span>
           <PlayerCard player={players[position]} compact />

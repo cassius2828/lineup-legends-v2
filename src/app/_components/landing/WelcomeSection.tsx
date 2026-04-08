@@ -14,8 +14,8 @@ const containerVariants = {
 
 const textVariants = {
   hidden: { opacity: 0, y: 40 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { duration: 0.6, ease: "easeOut" as const },
   },
@@ -23,8 +23,8 @@ const textVariants = {
 
 const imageVariants = {
   hidden: { opacity: 0, scale: 0.95, x: -30 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     scale: 1,
     x: 0,
     transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] as const },
@@ -33,13 +33,13 @@ const imageVariants = {
 
 export function WelcomeSection() {
   return (
-    <section className="relative overflow-hidden bg-surface-950 px-4 py-24 sm:px-8 lg:px-16">
+    <section className="bg-surface-950 relative overflow-hidden px-4 py-24 sm:px-8 lg:px-16">
       {/* Subtle gradient accent */}
-      <div className="pointer-events-none absolute -left-64 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-gold/5 blur-3xl" />
-      
+      <div className="bg-gold/5 pointer-events-none absolute top-1/2 -left-64 h-96 w-96 -translate-y-1/2 rounded-full blur-3xl" />
+
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-12 lg:flex-row">
         {/* Left - Image */}
-        <motion.div 
+        <motion.div
           className="flex-1"
           variants={imageVariants}
           initial="hidden"
@@ -48,7 +48,7 @@ export function WelcomeSection() {
         >
           <div className="relative">
             {/* Gold accent border */}
-            <div className="absolute -inset-1 rounded-lg bg-gradient-to-br from-gold/20 via-transparent to-gold/10 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+            <div className="from-gold/20 to-gold/10 absolute -inset-1 rounded-lg bg-gradient-to-br via-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
             <picture>
               <source
                 media="(max-width: 768px)"
@@ -66,39 +66,39 @@ export function WelcomeSection() {
         </motion.div>
 
         {/* Right - Text */}
-        <motion.div 
+        <motion.div
           className="flex-1 text-center lg:text-left"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
         >
-          <motion.h2 
-            className="font-stencil text-4xl uppercase tracking-wide text-foreground/60 sm:text-5xl lg:text-6xl"
+          <motion.h2
+            className="font-stencil text-foreground/60 text-4xl tracking-wide uppercase sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
             Welcome to
           </motion.h2>
-          <motion.h2 
-            className="font-stencil text-4xl uppercase tracking-wide text-foreground sm:text-5xl lg:text-6xl"
+          <motion.h2
+            className="font-stencil text-foreground text-4xl tracking-wide uppercase sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
             Lineup
           </motion.h2>
-          <motion.h2 
-            className="font-stencil text-4xl uppercase tracking-wide sm:text-5xl lg:text-6xl"
+          <motion.h2
+            className="font-stencil text-4xl tracking-wide uppercase sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
             <span className="text-gradient-gold">Legends</span>
           </motion.h2>
 
-          <motion.div 
-            className="mt-6 h-px w-24 bg-gradient-to-r from-gold to-transparent lg:mx-0 mx-auto"
+          <motion.div
+            className="from-gold mx-auto mt-6 h-px w-24 bg-gradient-to-r to-transparent lg:mx-0"
             variants={textVariants}
           />
 
-          <motion.p 
-            className="mt-8 max-w-xl text-lg leading-relaxed text-foreground/70"
+          <motion.p
+            className="text-foreground/70 mt-8 max-w-xl text-lg leading-relaxed"
             variants={textVariants}
           >
             The ultimate fantasy basketball lineup creation and management

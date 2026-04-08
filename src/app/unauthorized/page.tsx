@@ -4,16 +4,16 @@ import { auth, signOut } from "~/server/auth";
 const UnauthorizedPage = async () => {
   const session = await auth();
   return (
-    <main className="flex min-h-screen items-center justify-center bg-surface-950 px-4">
+    <main className="bg-surface-950 flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md space-y-6 text-center">
         <div className="space-y-2">
-          <h1 className="font-stencil text-4xl text-foreground uppercase">
+          <h1 className="font-stencil text-foreground text-4xl uppercase">
             Access Denied
           </h1>
-          <p className="text-lg text-foreground/80">
+          <p className="text-foreground/80 text-lg">
             You are not authorized to visit this page.
           </p>
-          <p className="text-sm text-foreground/60">
+          <p className="text-foreground/60 text-sm">
             This area is restricted to administrators only.
           </p>
         </div>
@@ -21,7 +21,7 @@ const UnauthorizedPage = async () => {
         <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:justify-center">
           <Link
             href="/"
-            className="border-gold bg-gold/10 hover:bg-gold hover:text-black hover:glow-gold-sm rounded-none border-2 px-6 py-3 text-sm font-medium text-foreground/90 capitalize transition-all"
+            className="border-gold bg-gold/10 hover:bg-gold hover:glow-gold-sm text-foreground/90 rounded-none border-2 px-6 py-3 text-sm font-medium capitalize transition-all hover:text-black"
           >
             Return Home
           </Link>
@@ -34,7 +34,7 @@ const UnauthorizedPage = async () => {
             >
               <button
                 type="submit"
-                className="hover:border-gold/50 hover:bg-gold/10 w-full cursor-pointer rounded-none border border-foreground/20 bg-transparent px-6 py-3 text-sm font-medium text-foreground/90 capitalize transition-all hover:text-foreground sm:w-auto"
+                className="hover:border-gold/50 hover:bg-gold/10 border-foreground/20 text-foreground/90 hover:text-foreground w-full cursor-pointer rounded-none border bg-transparent px-6 py-3 text-sm font-medium capitalize transition-all sm:w-auto"
               >
                 Sign Out
               </button>
@@ -42,7 +42,7 @@ const UnauthorizedPage = async () => {
           ) : (
             <Link
               href="/sign-in"
-              className="hover:border-gold/50 hover:bg-gold/10 w-full cursor-pointer rounded-none border border-foreground/20 bg-transparent px-6 py-3 text-sm font-medium text-foreground/90 capitalize transition-all hover:text-foreground sm:w-auto"
+              className="hover:border-gold/50 hover:bg-gold/10 border-foreground/20 text-foreground/90 hover:text-foreground w-full cursor-pointer rounded-none border bg-transparent px-6 py-3 text-sm font-medium capitalize transition-all sm:w-auto"
             >
               Sign In
             </Link>

@@ -158,22 +158,22 @@ export default function CommentModal({
     >
       <div className="flex min-h-full items-start justify-center px-4 py-10">
         <motion.div
-          className="w-full max-w-3xl rounded-2xl bg-surface-800 shadow-2xl"
+          className="bg-surface-800 w-full max-w-3xl rounded-2xl shadow-2xl"
           onClick={(e) => e.stopPropagation()}
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2, ease: "easeOut" }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-foreground/10 px-4 py-3">
+          <div className="border-foreground/10 flex items-center justify-between border-b px-4 py-3">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full p-1 text-foreground/50 transition-colors hover:bg-foreground/10 hover:text-foreground"
+              className="text-foreground/50 hover:bg-foreground/10 hover:text-foreground rounded-full p-1 transition-colors"
             >
               <X className="h-5 w-5" />
             </button>
-            <span className="text-sm font-medium text-foreground/40">
+            <span className="text-foreground/40 text-sm font-medium">
               {mode === "comment" ? "Comment" : "Reply"}
             </span>
             <div className="w-6" />
@@ -182,12 +182,9 @@ export default function CommentModal({
           {/* Comment mode: lineup card + composer */}
           {mode === "comment" && (
             <>
-              <div className="border-b border-foreground/10 px-5 py-4">
+              <div className="border-foreground/10 border-b px-5 py-4">
                 {lineup && (
-                  <LineupCard
-                    lineup={lineup as LineupOutput}
-                    hideFooter
-                  />
+                  <LineupCard lineup={lineup as LineupOutput} hideFooter />
                 )}
               </div>
 
@@ -203,7 +200,7 @@ export default function CommentModal({
                         className="h-9 w-9 shrink-0 rounded-full"
                       />
                     ) : (
-                      <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+                      <div className="bg-foreground/10 h-9 w-9 shrink-0 rounded-full" />
                     )}
                     <div className="flex-1">
                       <textarea
@@ -214,20 +211,20 @@ export default function CommentModal({
                         placeholder="Post your reply"
                         maxLength={1000}
                         rows={3}
-                        className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
+                        className="text-foreground placeholder:text-foreground/30 w-full resize-none bg-transparent text-sm focus:outline-none"
                       />
                       <ComposerToolbar media={media} onMediaChange={setMedia} />
                     </div>
                   </div>
                   <div className="mt-2 flex items-center justify-between">
-                    <span className="text-xs text-foreground/30">
+                    <span className="text-foreground/30 text-xs">
                       {text.length}/1000
                     </span>
                     <button
                       type="button"
                       onClick={() => submit(text, media)}
                       disabled={!hasContent || isSubmitting}
-                      className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
+                      className="bg-gold hover:bg-gold-light rounded-full px-5 py-1.5 text-sm font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       {isSubmitting ? "Posting..." : "Reply"}
                     </button>
@@ -235,9 +232,14 @@ export default function CommentModal({
                 </div>
               ) : (
                 <div className="px-5 py-6 text-center">
-                  <p className="text-sm text-foreground/50">
-                    <a href="/api/auth/signin" className="font-medium text-gold hover:text-gold-light">Sign in</a>
-                    {" "}to comment
+                  <p className="text-foreground/50 text-sm">
+                    <a
+                      href="/api/auth/signin"
+                      className="text-gold hover:text-gold-light font-medium"
+                    >
+                      Sign in
+                    </a>{" "}
+                    to comment
                   </p>
                 </div>
               )}
@@ -253,7 +255,7 @@ export default function CommentModal({
                 <div className="flex gap-3">
                   <div className="flex w-9 shrink-0 flex-col items-center">
                     {(parentComment.user.image ??
-                      parentComment.user.profileImg) ? (
+                    parentComment.user.profileImg) ? (
                       <Image
                         src={
                           (parentComment.user.image ??
@@ -265,19 +267,19 @@ export default function CommentModal({
                         className="h-9 w-9 shrink-0 rounded-full"
                       />
                     ) : (
-                      <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+                      <div className="bg-foreground/10 h-9 w-9 shrink-0 rounded-full" />
                     )}
                     {allThreads.length > 0 && (
-                      <div className="mt-2 w-0.5 flex-1 bg-foreground/20" />
+                      <div className="bg-foreground/20 mt-2 w-0.5 flex-1" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1 pb-3">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-foreground">
+                      <span className="text-foreground text-sm font-medium">
                         {parentDisplayName}
                       </span>
                       <span className="text-foreground/30">&middot;</span>
-                      <span className="text-xs text-foreground/40">
+                      <span className="text-foreground/40 text-xs">
                         {formatDistanceToNow(
                           new Date(parentComment.createdAt),
                           { addSuffix: true },
@@ -285,7 +287,7 @@ export default function CommentModal({
                       </span>
                     </div>
                     {parentComment.text && (
-                      <p className="mt-1 text-sm leading-relaxed text-foreground/60">
+                      <p className="text-foreground/60 mt-1 text-sm leading-relaxed">
                         {parentComment.text}
                       </p>
                     )}
@@ -311,21 +313,21 @@ export default function CommentModal({
 
                 {/* Thread replies */}
                 {allThreads.map((thread, index) => (
-                    <ThreadCard
-                      key={thread._id}
-                      thread={thread}
-                      lineupId={lineupId}
-                      commentId={parentComment._id}
-                      currentUserId={currentUserId}
-                      userVote={myThreadVotes?.[thread._id] ?? null}
-                      replyingTo={parentDisplayName}
-                      isLast={index === allThreads.length - 1}
-                    />
+                  <ThreadCard
+                    key={thread._id}
+                    thread={thread}
+                    lineupId={lineupId}
+                    commentId={parentComment._id}
+                    currentUserId={currentUserId}
+                    userVote={myThreadVotes?.[thread._id] ?? null}
+                    replyingTo={parentDisplayName}
+                    isLast={index === allThreads.length - 1}
+                  />
                 ))}
                 {hasNextPage && (
                   <div className="flex justify-center py-4">
                     <button
-                      className="text-sm text-foreground/40 transition-colors hover:text-foreground/70"
+                      className="text-foreground/40 hover:text-foreground/70 text-sm transition-colors"
                       type="button"
                       disabled={isFetchingNextPage}
                       onClick={() => fetchNextPage()}
@@ -338,7 +340,7 @@ export default function CommentModal({
 
               {/* Sticky composer at bottom */}
               {session ? (
-                <div className="border-t border-foreground/10 px-5 py-3">
+                <div className="border-foreground/10 border-t px-5 py-3">
                   <div className="flex gap-3">
                     <div className="w-9 shrink-0">
                       {userImage ? (
@@ -350,11 +352,11 @@ export default function CommentModal({
                           className="h-9 w-9 shrink-0 rounded-full"
                         />
                       ) : (
-                        <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+                        <div className="bg-foreground/10 h-9 w-9 shrink-0 rounded-full" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="mb-1 block text-xs text-foreground/40">
+                      <span className="text-foreground/40 mb-1 block text-xs">
                         Replying to{" "}
                         <span className="text-gold">@{parentDisplayName}</span>
                       </span>
@@ -366,18 +368,18 @@ export default function CommentModal({
                         placeholder="Post your reply"
                         maxLength={1000}
                         rows={2}
-                        className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
+                        className="text-foreground placeholder:text-foreground/30 w-full resize-none bg-transparent text-sm focus:outline-none"
                       />
                       <ComposerToolbar media={media} onMediaChange={setMedia} />
                       <div className="mt-2 flex items-center justify-between">
-                        <span className="text-xs text-foreground/30">
+                        <span className="text-foreground/30 text-xs">
                           {text.length}/1000
                         </span>
                         <button
                           type="button"
                           onClick={() => submit(text, media)}
                           disabled={!hasContent || isSubmitting}
-                          className="rounded-full bg-gold px-5 py-1.5 text-sm font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
+                          className="bg-gold hover:bg-gold-light rounded-full px-5 py-1.5 text-sm font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           {isSubmitting ? "Posting..." : "Reply"}
                         </button>
@@ -386,10 +388,15 @@ export default function CommentModal({
                   </div>
                 </div>
               ) : (
-                <div className="border-t border-foreground/10 px-5 py-4 text-center">
-                  <p className="text-sm text-foreground/50">
-                    <a href="/api/auth/signin" className="font-medium text-gold hover:text-gold-light">Sign in</a>
-                    {" "}to reply
+                <div className="border-foreground/10 border-t px-5 py-4 text-center">
+                  <p className="text-foreground/50 text-sm">
+                    <a
+                      href="/api/auth/signin"
+                      className="text-gold hover:text-gold-light font-medium"
+                    >
+                      Sign in
+                    </a>{" "}
+                    to reply
                   </p>
                 </div>
               )}
@@ -401,4 +408,3 @@ export default function CommentModal({
     document.body,
   );
 }
-

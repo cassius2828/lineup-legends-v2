@@ -33,7 +33,9 @@ export default function LineupCardFooter({
     { enabled: isAuthenticated && !!lineupId },
   );
 
-  const [optimisticBookmarked, setOptimisticBookmarked] = useState<boolean | null>(null);
+  const [optimisticBookmarked, setOptimisticBookmarked] = useState<
+    boolean | null
+  >(null);
   const bookmarked = optimisticBookmarked ?? bookmarkData?.bookmarked ?? false;
 
   const utils = api.useUtils();
@@ -61,51 +63,54 @@ export default function LineupCardFooter({
   const BookmarkIcon = bookmarked ? BookmarkCheck : Bookmark;
 
   return (
-      <div className="mt-4 flex items-center justify-between border-t border-foreground/10 pt-3">
-        {/* Comments */}
-        <button
-          type="button"
-          onClick={() => {
-            if (!isAuthenticated) {
-              toast.info("Sign in to comment");
-              return;
-            }
-            openComment(lineupId, { lineupId, ownerName, ownerImage, totalValue });
-          }}
-          className="group flex cursor-pointer items-center gap-1.5 text-foreground/40 transition-colors hover:text-gold"
-        >
-          <MessageCircle className="h-4 w-4" />
-          {commentCount > 0 && (
-            <span className="text-xs">{commentCount}</span>
-          )}
-        </button>
+    <div className="border-foreground/10 mt-4 flex items-center justify-between border-t pt-3">
+      {/* Comments */}
+      <button
+        type="button"
+        onClick={() => {
+          if (!isAuthenticated) {
+            toast.info("Sign in to comment");
+            return;
+          }
+          openComment(lineupId, {
+            lineupId,
+            ownerName,
+            ownerImage,
+            totalValue,
+          });
+        }}
+        className="group text-foreground/40 hover:text-gold flex cursor-pointer items-center gap-1.5 transition-colors"
+      >
+        <MessageCircle className="h-4 w-4" />
+        {commentCount > 0 && <span className="text-xs">{commentCount}</span>}
+      </button>
 
-        {/* View + Bookmark + Share */}
-        <div className="flex items-center gap-3">
-          <Link
-            href={`/lineups/${lineupId}`}
-            className="text-foreground/40 transition-colors hover:text-gold"
-            aria-label="View lineup"
+      {/* View + Bookmark + Share */}
+      <div className="flex items-center gap-3">
+        <Link
+          href={`/lineups/${lineupId}`}
+          className="text-foreground/40 hover:text-gold transition-colors"
+          aria-label="View lineup"
+        >
+          <Eye className="h-4 w-4" />
+        </Link>
+        {isAuthenticated && (
+          <button
+            type="button"
+            onClick={handleBookmark}
+            className={`group cursor-pointer transition-colors ${
+              bookmarked
+                ? "text-gold hover:text-gold-light"
+                : "text-foreground/40 hover:text-gold"
+            }`}
+            aria-label={bookmarked ? "Remove bookmark" : "Bookmark lineup"}
+            aria-pressed={bookmarked}
           >
-            <Eye className="h-4 w-4" />
-          </Link>
-          {isAuthenticated && (
-            <button
-              type="button"
-              onClick={handleBookmark}
-              className={`group cursor-pointer transition-colors ${
-                bookmarked
-                  ? "text-gold hover:text-gold-light"
-                  : "text-foreground/40 hover:text-gold"
-              }`}
-              aria-label={bookmarked ? "Remove bookmark" : "Bookmark lineup"}
-              aria-pressed={bookmarked}
-            >
-              <BookmarkIcon className="h-4 w-4" />
-            </button>
-          )}
-          <ShareMenu lineupId={lineupId} />
-        </div>
+            <BookmarkIcon className="h-4 w-4" />
+          </button>
+        )}
+        <ShareMenu lineupId={lineupId} />
       </div>
+    </div>
   );
 }

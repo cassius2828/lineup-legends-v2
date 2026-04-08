@@ -2,16 +2,13 @@ import { z } from "zod";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 // Converts MongoDB ObjectId (or string) to a plain string at parse time.
-const mongoId = z.preprocess(
-  (v) => {
-    if (typeof v === "string") return v;
-    if (v && typeof v === "object" && "toHexString" in v) {
-      return (v as { toHexString: () => string }).toHexString();
-    }
-    return String(v);
-  },
-  z.string(),
-);
+const mongoId = z.preprocess((v) => {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object" && "toHexString" in v) {
+    return (v as { toHexString: () => string }).toHexString();
+  }
+  return String(v);
+}, z.string());
 
 // ─── Enums ──────────────────────────────────────────────────────────────────────
 
@@ -125,7 +122,6 @@ export const lineupOutput = z.object({
   timesGambled: z.number().default(0),
   lastGambleResult: lastGambleResultOutput.nullable().optional(),
   gambleStreak: z.number().default(0),
-  lastGambleAt: z.coerce.date().nullable().optional(),
   dailyGamblesUsed: z.number().default(0),
   dailyGamblesResetAt: z.coerce.date().nullable().optional(),
 });
@@ -136,8 +132,8 @@ export const commentOutput = z.object({
   _id: mongoId,
   text: z.string().nullable().optional(),
   user: userSummaryOutput,
-  image: z.string().nullable(),
-  gif: z.string().nullable(),
+  image: z.string().nullable().optional(),
+  gif: z.string().nullable().optional(),
   totalVotes: z.number().default(0),
   threadCount: z.number().default(0),
   createdAt: z.coerce.date(),
@@ -148,8 +144,8 @@ export const threadOutput = z.object({
   _id: mongoId,
   text: z.string().nullable().optional(),
   user: userSummaryOutput,
-  image: z.string().nullable(),
-  gif: z.string().nullable(),
+  image: z.string().nullable().optional(),
+  gif: z.string().nullable().optional(),
   totalVotes: z.number().default(0),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
@@ -160,8 +156,8 @@ export const addCommentResultOutput = z.object({
   id: z.string().optional(),
   text: z.string().nullable().optional(),
   lineup: mongoId,
-  image: z.string().nullable(),
-  gif: z.string().nullable(),
+  image: z.string().nullable().optional(),
+  gif: z.string().nullable().optional(),
   totalVotes: z.number(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
@@ -173,8 +169,8 @@ export const addThreadResultOutput = z.object({
   id: z.string().optional(),
   text: z.string().nullable().optional(),
   comment: mongoId,
-  image: z.string().nullable(),
-  gif: z.string().nullable(),
+  image: z.string().nullable().optional(),
+  gif: z.string().nullable().optional(),
   totalVotes: z.number(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
@@ -204,7 +200,6 @@ export const gambleOutcomeOutput = z.object({
   outcomeTier: gambleOutcomeTierSchema,
   streak: z.number(),
   dailyGamblesRemaining: z.number(),
-  cooldownSeconds: z.number(),
 });
 
 export const gambleResultOutput = z.object({

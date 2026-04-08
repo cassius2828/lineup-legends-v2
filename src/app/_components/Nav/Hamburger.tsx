@@ -14,17 +14,17 @@ const Hamburger = ({
       aria-label={isOpen ? "Close menu" : "Open menu"}
     >
       <span
-        className={`h-0.5 w-6 bg-foreground/90 transition-all ${
+        className={`bg-foreground/90 h-0.5 w-6 transition-all ${
           isOpen ? "translate-y-2 rotate-45" : ""
         }`}
       />
       <span
-        className={`h-0.5 w-6 bg-foreground/90 transition-all ${
+        className={`bg-foreground/90 h-0.5 w-6 transition-all ${
           isOpen ? "opacity-0" : ""
         }`}
       />
       <span
-        className={`h-0.5 w-6 bg-foreground/90 transition-all ${
+        className={`bg-foreground/90 h-0.5 w-6 transition-all ${
           isOpen ? "-translate-y-2 -rotate-45" : ""
         }`}
       />

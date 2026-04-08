@@ -2,7 +2,10 @@ import { TRPCError } from "@trpc/server";
 import mongoose from "mongoose";
 import { z } from "zod";
 import { getVoteDelta } from "~/lib/utils";
-import { commentBodySchema, threadBodySchema } from "~/server/api/schemas/comment";
+import {
+  commentBodySchema,
+  threadBodySchema,
+} from "~/server/api/schemas/comment";
 import { voteTypeSchema } from "~/server/api/schemas/common";
 
 import {
@@ -105,7 +108,13 @@ export const commentRouter = createTRPCRouter({
 
   getCommentCount: publicProcedure
     .input(z.object({ lineupId: z.string() }))
-    .output(z.object({ total: z.number(), comments: z.number(), threads: z.number() }))
+    .output(
+      z.object({
+        total: z.number(),
+        comments: z.number(),
+        threads: z.number(),
+      }),
+    )
     .query(async ({ input }) => {
       const lineupOid = new mongoose.Types.ObjectId(input.lineupId);
 
@@ -120,7 +129,11 @@ export const commentRouter = createTRPCRouter({
         }),
       ]);
 
-      return { total: commentCount + threadCount, comments: commentCount, threads: threadCount };
+      return {
+        total: commentCount + threadCount,
+        comments: commentCount,
+        threads: threadCount,
+      };
     }),
 
   getMyCommentVotes: protectedProcedure
@@ -240,10 +253,16 @@ export const commentRouter = createTRPCRouter({
         .lean();
 
       if (!comment) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Comment not found." });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Comment not found.",
+        });
       }
       if (comment.user.toString() !== ctx.session.user.id) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "You can only delete your own comments." });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only delete your own comments.",
+        });
       }
 
       const threadIds = await ThreadModel.find({ comment: comment._id })
@@ -254,7 +273,9 @@ export const commentRouter = createTRPCRouter({
         CommentModel.deleteOne({ _id: comment._id }),
         ThreadModel.deleteMany({ comment: comment._id }),
         CommentVoteModel.deleteMany({ comment: comment._id }),
-        ThreadVoteModel.deleteMany({ thread: { $in: threadIds.map((t) => t._id) } }),
+        ThreadVoteModel.deleteMany({
+          thread: { $in: threadIds.map((t) => t._id) },
+        }),
       ]);
 
       return { deleted: true };
@@ -272,7 +293,10 @@ export const commentRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Reply not found." });
       }
       if (thread.user.toString() !== ctx.session.user.id) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "You can only delete your own replies." });
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only delete your own replies.",
+        });
       }
 
       await Promise.all([

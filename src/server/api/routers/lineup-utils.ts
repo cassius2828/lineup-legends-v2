@@ -28,9 +28,6 @@ export const GAMBLE_ODDS: Record<number, number[]> = {
 /** Maximum gambles allowed per day per lineup */
 export const DAILY_GAMBLE_LIMIT = 5;
 
-/** Cooldown between gambles in milliseconds (30 seconds) */
-export const GAMBLE_COOLDOWN_MS = 30 * 1000;
-
 /**
  * Selects a target player value based on weighted probabilities.
  * Uses cumulative probability distribution for selection.

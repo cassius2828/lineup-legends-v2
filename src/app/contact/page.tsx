@@ -29,7 +29,7 @@ const containerVariants = {
 
 export default function ContactPage() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+    <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
       <motion.div
         className="container mx-auto px-4 py-12"
         variants={containerVariants}
@@ -38,10 +38,10 @@ export default function ContactPage() {
       >
         {/* Page Header */}
         <motion.div className="mb-12 text-center" variants={sectionVariants}>
-          <h1 className="font-stencil text-4xl uppercase tracking-wide text-gradient-gold sm:text-5xl">
+          <h1 className="font-stencil text-gradient-gold text-4xl tracking-wide uppercase sm:text-5xl">
             Contact Us
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-foreground/60">
+          <p className="text-foreground/60 mx-auto mt-4 max-w-2xl text-lg">
             Request new players, share your feedback, or get in touch with the
             developer.
           </p>
@@ -129,14 +129,14 @@ function PlayerRequestSection() {
 
   return (
     <motion.section
-      className="rounded-xl border border-foreground/10 bg-foreground/5 p-6 backdrop-blur-sm"
+      className="border-foreground/10 bg-foreground/5 rounded-xl border p-6 backdrop-blur-sm"
       variants={sectionVariants}
     >
       <div className="mb-6">
         <div className="mb-2 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/20">
+          <div className="bg-gold/20 flex h-10 w-10 items-center justify-center rounded-lg">
             <svg
-              className="h-5 w-5 text-gold"
+              className="text-gold h-5 w-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -149,110 +149,110 @@ function PlayerRequestSection() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-foreground">
+          <h2 className="text-foreground text-xl font-semibold">
             Request a Player
           </h2>
         </div>
-        <p className="text-sm text-foreground/60">
+        <p className="text-foreground/60 text-sm">
           Can&apos;t find the player you&apos;re looking for? Submit a request
           and we&apos;ll work on adding them to the database.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="reqFirstName"
-                className="mb-2 block text-sm font-medium text-foreground/80"
-              >
-                First Name
-              </label>
-              <input
-                type="text"
-                id="reqFirstName"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                required
-                placeholder="e.g. LeBron"
-                className="w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="reqLastName"
-                className="mb-2 block text-sm font-medium text-foreground/80"
-              >
-                Last Name
-              </label>
-              <input
-                type="text"
-                id="reqLastName"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                required
-                placeholder="e.g. James"
-                className="w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
-              />
-            </div>
-          </div>
-
-          {duplicates && duplicates.length > 0 && (
-            <DuplicateHints duplicates={duplicates} />
-          )}
-
-          <div>
-            <label className="mb-2 block text-sm font-medium text-foreground/80">
-              Suggested Value ($1-$5)
-            </label>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setSuggestedValue(v)}
-                  className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-                    suggestedValue === v
-                      ? "bg-gold text-black"
-                      : "bg-foreground/10 text-foreground hover:bg-foreground/20"
-                  }`}
-                >
-                  ${v}
-                </button>
-              ))}
-            </div>
-          </div>
-
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label
-              htmlFor="reqNote"
-              className="mb-2 block text-sm font-medium text-foreground/80"
+              htmlFor="reqFirstName"
+              className="text-foreground/80 mb-2 block text-sm font-medium"
             >
-              Note{" "}
-              <span className="font-normal text-foreground/40">(optional)</span>
+              First Name
             </label>
-            <textarea
-              id="reqNote"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              maxLength={500}
-              rows={3}
-              placeholder="Why do you want this player?"
-              className="w-full resize-none rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+            <input
+              type="text"
+              id="reqFirstName"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              required
+              placeholder="e.g. LeBron"
+              className="border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
             />
-            <p className="mt-1 text-right text-xs text-foreground/40">
-              {note.length}/500
-            </p>
           </div>
+          <div>
+            <label
+              htmlFor="reqLastName"
+              className="text-foreground/80 mb-2 block text-sm font-medium"
+            >
+              Last Name
+            </label>
+            <input
+              type="text"
+              id="reqLastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+              placeholder="e.g. James"
+              className="border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
+            />
+          </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={createRequest.isPending}
-            className="w-full rounded-lg bg-gold px-6 py-2.5 font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-50"
+        {duplicates && duplicates.length > 0 && (
+          <DuplicateHints duplicates={duplicates} />
+        )}
+
+        <div>
+          <label className="text-foreground/80 mb-2 block text-sm font-medium">
+            Suggested Value ($1-$5)
+          </label>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setSuggestedValue(v)}
+                className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
+                  suggestedValue === v
+                    ? "bg-gold text-black"
+                    : "bg-foreground/10 text-foreground hover:bg-foreground/20"
+                }`}
+              >
+                ${v}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label
+            htmlFor="reqNote"
+            className="text-foreground/80 mb-2 block text-sm font-medium"
           >
-            {createRequest.isPending ? "Submitting..." : "Submit Request"}
-          </button>
-        </form>
+            Note{" "}
+            <span className="text-foreground/40 font-normal">(optional)</span>
+          </label>
+          <textarea
+            id="reqNote"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            maxLength={500}
+            rows={3}
+            placeholder="Why do you want this player?"
+            className="border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 focus:border-gold focus:ring-gold w-full resize-none rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
+          />
+          <p className="text-foreground/40 mt-1 text-right text-xs">
+            {note.length}/500
+          </p>
+        </div>
+
+        <button
+          type="submit"
+          disabled={createRequest.isPending}
+          className="bg-gold hover:bg-gold-light w-full rounded-lg px-6 py-2.5 font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {createRequest.isPending ? "Submitting..." : "Submit Request"}
+        </button>
+      </form>
     </motion.section>
   );
 }
@@ -293,14 +293,14 @@ function FeedbackSection() {
 
   return (
     <motion.section
-      className="rounded-xl border border-foreground/10 bg-foreground/5 p-6 backdrop-blur-sm"
+      className="border-foreground/10 bg-foreground/5 rounded-xl border p-6 backdrop-blur-sm"
       variants={sectionVariants}
     >
       <div className="mb-6">
         <div className="mb-2 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/20">
+          <div className="bg-gold/20 flex h-10 w-10 items-center justify-center rounded-lg">
             <svg
-              className="h-5 w-5 text-gold"
+              className="text-gold h-5 w-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -313,9 +313,11 @@ function FeedbackSection() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-foreground">App Feedback</h2>
+          <h2 className="text-foreground text-xl font-semibold">
+            App Feedback
+          </h2>
         </div>
-        <p className="text-sm text-foreground/60">
+        <p className="text-foreground/60 text-sm">
           Have suggestions, found a bug, or just want to share your thoughts?
           We&apos;d love to hear from you.
         </p>
@@ -326,7 +328,7 @@ function FeedbackSection() {
           <div>
             <label
               htmlFor="feedbackName"
-              className="mb-2 block text-sm font-medium text-foreground/80"
+              className="text-foreground/80 mb-2 block text-sm font-medium"
             >
               Name
             </label>
@@ -337,13 +339,13 @@ function FeedbackSection() {
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="Your name"
-              className="w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+              className="border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
             />
           </div>
           <div>
             <label
               htmlFor="feedbackEmail"
-              className="mb-2 block text-sm font-medium text-foreground/80"
+              className="text-foreground/80 mb-2 block text-sm font-medium"
             >
               Email
             </label>
@@ -355,7 +357,7 @@ function FeedbackSection() {
               readOnly={!!sessionEmail}
               required
               placeholder="your@email.com"
-              className={`w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold ${sessionEmail ? "cursor-not-allowed opacity-60" : ""}`}
+              className={`border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none ${sessionEmail ? "cursor-not-allowed opacity-60" : ""}`}
             />
           </div>
         </div>
@@ -363,7 +365,7 @@ function FeedbackSection() {
         <div>
           <label
             htmlFor="feedbackSubject"
-            className="mb-2 block text-sm font-medium text-foreground/80"
+            className="text-foreground/80 mb-2 block text-sm font-medium"
           >
             Subject
           </label>
@@ -374,14 +376,14 @@ function FeedbackSection() {
             onChange={(e) => setSubject(e.target.value)}
             required
             placeholder="What's this about?"
-            className="w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+            className="border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
           />
         </div>
 
         <div>
           <label
             htmlFor="feedbackMessage"
-            className="mb-2 block text-sm font-medium text-foreground/80"
+            className="text-foreground/80 mb-2 block text-sm font-medium"
           >
             Message
           </label>
@@ -393,9 +395,9 @@ function FeedbackSection() {
             rows={5}
             maxLength={2000}
             placeholder="Tell us what's on your mind..."
-            className="w-full resize-none rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+            className="border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 focus:border-gold focus:ring-gold w-full resize-none rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
           />
-          <p className="mt-1 text-right text-xs text-foreground/40">
+          <p className="text-foreground/40 mt-1 text-right text-xs">
             {message.length}/2000
           </p>
         </div>
@@ -403,7 +405,7 @@ function FeedbackSection() {
         <button
           type="submit"
           disabled={createFeedback.isPending}
-          className="w-full rounded-lg bg-gold px-6 py-2.5 font-semibold text-black transition-colors hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-50"
+          className="bg-gold hover:bg-gold-light w-full rounded-lg px-6 py-2.5 font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
         >
           {createFeedback.isPending ? "Sending..." : "Send Feedback"}
         </button>
@@ -460,14 +462,14 @@ function ConnectSection() {
 
   return (
     <motion.section
-      className="rounded-xl border border-foreground/10 bg-foreground/5 p-6 backdrop-blur-sm"
+      className="border-foreground/10 bg-foreground/5 rounded-xl border p-6 backdrop-blur-sm"
       variants={sectionVariants}
     >
       <div className="mb-6">
         <div className="mb-2 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gold/20">
+          <div className="bg-gold/20 flex h-10 w-10 items-center justify-center rounded-lg">
             <svg
-              className="h-5 w-5 text-gold"
+              className="text-gold h-5 w-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -480,9 +482,9 @@ function ConnectSection() {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-foreground">Connect</h2>
+          <h2 className="text-foreground text-xl font-semibold">Connect</h2>
         </div>
-        <p className="text-sm text-foreground/60">
+        <p className="text-foreground/60 text-sm">
           Find me around the web or reach out directly.
         </p>
       </div>
@@ -498,19 +500,19 @@ function ConnectSection() {
                 ? undefined
                 : "noopener noreferrer"
             }
-            className="group flex items-center gap-4 rounded-lg border border-foreground/10 p-4 transition-all hover:border-gold/30 hover:bg-foreground/5"
+            className="group border-foreground/10 hover:border-gold/30 hover:bg-foreground/5 flex items-center gap-4 rounded-lg border p-4 transition-all"
           >
-            <div className="text-foreground/60 transition-colors group-hover:text-gold">
+            <div className="text-foreground/60 group-hover:text-gold transition-colors">
               {link.icon}
             </div>
             <div>
-              <p className="font-medium text-foreground group-hover:text-gold">
+              <p className="text-foreground group-hover:text-gold font-medium">
                 {link.label}
               </p>
-              <p className="text-sm text-foreground/50">{link.description}</p>
+              <p className="text-foreground/50 text-sm">{link.description}</p>
             </div>
             <svg
-              className="ml-auto h-5 w-5 text-foreground/30 transition-colors group-hover:text-gold"
+              className="text-foreground/30 group-hover:text-gold ml-auto h-5 w-5 transition-colors"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -528,7 +530,7 @@ function ConnectSection() {
         {/* Getting Technical Link */}
         <Link
           href="/getting-technical"
-          className="group flex items-center gap-4 rounded-lg border border-gold/20 bg-gold/5 p-4 transition-all hover:border-gold/40 hover:bg-gold/10"
+          className="group border-gold/20 bg-gold/5 hover:border-gold/40 hover:bg-gold/10 flex items-center gap-4 rounded-lg border p-4 transition-all"
         >
           <div className="text-gold">
             <svg
@@ -552,13 +554,13 @@ function ConnectSection() {
             </svg>
           </div>
           <div>
-            <p className="font-medium text-gold">Getting Technical</p>
-            <p className="text-sm text-foreground/50">
+            <p className="text-gold font-medium">Getting Technical</p>
+            <p className="text-foreground/50 text-sm">
               Explore the engineering behind Lineup Legends
             </p>
           </div>
           <svg
-            className="ml-auto h-5 w-5 text-gold/50 transition-colors group-hover:text-gold"
+            className="text-gold/50 group-hover:text-gold ml-auto h-5 w-5 transition-colors"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

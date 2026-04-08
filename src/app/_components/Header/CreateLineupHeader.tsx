@@ -7,7 +7,7 @@ const CreateLineupHeader = ({
 }) => {
   return (
     <header className="mb-4 flex flex-col items-center justify-center">
-      <h1 className="text-2xl font-bold tracking-wide text-foreground uppercase">
+      <h1 className="text-foreground text-2xl font-bold tracking-wide uppercase">
         Build Your Starting 5
       </h1>
       <span
@@ -22,7 +22,7 @@ const CreateLineupHeader = ({
         ${remainingBudget}
       </span>
       {activePlayer && (
-        <span className="mt-1 animate-pulse text-sm text-foreground/60">
+        <span className="text-foreground/60 mt-1 animate-pulse text-sm">
           Drag to a position slot...
         </span>
       )}

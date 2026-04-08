@@ -23,10 +23,10 @@ const CreateLineupPlayerDragOverlay = ({
         />
       </div>
       <div className="mt-1 h-10 text-center">
-        <p className="text-xs font-medium text-foreground drop-shadow-lg">
+        <p className="text-foreground text-xs font-medium drop-shadow-lg">
           {activePlayer.firstName.length < 9 ? activePlayer.firstName : ""}
         </p>
-        <p className="text-xs text-foreground/80 drop-shadow-lg">
+        <p className="text-foreground/80 text-xs drop-shadow-lg">
           {activePlayer.lastName.length < 9 ? activePlayer.lastName : ""}
         </p>
       </div>

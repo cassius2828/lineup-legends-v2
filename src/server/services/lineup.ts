@@ -1,8 +1,6 @@
 import type { SortOrder } from "mongoose";
 
-export function buildLineupSort(
-  sort?: string,
-): Record<string, SortOrder> {
+export function buildLineupSort(sort?: string): Record<string, SortOrder> {
   switch (sort) {
     case "oldest":
       return { createdAt: 1 };

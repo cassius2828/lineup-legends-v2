@@ -45,8 +45,9 @@ export function PlayerSelector({
   isSubmitting = false,
   isAuthenticated = true,
 }: PlayerSelectorProps) {
-  const [positionSlots, setPositionSlots] =
-    useState<PositionSlots>(INITIAL_POSITION_SLOTS);
+  const [positionSlots, setPositionSlots] = useState<PositionSlots>(
+    INITIAL_POSITION_SLOTS,
+  );
   const [activePlayer, setActivePlayer] = useState<PlayerOutput | null>(null);
 
   // Configure sensors for better drag experience
@@ -209,7 +210,7 @@ export function PlayerSelector({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col gap-4 lg:flex-row items-center lg:justify-center lg:gap-20">
+      <div className="flex flex-col items-center gap-4 lg:flex-row lg:justify-center lg:gap-20">
         {/* Left Container - Player Grid */}
         <div className="flex-shrink-0">
           {/* Header with Title and Budget */}

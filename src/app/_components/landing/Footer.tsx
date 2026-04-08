@@ -15,8 +15,8 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 30 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { duration: 0.5, ease: "easeOut" as const },
   },
@@ -34,8 +34,8 @@ const socialVariants = {
 
 const socialItemVariants = {
   hidden: { opacity: 0, scale: 0.8 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     scale: 1,
     transition: { duration: 0.4, ease: "easeOut" as const },
   },
@@ -43,11 +43,11 @@ const socialItemVariants = {
 
 export function Footer() {
   return (
-    <footer className="relative overflow-hidden bg-surface-950 px-4 py-16 sm:px-8 lg:px-16">
+    <footer className="bg-surface-950 relative overflow-hidden px-4 py-16 sm:px-8 lg:px-16">
       {/* Subtle gold gradient at top */}
-      <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-      
-      <motion.div 
+      <div className="via-gold/30 absolute top-0 right-0 left-0 h-px bg-gradient-to-r from-transparent to-transparent" />
+
+      <motion.div
         className="mx-auto max-w-7xl"
         variants={containerVariants}
         initial="hidden"
@@ -56,20 +56,20 @@ export function Footer() {
       >
         <div className="flex flex-col items-center justify-between gap-12 lg:flex-row lg:items-start">
           {/* Left - CTA Text */}
-          <motion.div 
+          <motion.div
             className="max-w-sm text-center lg:text-left"
             variants={itemVariants}
           >
-            <p className="font-stencil text-lg uppercase leading-relaxed tracking-wide text-gold">
+            <p className="font-stencil text-gold text-lg leading-relaxed tracking-wide uppercase">
               Join Lineup Legends – create, share, and dominate with your
-              ultimate fantasy basketball lineups. Your journey as a top
-              fantasy GM starts here!
+              ultimate fantasy basketball lineups. Your journey as a top fantasy
+              GM starts here!
             </p>
           </motion.div>
 
           {/* Center - Contact Info */}
-          <motion.div 
-            className="text-center text-foreground/70"
+          <motion.div
+            className="text-foreground/70 text-center"
             variants={itemVariants}
           >
             <p>Located in Northern California</p>
@@ -78,33 +78,33 @@ export function Footer() {
               Email:{" "}
               <a
                 href="mailto:cassius.reynolds.dev@gmail.com"
-                className="text-gold transition-colors hover:text-gold-light"
+                className="text-gold hover:text-gold-light transition-colors"
               >
                 cassius.reynolds.dev@gmail.com
               </a>
             </p>
             <Link
               href="/contact"
-              className="mt-3 inline-block text-sm text-gold/80 transition-colors hover:text-gold-light"
+              className="text-gold/80 hover:text-gold-light mt-3 inline-block text-sm transition-colors"
             >
               Contact Us &rarr;
             </Link>
           </motion.div>
 
           {/* Right - Developer Credit */}
-          <motion.div 
+          <motion.div
             className="text-center lg:text-right"
             variants={itemVariants}
           >
             <p className="text-foreground/50">Developed by</p>
-            <p className="font-stencil mt-1 text-xl uppercase tracking-wide text-gradient-gold">
+            <p className="font-stencil text-gradient-gold mt-1 text-xl tracking-wide uppercase">
               Cassius Reynolds
             </p>
           </motion.div>
         </div>
 
         {/* Social Icons */}
-        <motion.div 
+        <motion.div
           className="mt-12 flex items-center justify-center gap-6"
           variants={socialVariants}
           initial="hidden"
@@ -126,36 +126,33 @@ export function Footer() {
           >
             <LinkedInIcon />
           </SocialLink>
-          <SocialLink
-            href="https://github.com/cassius2828"
-            label="GitHub"
-          >
+          <SocialLink href="https://github.com/cassius2828" label="GitHub">
             <GitHubIcon />
           </SocialLink>
         </motion.div>
 
         {/* Legal Links */}
         <motion.div
-          className="mt-12 flex justify-center gap-6 border-t border-foreground/10 pt-8 pb-4"
+          className="border-foreground/10 mt-12 flex justify-center gap-6 border-t pt-8 pb-4"
           variants={itemVariants}
         >
           <Link
             href="/terms"
-            className="text-sm text-foreground/50 transition-colors hover:text-gold"
+            className="text-foreground/50 hover:text-gold text-sm transition-colors"
           >
             Terms of Service
           </Link>
           <Link
             href="/privacy"
-            className="text-sm text-foreground/50 transition-colors hover:text-gold"
+            className="text-foreground/50 hover:text-gold text-sm transition-colors"
           >
             Privacy Policy
           </Link>
         </motion.div>
 
         {/* Copyright */}
-        <motion.div 
-          className="text-center text-sm text-foreground/40"
+        <motion.div
+          className="text-foreground/40 text-center text-sm"
           variants={itemVariants}
         >
           © {new Date().getFullYear()} Lineup Legends. All rights reserved.
@@ -181,9 +178,9 @@ function SocialLink({
         target="_blank"
         rel="noopener noreferrer"
         aria-label={label}
-        className="group relative block text-foreground/60 transition-all duration-300 hover:text-gold"
+        className="group text-foreground/60 hover:text-gold relative block transition-all duration-300"
       >
-        <span className="absolute -inset-2 rounded-full bg-gold/0 transition-all duration-300 group-hover:bg-gold/10" />
+        <span className="bg-gold/0 group-hover:bg-gold/10 absolute -inset-2 rounded-full transition-all duration-300" />
         <span className="relative block transition-transform duration-300 group-hover:scale-110">
           {children}
         </span>

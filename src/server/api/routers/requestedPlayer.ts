@@ -70,19 +70,21 @@ export const requestedPlayerRouter = createTRPCRouter({
     }),
 
   // Get all requested players with description counts
-  getAll: publicProcedure.output(z.array(requestedPlayerListItemOutput)).query(async () => {
-    const requestedPlayers = await RequestedPlayerModel.find()
-      .sort({ updatedAt: -1 })
-      .lean();
+  getAll: publicProcedure
+    .output(z.array(requestedPlayerListItemOutput))
+    .query(async () => {
+      const requestedPlayers = await RequestedPlayerModel.find()
+        .sort({ updatedAt: -1 })
+        .lean();
 
-    return populated(
-      requestedPlayers.map((rp) => ({
-        ...rp,
-        id: rp._id,
-        descriptionCount: rp.descriptions.length,
-      })),
-    );
-  }),
+      return populated(
+        requestedPlayers.map((rp) => ({
+          ...rp,
+          id: rp._id,
+          descriptionCount: rp.descriptions.length,
+        })),
+      );
+    }),
 
   // Get a single requested player by ID with populated user info
   getById: publicProcedure
@@ -142,7 +144,11 @@ export const requestedPlayerRouter = createTRPCRouter({
         note: z.string().max(500).optional(),
       }),
     )
-    .output(requestedPlayerListItemOutput.extend({ descriptionCount: z.number().optional() }))
+    .output(
+      requestedPlayerListItemOutput.extend({
+        descriptionCount: z.number().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const firstName = input.firstName.trim();
       const lastName = input.lastName.trim();

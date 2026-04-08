@@ -15,14 +15,14 @@ describe("CommentModel", () => {
       expect(error).toBeUndefined();
     });
 
-    it("should require text", () => {
+    it("should default text to null when omitted", () => {
       const comment = new CommentModel({
         user: mockObjectId(),
         lineup: mockObjectId(),
       });
       const error = comment.validateSync();
-      expect(error).toBeDefined();
-      expect(error!.errors.text).toBeDefined();
+      expect(error).toBeUndefined();
+      expect(comment.text).toBeNull();
     });
 
     it("should require user", () => {
@@ -66,7 +66,9 @@ describe("CommentModel", () => {
         user: mockObjectId(),
         lineup: mockObjectId(),
       });
-      expect((comment as unknown as { id: string }).id).toBe(objectId.toHexString());
+      expect((comment as unknown as { id: string }).id).toBe(
+        objectId.toHexString(),
+      );
     });
 
     it("should include virtuals in toJSON", () => {
@@ -76,7 +78,7 @@ describe("CommentModel", () => {
         lineup: mockObjectId(),
       });
       const json = comment.toJSON();
-      expect(json).toHaveProperty('id');
+      expect(json).toHaveProperty("id");
     });
 
     it("should include virtuals in toObject", () => {
@@ -86,7 +88,7 @@ describe("CommentModel", () => {
         lineup: mockObjectId(),
       });
       const obj = comment.toObject();
-      expect(obj).toHaveProperty('id');
+      expect(obj).toHaveProperty("id");
     });
   });
 

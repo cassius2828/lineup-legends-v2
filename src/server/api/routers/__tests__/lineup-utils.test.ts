@@ -1,7 +1,6 @@
 import {
   BUDGET_LIMIT,
   DAILY_GAMBLE_LIMIT,
-  GAMBLE_COOLDOWN_MS,
   GAMBLE_ODDS,
   selectWeightedValue,
   getOutcomeTier,
@@ -19,10 +18,6 @@ describe("lineup constants", () => {
 
   it("should have a daily gamble limit of 5", () => {
     expect(DAILY_GAMBLE_LIMIT).toBe(5);
-  });
-
-  it("should have a gamble cooldown of 30 seconds", () => {
-    expect(GAMBLE_COOLDOWN_MS).toBe(30000);
   });
 });
 

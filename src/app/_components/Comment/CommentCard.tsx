@@ -65,7 +65,7 @@ export default function CommentCard({
   const relativeTime = formatRelativeTime(comment.createdAt);
 
   return (
-    <div className="flex gap-3 border-b border-foreground/10 py-4 last:border-b-0">
+    <div className="border-foreground/10 flex gap-3 border-b py-4 last:border-b-0">
       {/* Avatar */}
       {avatar ? (
         <Image
@@ -76,25 +76,25 @@ export default function CommentCard({
           className="h-9 w-9 shrink-0 rounded-full"
         />
       ) : (
-        <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+        <div className="bg-foreground/10 h-9 w-9 shrink-0 rounded-full" />
       )}
 
       {/* Content */}
       <div className="min-w-0 flex-1">
         {/* Name + time */}
         <div className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-medium text-foreground">
+          <span className="text-foreground truncate text-sm font-medium">
             {displayName}
           </span>
           <span className="text-foreground/30">&middot;</span>
-          <span className="shrink-0 text-xs text-foreground/40">
+          <span className="text-foreground/40 shrink-0 text-xs">
             {relativeTime}
           </span>
         </div>
 
         {/* Body */}
         {comment.text && (
-          <p className="mt-1 text-sm leading-relaxed text-foreground/80">
+          <p className="text-foreground/80 mt-1 text-sm leading-relaxed">
             {comment.text}
           </p>
         )}
@@ -124,7 +124,7 @@ export default function CommentCard({
           <button
             type="button"
             onClick={onReplyClick}
-            className="flex cursor-pointer items-center gap-1.5 text-foreground/30 transition-colors hover:text-gold"
+            className="text-foreground/30 hover:text-gold flex cursor-pointer items-center gap-1.5 transition-colors"
           >
             <MessageCircle className="h-3.5 w-3.5" />
             {(comment.threadCount ?? 0) > 0 && (
@@ -148,7 +148,9 @@ export default function CommentCard({
               <ChevronUp className="h-4 w-4" />
             </button>
 
-            <span className={`min-w-[1.25rem] text-center text-xs font-medium ${vote.voteColor}`}>
+            <span
+              className={`min-w-[1.25rem] text-center text-xs font-medium ${vote.voteColor}`}
+            >
               {vote.optimisticTotal}
             </span>
 

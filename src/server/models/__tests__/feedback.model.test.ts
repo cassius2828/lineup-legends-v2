@@ -161,19 +161,21 @@ describe("FeedbackModel", () => {
         _id: objectId,
         ...validFeedback(),
       });
-      expect((feedback as unknown as { id: string }).id).toBe(objectId.toHexString());
+      expect((feedback as unknown as { id: string }).id).toBe(
+        objectId.toHexString(),
+      );
     });
 
     it("should include virtuals in toJSON", () => {
       const feedback = new FeedbackModel(validFeedback());
       const json = feedback.toJSON();
-      expect(json).toHaveProperty('id');
+      expect(json).toHaveProperty("id");
     });
 
     it("should include virtuals in toObject", () => {
       const feedback = new FeedbackModel(validFeedback());
       const obj = feedback.toObject();
-      expect(obj).toHaveProperty('id');
+      expect(obj).toHaveProperty("id");
     });
   });
 

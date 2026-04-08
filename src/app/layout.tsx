@@ -58,27 +58,37 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable} ${stickNoBills.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${geist.variable} ${stickNoBills.variable}`}
+      suppressHydrationWarning
+    >
       <body className="flex min-h-screen flex-col">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-        <TRPCReactProvider>
-          <SessionProvider>
-            <TooltipProvider>
-              <div id="global-nav">
-                <Nav />
-              </div>
-              <div id="global-nav-spacer" className="mb-24 md:mb-16"></div>
-              <div className="flex-1">
-                <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-              </div>
-              <div id="global-footer">
-                <Footer />
-              </div>
-              <GlobalCommentModal />
-              <Toaster richColors position="top-center" />
-            </TooltipProvider>
-          </SessionProvider>
-        </TRPCReactProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+        >
+          <TRPCReactProvider>
+            <SessionProvider>
+              <TooltipProvider>
+                <div id="global-nav">
+                  <Nav />
+                </div>
+                <div id="global-nav-spacer" className="mb-24 md:mb-16"></div>
+                <div className="flex-1">
+                  <Suspense fallback={<div>Loading...</div>}>
+                    {children}
+                  </Suspense>
+                </div>
+                <div id="global-footer">
+                  <Footer />
+                </div>
+                <GlobalCommentModal />
+                <Toaster richColors position="top-center" />
+              </TooltipProvider>
+            </SessionProvider>
+          </TRPCReactProvider>
         </ThemeProvider>
       </body>
     </html>

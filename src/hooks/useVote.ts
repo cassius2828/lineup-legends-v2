@@ -46,13 +46,10 @@ export function useVote({
     [isOwn, currentUserId, optimisticVote, onVote],
   );
 
-  const resetVote = useCallback(
-    (vote: VoteType | null, total: number) => {
-      setOptimisticVote(vote);
-      setOptimisticTotal(total);
-    },
-    [],
-  );
+  const resetVote = useCallback((vote: VoteType | null, total: number) => {
+    setOptimisticVote(vote);
+    setOptimisticTotal(total);
+  }, []);
 
   const voteColor =
     optimisticTotal > 0

@@ -56,15 +56,15 @@ export default function ConfirmModal({
       transition={{ duration: 0.12 }}
     >
       <motion.div
-        className="w-full max-w-sm rounded-2xl bg-surface-800 p-6 shadow-2xl"
+        className="bg-surface-800 w-full max-w-sm rounded-2xl p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.15, ease: "easeOut" }}
       >
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
+        <h3 className="text-foreground text-base font-semibold">{title}</h3>
         {description && (
-          <p className="mt-2 text-sm leading-relaxed text-foreground/50">
+          <p className="text-foreground/50 mt-2 text-sm leading-relaxed">
             {description}
           </p>
         )}
@@ -73,7 +73,7 @@ export default function ConfirmModal({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="rounded-full px-4 py-1.5 text-sm font-medium text-foreground/60 transition-colors hover:bg-foreground/10 hover:text-foreground disabled:opacity-40"
+            className="text-foreground/60 hover:bg-foreground/10 hover:text-foreground rounded-full px-4 py-1.5 text-sm font-medium transition-colors disabled:opacity-40"
           >
             {cancelLabel}
           </button>

@@ -1,8 +1,4 @@
-import mongoose, {
-  Schema,
-  type Document,
-  type Model
-} from "mongoose";
+import mongoose, { Schema, type Document, type Model } from "mongoose";
 
 export interface SocialMedia {
   twitter?: string | null;
@@ -83,7 +79,7 @@ const UserSchema = new Schema<UserDoc>(
 );
 
 UserSchema.index({ username: 1 }, { unique: true, sparse: true });
-UserSchema.index({name: 1})
+UserSchema.index({ name: 1 });
 
 // Virtual for id
 UserSchema.virtual("id").get(function (this: UserDoc) {

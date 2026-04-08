@@ -6,10 +6,7 @@ export const UPLOAD_ALLOWED_TYPES = [
   "image/gif",
 ];
 
-export async function uploadFile(
-  file: File,
-  type: string,
-): Promise<string> {
+export async function uploadFile(file: File, type: string): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("type", type);

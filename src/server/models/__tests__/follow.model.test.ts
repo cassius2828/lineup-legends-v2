@@ -41,7 +41,9 @@ describe("FollowModel", () => {
         follower: mockObjectId(),
         following: mockObjectId(),
       });
-      expect((follow as unknown as { id: string }).id).toBe(objectId.toHexString());
+      expect((follow as unknown as { id: string }).id).toBe(
+        objectId.toHexString(),
+      );
     });
 
     it("should include virtuals in toJSON", () => {
@@ -50,7 +52,7 @@ describe("FollowModel", () => {
         following: mockObjectId(),
       });
       const json = follow.toJSON();
-      expect(json).toHaveProperty('id');
+      expect(json).toHaveProperty("id");
     });
 
     it("should include virtuals in toObject", () => {
@@ -59,7 +61,7 @@ describe("FollowModel", () => {
         following: mockObjectId(),
       });
       const obj = follow.toObject();
-      expect(obj).toHaveProperty('id');
+      expect(obj).toHaveProperty("id");
     });
   });
 

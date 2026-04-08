@@ -34,7 +34,12 @@ interface PlayerImageProps {
   onClick?: () => void;
 }
 
-export function PlayerImage({ imgUrl, alt, className, onClick }: PlayerImageProps) {
+export function PlayerImage({
+  imgUrl,
+  alt,
+  className,
+  onClick,
+}: PlayerImageProps) {
   const [retryCount, setRetryCount] = useState(0);
   const [failed, setFailed] = useState(false);
 
@@ -51,7 +56,14 @@ export function PlayerImage({ imgUrl, alt, className, onClick }: PlayerImageProp
     className ?? "absolute inset-0 h-full w-full object-cover";
 
   // eslint-disable-next-line @next/next/no-img-element
-  const fallbackEl = <img src={FALLBACK_PLAYER_IMAGE} alt={alt} className={baseClassName} draggable={false} />;
+  const fallbackEl = (
+    <img
+      src={FALLBACK_PLAYER_IMAGE}
+      alt={alt}
+      className={baseClassName}
+      draggable={false}
+    />
+  );
 
   if (showFallback) return fallbackEl;
 

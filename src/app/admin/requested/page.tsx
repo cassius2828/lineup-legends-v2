@@ -13,16 +13,16 @@ export default function AdminRequestedPlayersPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">
+            <h1 className="text-foreground text-3xl font-bold">
               Requested Players
             </h1>
-            <p className="mt-1 text-foreground/50">
+            <p className="text-foreground/50 mt-1">
               View and manage player requests submitted by users
             </p>
           </div>
           <Link
             href="/admin/players"
-            className="rounded-lg bg-foreground/10 px-6 py-3 font-semibold text-foreground transition-colors hover:bg-foreground/20"
+            className="bg-foreground/10 text-foreground hover:bg-foreground/20 rounded-lg px-6 py-3 font-semibold transition-colors"
           >
             View All Players
           </Link>
@@ -31,7 +31,7 @@ export default function AdminRequestedPlayersPage() {
 
       {/* Results Count */}
       <div className="mb-4">
-        <p className="text-sm text-foreground/50">
+        <p className="text-foreground/50 text-sm">
           {isLoading
             ? "Loading..."
             : `${requestedPlayers?.length ?? 0} player requests`}
@@ -41,7 +41,7 @@ export default function AdminRequestedPlayersPage() {
       {/* Requested Players Grid */}
       {isLoading ? (
         <div className="flex h-64 items-center justify-center">
-          <div className="border-t-gold h-12 w-12 animate-spin rounded-full border-4 border-foreground/20" />
+          <div className="border-t-gold border-foreground/20 h-12 w-12 animate-spin rounded-full border-4" />
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -51,8 +51,8 @@ export default function AdminRequestedPlayersPage() {
               href={`/admin/requested/${player.id}`}
               className="group flex flex-col items-center"
             >
-              <div className="relative flex h-28 w-28 cursor-pointer items-center justify-center overflow-hidden rounded-lg bg-foreground/10 transition-all duration-200 group-hover:scale-105 group-hover:bg-foreground/20">
-                <span className="text-2xl font-bold text-foreground/60">
+              <div className="bg-foreground/10 group-hover:bg-foreground/20 relative flex h-28 w-28 cursor-pointer items-center justify-center overflow-hidden rounded-lg transition-all duration-200 group-hover:scale-105">
+                <span className="text-foreground/60 text-2xl font-bold">
                   {player.firstName.charAt(0)}
                   {player.lastName.charAt(0)}
                 </span>
@@ -63,17 +63,17 @@ export default function AdminRequestedPlayersPage() {
               </div>
 
               <div className="mt-2 text-center">
-                <p className="text-sm font-medium text-foreground">
+                <p className="text-foreground text-sm font-medium">
                   {player.firstName}
                 </p>
-                <p className="text-sm text-foreground/80">{player.lastName}</p>
-                <p className="mt-1 text-xs text-foreground/60">
+                <p className="text-foreground/80 text-sm">{player.lastName}</p>
+                <p className="text-foreground/60 mt-1 text-xs">
                   {player.descriptionCount}{" "}
                   {player.descriptionCount === 1 ? "request" : "requests"}
                 </p>
               </div>
 
-              <p className="mt-2 text-xs text-foreground/40 opacity-0 transition-opacity group-hover:opacity-100">
+              <p className="text-foreground/40 mt-2 text-xs opacity-0 transition-opacity group-hover:opacity-100">
                 Click to view
               </p>
             </Link>
@@ -85,8 +85,8 @@ export default function AdminRequestedPlayersPage() {
       {!isLoading && requestedPlayers?.length === 0 && (
         <div className="flex h-64 items-center justify-center">
           <div className="text-center">
-            <p className="text-lg text-foreground/60">No player requests yet</p>
-            <p className="mt-2 text-sm text-foreground/40">
+            <p className="text-foreground/60 text-lg">No player requests yet</p>
+            <p className="text-foreground/40 mt-2 text-sm">
               Users can request players from the Find Players page
             </p>
           </div>

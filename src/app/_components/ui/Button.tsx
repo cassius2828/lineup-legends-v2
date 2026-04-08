@@ -46,7 +46,8 @@ const ButtonColors = {
 type ButtonColor = keyof typeof ButtonColors;
 type ButtonVariant = "subtle" | "solid";
 
-const baseClasses = "cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors";
+const baseClasses =
+  "cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors";
 const disabledClasses = "disabled:cursor-not-allowed disabled:opacity-50";
 
 export const Button = ({

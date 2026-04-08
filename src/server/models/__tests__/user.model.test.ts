@@ -155,7 +155,9 @@ describe("UserModel", () => {
         name: "John Doe",
         email: "john@example.com",
       });
-      expect((user as unknown as { id: string }).id).toBe(objectId.toHexString());
+      expect((user as unknown as { id: string }).id).toBe(
+        objectId.toHexString(),
+      );
     });
 
     it("should include virtuals in toJSON output", () => {
@@ -164,7 +166,7 @@ describe("UserModel", () => {
         email: "john@example.com",
       });
       const json = user.toJSON();
-      expect(json).toHaveProperty('id');
+      expect(json).toHaveProperty("id");
     });
 
     it("should include virtuals in toObject output", () => {
@@ -173,7 +175,7 @@ describe("UserModel", () => {
         email: "john@example.com",
       });
       const obj = user.toObject();
-      expect(obj).toHaveProperty('id');
+      expect(obj).toHaveProperty("id");
     });
   });
 
