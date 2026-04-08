@@ -168,11 +168,17 @@ async function uploadToS3(file: Buffer, key: string): Promise<void> {
   );
 }
 
-async function processBatch(players: PlayerDoc[], stats: MigrationStats): Promise<void> {
+async function processBatch(
+  players: PlayerDoc[],
+  stats: MigrationStats,
+): Promise<void> {
   await Promise.all(players.map((player) => processPlayer(player, stats)));
 }
 
-async function processPlayer(player: PlayerDoc, stats: MigrationStats): Promise<void> {
+async function processPlayer(
+  player: PlayerDoc,
+  stats: MigrationStats,
+): Promise<void> {
   const name = `${player.firstName} ${player.lastName}`;
   const newKey = buildS3Key(player);
   const oldKey = buildOldS3Key(player);
@@ -187,7 +193,7 @@ async function processPlayer(player: PlayerDoc, stats: MigrationStats): Promise<
 
   if (!alreadyAtNewLocation) {
     // Check if the image exists at the old (wrong) S3 location from the previous run
-    if (isAtOldLocation(player.imgUrl) || await s3ObjectExists(oldKey)) {
+    if (isAtOldLocation(player.imgUrl) || (await s3ObjectExists(oldKey))) {
       await copyS3Object(oldKey, newKey);
       await deleteS3Object(oldKey);
       console.log(`  MOVED   ${name}`);
@@ -195,7 +201,9 @@ async function processPlayer(player: PlayerDoc, stats: MigrationStats): Promise<
       // Fresh download from external URL
       const imageBuffer = await downloadImage(player.imgUrl);
       if (!imageBuffer) {
-        console.log(`  FAILED  ${name} — could not download from ${player.imgUrl}`);
+        console.log(
+          `  FAILED  ${name} — could not download from ${player.imgUrl}`,
+        );
         stats.failed.push({ name, url: player.imgUrl });
         return;
       }
@@ -211,7 +219,10 @@ async function processPlayer(player: PlayerDoc, stats: MigrationStats): Promise<
     console.log(`  OK      ${name} (already in correct S3 location)`);
   }
 
-  await PlayerModel.updateOne({ _id: player._id }, { $set: { imgUrl: cdnUrl } });
+  await PlayerModel.updateOne(
+    { _id: player._id },
+    { $set: { imgUrl: cdnUrl } },
+  );
   stats.migrated++;
 }
 
@@ -248,7 +259,9 @@ async function main() {
     const batch = players.slice(i, i + BATCH_SIZE);
     const batchNum = Math.floor(i / BATCH_SIZE) + 1;
     const totalBatches = Math.ceil(players.length / BATCH_SIZE);
-    console.log(`Batch ${batchNum}/${totalBatches} (players ${i + 1}-${Math.min(i + BATCH_SIZE, players.length)})`);
+    console.log(
+      `Batch ${batchNum}/${totalBatches} (players ${i + 1}-${Math.min(i + BATCH_SIZE, players.length)})`,
+    );
     await processBatch(batch, stats);
   }
 

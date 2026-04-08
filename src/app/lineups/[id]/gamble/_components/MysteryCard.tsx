@@ -10,11 +10,14 @@ interface MysteryCardProps {
   suspenseDuration: number;
 }
 
-export function MysteryCard({ playerValue, suspenseDuration }: MysteryCardProps) {
+export function MysteryCard({
+  playerValue,
+  suspenseDuration,
+}: MysteryCardProps) {
   const tierColor = VALUE_COLORS[playerValue] ?? "#e3b920";
 
-  const colorTransitionDelay = suspenseDuration * 0.45 / 1000;
-  const colorTransitionDuration = suspenseDuration * 0.55 / 1000;
+  const colorTransitionDelay = (suspenseDuration * 0.45) / 1000;
+  const colorTransitionDuration = (suspenseDuration * 0.55) / 1000;
 
   return (
     <div className="relative flex h-full w-full items-center justify-center">
@@ -79,7 +82,7 @@ export function MysteryCard({ playerValue, suspenseDuration }: MysteryCardProps)
 
         {/* Question mark — neutral to tier color */}
         <motion.span
-          className="select-none text-7xl font-black"
+          className="text-7xl font-black select-none"
           initial={{
             color: NEUTRAL_COLOR,
             textShadow: `0 0 30px ${NEUTRAL_COLOR}80, 0 0 60px ${NEUTRAL_COLOR}40`,

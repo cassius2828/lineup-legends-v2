@@ -55,16 +55,16 @@ export function AdminSidebar() {
   const sidebarContent = (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="border-b border-foreground/10 p-6">
+      <div className="border-foreground/10 border-b p-6">
         <Link href="/admin" className="flex items-center gap-3">
           <div className="bg-gold flex h-9 w-9 items-center justify-center rounded-lg">
             <LayoutDashboard className="h-5 w-5 text-black" />
           </div>
           <div>
-            <h2 className="font-stencil text-lg font-bold tracking-wide text-foreground uppercase">
+            <h2 className="font-stencil text-foreground text-lg font-bold tracking-wide uppercase">
               Admin
             </h2>
-            <p className="text-xs text-foreground/40">Lineup Legends</p>
+            <p className="text-foreground/40 text-xs">Lineup Legends</p>
           </div>
         </Link>
       </div>
@@ -84,7 +84,9 @@ export function AdminSidebar() {
                   : "text-foreground/60 hover:bg-foreground/5 hover:text-foreground/90"
               }`}
             >
-              <item.icon className={`h-4.5 w-4.5 ${active ? "text-gold" : ""}`} />
+              <item.icon
+                className={`h-4.5 w-4.5 ${active ? "text-gold" : ""}`}
+              />
               {item.label}
             </Link>
           );
@@ -92,10 +94,10 @@ export function AdminSidebar() {
       </nav>
 
       {/* Back to site */}
-      <div className="border-t border-foreground/10 p-4">
+      <div className="border-foreground/10 border-t p-4">
         <Link
           href="/"
-          className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-foreground/40 transition-colors hover:text-foreground/70"
+          className="text-foreground/40 hover:text-foreground/70 flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
           Back to site
@@ -109,12 +111,12 @@ export function AdminSidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(!mobileOpen)}
-        className="fixed top-4 left-4 z-50 rounded-lg bg-foreground/10 p-2 backdrop-blur-sm md:hidden"
+        className="bg-foreground/10 fixed top-4 left-4 z-50 rounded-lg p-2 backdrop-blur-sm md:hidden"
       >
         {mobileOpen ? (
-          <X className="h-5 w-5 text-foreground" />
+          <X className="text-foreground h-5 w-5" />
         ) : (
-          <Menu className="h-5 w-5 text-foreground" />
+          <Menu className="text-foreground h-5 w-5" />
         )}
       </button>
 
@@ -128,7 +130,7 @@ export function AdminSidebar() {
 
       {/* Sidebar - mobile */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-full w-64 border-r border-foreground/10 bg-background transition-transform md:hidden ${
+        className={`border-foreground/10 bg-background fixed top-0 left-0 z-40 h-full w-64 border-r transition-transform md:hidden ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -136,7 +138,7 @@ export function AdminSidebar() {
       </aside>
 
       {/* Sidebar - desktop */}
-      <aside className="fixed top-0 left-0 hidden h-full w-64 border-r border-foreground/10 bg-background md:block">
+      <aside className="border-foreground/10 bg-background fixed top-0 left-0 hidden h-full w-64 border-r md:block">
         {sidebarContent}
       </aside>
     </>

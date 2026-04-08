@@ -25,7 +25,7 @@ export default function AdminDashboardPage() {
   if (isLoading || !stats) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="border-t-gold h-12 w-12 animate-spin rounded-full border-4 border-foreground/20" />
+        <div className="border-t-gold border-foreground/20 h-12 w-12 animate-spin rounded-full border-4" />
       </div>
     );
   }
@@ -65,7 +65,8 @@ export default function AdminDashboardPage() {
       value: stats.pendingFeedback,
       subtitle: `${stats.totalFeedback} total`,
       icon: MessageSquare,
-      color: stats.pendingFeedback > 0 ? "text-amber-400" : "text-foreground/60",
+      color:
+        stats.pendingFeedback > 0 ? "text-amber-400" : "text-foreground/60",
       bgColor:
         stats.pendingFeedback > 0 ? "bg-amber-400/10" : "bg-foreground/5",
       highlight: stats.pendingFeedback > 0,
@@ -83,8 +84,8 @@ export default function AdminDashboardPage() {
     <div>
       {/* Page header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-        <p className="mt-1 text-foreground/50">
+        <h1 className="text-foreground text-3xl font-bold">Dashboard</h1>
+        <p className="text-foreground/50 mt-1">
           Overview of Lineup Legends activity and stats
         </p>
       </div>
@@ -102,12 +103,14 @@ export default function AdminDashboardPage() {
           >
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm text-foreground/50">{card.label}</p>
-                <p className="mt-1 text-3xl font-bold text-foreground">
+                <p className="text-foreground/50 text-sm">{card.label}</p>
+                <p className="text-foreground mt-1 text-3xl font-bold">
                   {card.value.toLocaleString()}
                 </p>
                 {card.subtitle && (
-                  <p className="mt-1 text-xs text-foreground/40">{card.subtitle}</p>
+                  <p className="text-foreground/40 mt-1 text-xs">
+                    {card.subtitle}
+                  </p>
                 )}
               </div>
               <div className={`rounded-lg p-2.5 ${card.bgColor}`}>
@@ -121,18 +124,18 @@ export default function AdminDashboardPage() {
       {/* Two-column layout for recent activity */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Recent signups */}
-        <div className="rounded-xl border border-foreground/10 bg-foreground/3 p-6">
+        <div className="border-foreground/10 bg-foreground/3 rounded-xl border p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">
+            <h2 className="text-foreground text-lg font-semibold">
               Recent Signups
             </h2>
-            <span className="text-xs text-foreground/40">Last 5 users</span>
+            <span className="text-foreground/40 text-xs">Last 5 users</span>
           </div>
           <div className="space-y-3">
             {stats.recentUsers.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center gap-3 rounded-lg border border-foreground/5 bg-foreground/2 p-3"
+                className="border-foreground/5 bg-foreground/2 flex items-center gap-3 rounded-lg border p-3"
               >
                 {user.image ? (
                   <Image
@@ -143,19 +146,21 @@ export default function AdminDashboardPage() {
                     className="h-9 w-9 rounded-full"
                   />
                 ) : (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground/10">
-                    <span className="text-sm font-medium text-foreground/50">
+                  <div className="bg-foreground/10 flex h-9 w-9 items-center justify-center rounded-full">
+                    <span className="text-foreground/50 text-sm font-medium">
                       {user.name.charAt(0)}
                     </span>
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
+                  <p className="text-foreground truncate text-sm font-medium">
                     {user.name}
                   </p>
-                  <p className="truncate text-xs text-foreground/40">{user.email}</p>
+                  <p className="text-foreground/40 truncate text-xs">
+                    {user.email}
+                  </p>
                 </div>
-                <span className="shrink-0 text-xs text-foreground/30">
+                <span className="text-foreground/30 shrink-0 text-xs">
                   {formatDistanceToNow(new Date(user.createdAt), {
                     addSuffix: true,
                   })}
@@ -163,7 +168,7 @@ export default function AdminDashboardPage() {
               </div>
             ))}
             {stats.recentUsers.length === 0 && (
-              <p className="py-4 text-center text-sm text-foreground/40">
+              <p className="text-foreground/40 py-4 text-center text-sm">
                 No users yet
               </p>
             )}
@@ -171,9 +176,9 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Recent feedback */}
-        <div className="rounded-xl border border-foreground/10 bg-foreground/3 p-6">
+        <div className="border-foreground/10 bg-foreground/3 rounded-xl border p-6">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-foreground">
+            <h2 className="text-foreground text-lg font-semibold">
               Recent Feedback
             </h2>
             <Link
@@ -189,15 +194,15 @@ export default function AdminDashboardPage() {
               <Link
                 key={feedback.id}
                 href="/admin/feedback"
-                className="block rounded-lg border border-foreground/5 bg-foreground/2 p-3 transition-colors hover:bg-foreground/5"
+                className="border-foreground/5 bg-foreground/2 hover:bg-foreground/5 block rounded-lg border p-3 transition-colors"
               >
                 <div className="mb-1 flex items-center justify-between">
-                  <p className="truncate text-sm font-medium text-foreground">
+                  <p className="text-foreground truncate text-sm font-medium">
                     {feedback.subject}
                   </p>
                   <StatusBadge status={feedback.status} />
                 </div>
-                <p className="truncate text-xs text-foreground/40">
+                <p className="text-foreground/40 truncate text-xs">
                   {feedback.name} &middot;{" "}
                   {formatDistanceToNow(new Date(feedback.createdAt), {
                     addSuffix: true,
@@ -206,7 +211,7 @@ export default function AdminDashboardPage() {
               </Link>
             ))}
             {stats.recentFeedback.length === 0 && (
-              <p className="py-4 text-center text-sm text-foreground/40">
+              <p className="text-foreground/40 py-4 text-center text-sm">
                 No feedback yet
               </p>
             )}
@@ -216,76 +221,82 @@ export default function AdminDashboardPage() {
 
       {/* Quick actions */}
       <div className="mt-8">
-        <h2 className="mb-4 text-lg font-semibold text-foreground">
+        <h2 className="text-foreground mb-4 text-lg font-semibold">
           Quick Actions
         </h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Link
             href="/admin/add-player"
-            className="flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/3 p-4 transition-colors hover:bg-foreground/6"
+            className="border-foreground/10 bg-foreground/3 hover:bg-foreground/6 flex items-center gap-3 rounded-xl border p-4 transition-colors"
           >
-            <div className="rounded-lg bg-gold-300/10 p-2">
-              <Plus className="h-5 w-5 text-gold-300" />
+            <div className="bg-gold-300/10 rounded-lg p-2">
+              <Plus className="text-gold-300 h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">Add Player</p>
-              <p className="text-xs text-foreground/40">Add a new player to the database</p>
+              <p className="text-foreground text-sm font-medium">Add Player</p>
+              <p className="text-foreground/40 text-xs">
+                Add a new player to the database
+              </p>
             </div>
           </Link>
           <Link
             href="/admin/requested"
-            className="flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/3 p-4 transition-colors hover:bg-foreground/6"
+            className="border-foreground/10 bg-foreground/3 hover:bg-foreground/6 flex items-center gap-3 rounded-xl border p-4 transition-colors"
           >
             <div className="rounded-lg bg-rose-400/10 p-2">
               <UserPlus className="h-5 w-5 text-rose-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-foreground text-sm font-medium">
                 Requested Players
               </p>
-              <p className="text-xs text-foreground/40">
+              <p className="text-foreground/40 text-xs">
                 Review player requests from users
               </p>
             </div>
           </Link>
           <Link
             href="/admin/feedback"
-            className="flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/3 p-4 transition-colors hover:bg-foreground/6"
+            className="border-foreground/10 bg-foreground/3 hover:bg-foreground/6 flex items-center gap-3 rounded-xl border p-4 transition-colors"
           >
             <div className="rounded-lg bg-amber-400/10 p-2">
               <Mail className="h-5 w-5 text-amber-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">Feedback</p>
-              <p className="text-xs text-foreground/40">
+              <p className="text-foreground text-sm font-medium">Feedback</p>
+              <p className="text-foreground/40 text-xs">
                 Manage user feedback and messages
               </p>
             </div>
           </Link>
           <Link
             href="/test/player-images"
-            className="flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/3 p-4 transition-colors hover:bg-foreground/6"
+            className="border-foreground/10 bg-foreground/3 hover:bg-foreground/6 flex items-center gap-3 rounded-xl border p-4 transition-colors"
           >
             <div className="rounded-lg bg-red-400/10 p-2">
               <ImageOff className="h-5 w-5 text-red-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">Test Player Images</p>
-              <p className="text-xs text-foreground/40">
+              <p className="text-foreground text-sm font-medium">
+                Test Player Images
+              </p>
+              <p className="text-foreground/40 text-xs">
                 Check for broken player images
               </p>
             </div>
           </Link>
           <Link
             href="/admin/gamble-animations"
-            className="flex items-center gap-3 rounded-xl border border-foreground/10 bg-foreground/3 p-4 transition-colors hover:bg-foreground/6"
+            className="border-foreground/10 bg-foreground/3 hover:bg-foreground/6 flex items-center gap-3 rounded-xl border p-4 transition-colors"
           >
             <div className="rounded-lg bg-green-400/10 p-2">
               <Sparkles className="h-5 w-5 text-green-400" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">Gamble Animations</p>
-              <p className="text-xs text-foreground/40">
+              <p className="text-foreground text-sm font-medium">
+                Gamble Animations
+              </p>
+              <p className="text-foreground/40 text-xs">
                 Preview all gamble outcome animations
               </p>
             </div>
@@ -295,4 +306,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-

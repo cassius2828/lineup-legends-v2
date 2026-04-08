@@ -38,10 +38,7 @@ export function useSubmitComment({
     onError: (err) => toast.error(err.message),
   });
 
-  const submit = (
-    text: string,
-    media?: { image?: string; gif?: string },
-  ) => {
+  const submit = (text: string, media?: { image?: string; gif?: string }) => {
     const trimmed = text.trim();
     if (!trimmed && !media?.image && !media?.gif) return;
 

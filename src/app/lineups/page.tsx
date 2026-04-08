@@ -57,7 +57,7 @@ export default function MyLineupsPage() {
     toggleFeatured.mutate({ id });
   };
   return (
-    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+    <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <LineupsHeader
@@ -91,7 +91,7 @@ export default function MyLineupsPage() {
         {isLoading ? (
           <div className="flex h-64 items-center justify-center">
             <div className="text-center">
-              <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-foreground/20 border-t-gold" />
+              <div className="border-foreground/20 border-t-gold mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4" />
               <p className="text-foreground/60">Loading lineups...</p>
             </div>
           </div>
@@ -110,10 +110,10 @@ export default function MyLineupsPage() {
             ))}
           </LineupCardGrid>
         ) : (
-          <div className="rounded-2xl bg-foreground/5 p-12 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-foreground/10">
+          <div className="bg-foreground/5 rounded-2xl p-12 text-center">
+            <div className="bg-foreground/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
               <svg
-                className="h-8 w-8 text-foreground/40"
+                className="text-foreground/40 h-8 w-8"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -126,15 +126,15 @@ export default function MyLineupsPage() {
                 />
               </svg>
             </div>
-            <h3 className="mb-2 text-xl font-semibold text-foreground">
+            <h3 className="text-foreground mb-2 text-xl font-semibold">
               No lineups yet
             </h3>
-            <p className="mb-6 text-foreground/60">
+            <p className="text-foreground/60 mb-6">
               Create your first lineup to get started!
             </p>
             <Link
               href="/lineups/new"
-              className="inline-flex items-center gap-2 rounded-lg bg-gold px-6 py-3 font-semibold text-black transition-colors hover:bg-gold-light"
+              className="bg-gold hover:bg-gold-light inline-flex items-center gap-2 rounded-lg px-6 py-3 font-semibold text-black transition-colors"
             >
               <svg
                 className="h-5 w-5"

@@ -48,9 +48,9 @@ export function DroppablePositionSlot({
             : isValidDropTarget
               ? "border-gold/60 bg-gold/10 scale-105 animate-pulse border-2 border-dashed"
               : player
-                ? "border-2 border-solid border-foreground/40 bg-foreground/10"
-                : "border-2 border-dashed border-foreground/30 bg-foreground/5"
-        } ${showSwapIndicator ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-surface-950" : ""}`}
+                ? "border-foreground/40 bg-foreground/10 border-2 border-solid"
+                : "border-foreground/30 bg-foreground/5 border-2 border-dashed"
+        } ${showSwapIndicator ? "ring-offset-surface-950 ring-2 ring-amber-400 ring-offset-2" : ""}`}
       >
         {player ? (
           <>
@@ -66,7 +66,7 @@ export function DroppablePositionSlot({
             {/* Remove Button */}
             <button
               onClick={() => onRemove(player)}
-              className="absolute -top-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs text-foreground transition-colors hover:bg-red-500"
+              className="text-foreground absolute -top-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs transition-colors hover:bg-red-500"
             >
               ×
             </button>
@@ -75,7 +75,7 @@ export function DroppablePositionSlot({
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="rounded-full bg-amber-500 p-1">
                   <svg
-                    className="h-4 w-4 text-foreground"
+                    className="text-foreground h-4 w-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -114,7 +114,7 @@ export function DroppablePositionSlot({
               </svg>
             ) : (
               <svg
-                className="h-6 w-6 text-foreground/30"
+                className="text-foreground/30 h-6 w-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

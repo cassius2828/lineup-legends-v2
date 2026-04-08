@@ -200,8 +200,7 @@ _Content coming soon — add your video and detailed writeup here._
   {
     slug: "comments-threads",
     title: "Comments & Threads",
-    description:
-      "Threaded commenting system with voting on lineups.",
+    description: "Threaded commenting system with voting on lineups.",
     category: "features",
     icon: "💬",
     videoId: "",
@@ -622,7 +621,12 @@ export function getTopicBySlug(slug: string): Topic | undefined {
 }
 
 /** Helper to get topics grouped by category */
-export function getTopicsByCategory(): { key: string; label: string; color: string; topics: Topic[] }[] {
+export function getTopicsByCategory(): {
+  key: string;
+  label: string;
+  color: string;
+  topics: Topic[];
+}[] {
   return CATEGORIES.map((cat) => ({
     ...cat,
     topics: topics.filter((t) => t.category === cat.key),

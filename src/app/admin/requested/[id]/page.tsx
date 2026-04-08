@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { api } from "~/trpc/react";
+import { isValidImageUrl } from "~/lib/utils";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
 import { ConfirmModal } from "~/app/_components/common/ConfirmModal";
@@ -99,7 +100,7 @@ export default function RequestedPlayerDetailPage() {
   if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
-        <div className="border-t-gold h-12 w-12 animate-spin rounded-full border-4 border-foreground/20" />
+        <div className="border-t-gold border-foreground/20 h-12 w-12 animate-spin rounded-full border-4" />
       </div>
     );
   }
@@ -108,7 +109,7 @@ export default function RequestedPlayerDetailPage() {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <div className="text-center">
-          <p className="text-xl text-foreground">Requested player not found</p>
+          <p className="text-foreground text-xl">Requested player not found</p>
           <Link
             href="/admin/requested"
             className="text-gold mt-4 inline-block hover:underline"
@@ -126,7 +127,7 @@ export default function RequestedPlayerDetailPage() {
       <div className="mb-8">
         <Link
           href="/admin/requested"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
+          className="text-foreground/60 hover:text-foreground/80 mb-4 inline-flex items-center gap-1 text-sm"
         >
           <svg
             className="h-4 w-4"
@@ -143,17 +144,17 @@ export default function RequestedPlayerDetailPage() {
           </svg>
           Back to Requested Players
         </Link>
-        <h1 className="text-3xl font-bold text-foreground">Player Request</h1>
-        <p className="mt-2 text-foreground/60">
+        <h1 className="text-foreground text-3xl font-bold">Player Request</h1>
+        <p className="text-foreground/60 mt-2">
           View request details and user suggestions
         </p>
       </div>
 
       {/* Player Info Card */}
-      <div className="mb-8 rounded-xl border border-foreground/10 bg-foreground/3 p-6">
+      <div className="border-foreground/10 bg-foreground/3 mb-8 rounded-xl border p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {playerImgUrl.trim() && !imgPreviewError ? (
+            {isValidImageUrl(playerImgUrl.trim()) && !imgPreviewError ? (
               <img
                 src={playerImgUrl.trim()}
                 alt={`${requestedPlayer.firstName} ${requestedPlayer.lastName}`}
@@ -161,18 +162,18 @@ export default function RequestedPlayerDetailPage() {
                 onError={() => setImgPreviewError(true)}
               />
             ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-foreground/10">
-                <span className="text-2xl font-bold text-foreground/60">
+              <div className="bg-foreground/10 flex h-16 w-16 items-center justify-center rounded-lg">
+                <span className="text-foreground/60 text-2xl font-bold">
                   {requestedPlayer.firstName.charAt(0)}
                   {requestedPlayer.lastName.charAt(0)}
                 </span>
               </div>
             )}
             <div>
-              <p className="text-2xl font-semibold text-foreground">
+              <p className="text-foreground text-2xl font-semibold">
                 {requestedPlayer.firstName} {requestedPlayer.lastName}
               </p>
-              <p className="text-sm text-foreground/60">
+              <p className="text-foreground/60 text-sm">
                 {requestedPlayer.descriptions.length}{" "}
                 {requestedPlayer.descriptions.length === 1
                   ? "value suggestion"
@@ -203,14 +204,14 @@ export default function RequestedPlayerDetailPage() {
 
       {/* Value Suggestions List */}
       <div>
-        <h2 className="mb-4 text-xl font-semibold text-foreground">
+        <h2 className="text-foreground mb-4 text-xl font-semibold">
           Value Suggestions
         </h2>
         <div className="space-y-3">
           {requestedPlayer.descriptions.map((desc) => (
             <div
               key={String(desc.id)}
-              className="rounded-lg border border-foreground/10 bg-foreground/3 p-4"
+              className="border-foreground/10 bg-foreground/3 rounded-lg border p-4"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -223,17 +224,17 @@ export default function RequestedPlayerDetailPage() {
                       className="h-10 w-10 rounded-full"
                     />
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/10">
-                      <span className="text-sm font-medium text-foreground/60">
+                    <div className="bg-foreground/10 flex h-10 w-10 items-center justify-center rounded-full">
+                      <span className="text-foreground/60 text-sm font-medium">
                         {desc.user?.name?.charAt(0) ?? "?"}
                       </span>
                     </div>
                   )}
                   <div>
-                    <p className="font-medium text-foreground">
+                    <p className="text-foreground font-medium">
                       {desc.user?.name ?? "Unknown User"}
                     </p>
-                    <p className="text-xs text-foreground/50">
+                    <p className="text-foreground/50 text-xs">
                       {formatDate(desc.createdAt)}
                     </p>
                   </div>
@@ -244,7 +245,7 @@ export default function RequestedPlayerDetailPage() {
                 </div>
               </div>
               {desc.note && (
-                <p className="mt-2 rounded-md bg-foreground/5 px-3 py-2 text-sm text-foreground/60 italic">
+                <p className="bg-foreground/5 text-foreground/60 mt-2 rounded-md px-3 py-2 text-sm italic">
                   &ldquo;{desc.note}&rdquo;
                 </p>
               )}
@@ -256,7 +257,7 @@ export default function RequestedPlayerDetailPage() {
       {/* Potential Duplicates */}
       {duplicates && duplicates.length > 0 && (
         <div className="mt-8">
-          <h2 className="mb-4 text-xl font-semibold text-foreground">
+          <h2 className="text-foreground mb-4 text-xl font-semibold">
             Potential Duplicates
           </h2>
           <DuplicateHints duplicates={duplicates} />
@@ -264,16 +265,16 @@ export default function RequestedPlayerDetailPage() {
       )}
 
       {/* Quick Add Player */}
-      <div className="mt-8 rounded-xl border border-foreground/10 bg-foreground/3 p-6">
-        <h2 className="mb-4 text-xl font-semibold text-foreground">
+      <div className="border-foreground/10 bg-foreground/3 mt-8 rounded-xl border p-6">
+        <h2 className="text-foreground mb-4 text-xl font-semibold">
           Quick Add Player
         </h2>
 
         {playerCreated ? (
           <div>
-            <div className="mb-4 flex items-center gap-3 rounded-lg bg-gold-300/10 p-4">
-              <Check className="h-5 w-5 text-gold-300" />
-              <p className="text-sm font-medium text-gold-300">
+            <div className="bg-gold-300/10 mb-4 flex items-center gap-3 rounded-lg p-4">
+              <Check className="text-gold-300 h-5 w-5" />
+              <p className="text-gold-300 text-sm font-medium">
                 {requestedPlayer.firstName} {requestedPlayer.lastName} has been
                 added to the database!
               </p>
@@ -283,22 +284,20 @@ export default function RequestedPlayerDetailPage() {
               disabled={deleteRequest.isPending}
               className="w-full rounded-lg bg-red-600/20 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-600/30 disabled:opacity-50"
             >
-              {deleteRequest.isPending
-                ? "Removing..."
-                : "Remove this request"}
+              {deleteRequest.isPending ? "Removing..." : "Remove this request"}
             </button>
           </div>
         ) : (
           <form onSubmit={handleQuickAdd} className="space-y-4">
-            <div className="rounded-lg bg-foreground/3 p-3">
-              <p className="text-sm text-foreground/40">Player name</p>
-              <p className="font-medium text-foreground">
+            <div className="bg-foreground/3 rounded-lg p-3">
+              <p className="text-foreground/40 text-sm">Player name</p>
+              <p className="text-foreground font-medium">
                 {requestedPlayer.firstName} {requestedPlayer.lastName}
               </p>
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm text-foreground/60">
+              <label className="text-foreground/60 mb-1.5 block text-sm">
                 Value (1-5)
               </label>
               <div className="flex gap-2">
@@ -317,13 +316,13 @@ export default function RequestedPlayerDetailPage() {
                   </button>
                 ))}
               </div>
-              <p className="mt-1.5 text-xs text-foreground/30">
+              <p className="text-foreground/30 mt-1.5 text-xs">
                 Average suggested: ${avgSuggestedValue}
               </p>
             </div>
 
             <div>
-              <label className="mb-1.5 block text-sm text-foreground/60">
+              <label className="text-foreground/60 mb-1.5 block text-sm">
                 Image URL
               </label>
               <input
@@ -335,7 +334,7 @@ export default function RequestedPlayerDetailPage() {
                 }}
                 placeholder="https://example.com/player-image.jpg"
                 required
-                className="w-full rounded-lg border border-foreground/10 bg-foreground/5 px-3 py-2.5 text-sm text-foreground placeholder-foreground/30 outline-none transition-colors focus:border-foreground/30"
+                className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/30 focus:border-foreground/30 w-full rounded-lg border px-3 py-2.5 text-sm transition-colors outline-none"
               />
             </div>
 
@@ -344,7 +343,9 @@ export default function RequestedPlayerDetailPage() {
               disabled={createPlayer.isPending || !playerImgUrl.trim()}
               className="bg-gold hover:bg-gold-light w-full rounded-lg py-2.5 text-sm font-semibold text-black transition-colors disabled:opacity-50"
             >
-              {createPlayer.isPending ? "Adding Player..." : "Add Player to Database"}
+              {createPlayer.isPending
+                ? "Adding Player..."
+                : "Add Player to Database"}
             </button>
           </form>
         )}

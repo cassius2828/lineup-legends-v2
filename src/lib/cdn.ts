@@ -7,4 +7,3 @@ import { env } from "~/env";
  */
 export const cdnUrl = (path: string) =>
   `${env.NEXT_PUBLIC_CLOUDFRONT_URL}/media/images/landing/${path}`;
-

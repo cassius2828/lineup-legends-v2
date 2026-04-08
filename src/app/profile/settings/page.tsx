@@ -16,10 +16,10 @@ export default function SettingsPage() {
 
   if (!mounted) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+      <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
         <div className="flex h-64 items-center justify-center">
           <div className="text-center">
-            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-foreground/20 border-t-gold" />
+            <div className="border-foreground/20 border-t-gold mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4" />
             <p className="text-foreground/60">Loading...</p>
           </div>
         </div>
@@ -28,14 +28,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+    <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
       <div className="container mx-auto max-w-2xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           {profile && (
             <Link
               href={`/profile/${profile.id}`}
-              className="mb-2 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
+              className="text-foreground/60 hover:text-foreground/80 mb-2 inline-flex items-center gap-1 text-sm"
             >
               <svg
                 className="h-4 w-4"
@@ -53,29 +53,29 @@ export default function SettingsPage() {
               Back to Profile
             </Link>
           )}
-          <h1 className="text-3xl font-bold text-foreground">Settings</h1>
-          <p className="mt-1 text-foreground/60">
-            Manage your preferences
-          </p>
+          <h1 className="text-foreground text-3xl font-bold">Settings</h1>
+          <p className="text-foreground/60 mt-1">Manage your preferences</p>
         </div>
 
         {/* Display Section */}
-        <section className="rounded-2xl border border-foreground/10 bg-surface-800 p-6">
-          <h2 className="mb-1 text-lg font-semibold text-foreground">Display</h2>
-          <p className="mb-6 text-sm text-foreground/50">
+        <section className="border-foreground/10 bg-surface-800 rounded-2xl border p-6">
+          <h2 className="text-foreground mb-1 text-lg font-semibold">
+            Display
+          </h2>
+          <p className="text-foreground/50 mb-6 text-sm">
             Choose your preferred appearance
           </p>
 
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-foreground">Theme</p>
-              <p className="text-sm text-foreground/50">
+              <p className="text-foreground font-medium">Theme</p>
+              <p className="text-foreground/50 text-sm">
                 Select light or dark mode
               </p>
             </div>
 
             {/* Theme Toggle */}
-            <div className="flex items-center gap-1 rounded-full border border-foreground/10 bg-surface-700 p-1">
+            <div className="border-foreground/10 bg-surface-700 flex items-center gap-1 rounded-full border p-1">
               <button
                 onClick={() => setTheme("dark")}
                 className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
@@ -84,7 +84,12 @@ export default function SettingsPage() {
                     : "text-foreground/50 hover:text-foreground/70"
                 }`}
               >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -102,7 +107,12 @@ export default function SettingsPage() {
                     : "text-foreground/50 hover:text-foreground/70"
                 }`}
               >
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

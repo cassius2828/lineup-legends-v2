@@ -66,8 +66,8 @@ export default function AdminFeedbackPage() {
     <div>
       {/* Page header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-foreground">Feedback</h1>
-        <p className="mt-1 text-foreground/50">
+        <h1 className="text-foreground text-3xl font-bold">Feedback</h1>
+        <p className="text-foreground/50 mt-1">
           View and manage feedback submitted by users
         </p>
       </div>
@@ -108,7 +108,7 @@ export default function AdminFeedbackPage() {
       {/* Feedback list */}
       {isLoading ? (
         <div className="flex h-40 items-center justify-center">
-          <div className="border-t-gold h-10 w-10 animate-spin rounded-full border-4 border-foreground/20" />
+          <div className="border-t-gold border-foreground/20 h-10 w-10 animate-spin rounded-full border-4" />
         </div>
       ) : feedback && feedback.length > 0 ? (
         <div className="space-y-3">
@@ -117,22 +117,22 @@ export default function AdminFeedbackPage() {
             return (
               <div
                 key={item.id}
-                className="overflow-hidden rounded-xl border border-foreground/10 bg-foreground/3 transition-colors"
+                className="border-foreground/10 bg-foreground/3 overflow-hidden rounded-xl border transition-colors"
               >
                 {/* Header row - always visible */}
                 <button
                   onClick={() => toggleExpand(item.id)}
-                  className="flex w-full items-center gap-4 p-4 text-left transition-colors hover:bg-foreground/2"
+                  className="hover:bg-foreground/2 flex w-full items-center gap-4 p-4 text-left transition-colors"
                 >
                   <StatusIcon status={item.status} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-medium text-foreground">
+                      <p className="text-foreground truncate text-sm font-medium">
                         {item.subject}
                       </p>
                       <StatusBadge status={item.status} />
                     </div>
-                    <p className="mt-0.5 truncate text-xs text-foreground/40">
+                    <p className="text-foreground/40 mt-0.5 truncate text-xs">
                       {item.name} ({item.email}) &middot;{" "}
                       {formatDistanceToNow(new Date(item.createdAt), {
                         addSuffix: true,
@@ -140,24 +140,24 @@ export default function AdminFeedbackPage() {
                     </p>
                   </div>
                   {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 shrink-0 text-foreground/30" />
+                    <ChevronUp className="text-foreground/30 h-4 w-4 shrink-0" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 shrink-0 text-foreground/30" />
+                    <ChevronDown className="text-foreground/30 h-4 w-4 shrink-0" />
                   )}
                 </button>
 
                 {/* Expanded content */}
                 {isExpanded && (
-                  <div className="border-t border-foreground/10 px-4 pb-4 pt-3">
+                  <div className="border-foreground/10 border-t px-4 pt-3 pb-4">
                     {/* Message */}
-                    <div className="mb-4 rounded-lg bg-foreground/3 p-4">
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/80">
+                    <div className="bg-foreground/3 mb-4 rounded-lg p-4">
+                      <p className="text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap">
                         {item.message}
                       </p>
                     </div>
 
                     {/* Meta info */}
-                    <div className="mb-4 flex flex-wrap gap-4 text-xs text-foreground/40">
+                    <div className="text-foreground/40 mb-4 flex flex-wrap gap-4 text-xs">
                       <span>From: {item.name}</span>
                       <span>Email: {item.email}</span>
                       <span>
@@ -183,7 +183,7 @@ export default function AdminFeedbackPage() {
                             handleStatusChange(item.id, "resolved")
                           }
                           disabled={updateStatus.isPending}
-                          className="rounded-lg bg-gold-300/10 px-3 py-1.5 text-xs font-medium text-gold-300 transition-colors hover:bg-gold-300/20 disabled:opacity-50"
+                          className="bg-gold-300/10 text-gold-300 hover:bg-gold-300/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
                         >
                           Mark as Resolved
                         </button>
@@ -192,7 +192,7 @@ export default function AdminFeedbackPage() {
                         <button
                           onClick={() => handleStatusChange(item.id, "new")}
                           disabled={updateStatus.isPending}
-                          className="rounded-lg bg-foreground/5 px-3 py-1.5 text-xs font-medium text-foreground/50 transition-colors hover:bg-foreground/10 disabled:opacity-50"
+                          className="bg-foreground/5 text-foreground/50 hover:bg-foreground/10 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
                         >
                           Reset to New
                         </button>
@@ -205,10 +205,10 @@ export default function AdminFeedbackPage() {
           })}
         </div>
       ) : (
-        <div className="flex h-40 items-center justify-center rounded-xl border border-foreground/10 bg-foreground/3">
+        <div className="border-foreground/10 bg-foreground/3 flex h-40 items-center justify-center rounded-xl border">
           <div className="text-center">
-            <Mail className="mx-auto mb-2 h-8 w-8 text-foreground/20" />
-            <p className="text-sm text-foreground/40">
+            <Mail className="text-foreground/20 mx-auto mb-2 h-8 w-8" />
+            <p className="text-foreground/40 text-sm">
               {activeTab === "all"
                 ? "No feedback received yet"
                 : `No ${activeTab} feedback`}
@@ -236,12 +236,11 @@ function StatusIcon({ status }: { status: string }) {
       );
     case "resolved":
       return (
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-300/10">
-          <CheckCircle2 className="h-4 w-4 text-gold-300" />
+        <div className="bg-gold-300/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+          <CheckCircle2 className="text-gold-300 h-4 w-4" />
         </div>
       );
     default:
       return null;
   }
 }
-

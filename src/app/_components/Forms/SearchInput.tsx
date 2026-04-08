@@ -13,7 +13,7 @@ const SearchInput = ({
       placeholder={placeholder}
       value={value}
       onChange={onChange}
-      className="focus:border-gold focus:ring-gold w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-3 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
+      className="focus:border-gold focus:ring-gold border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 w-full rounded-lg border px-4 py-3 focus:ring-1 focus:outline-none"
     />
   );
 };

@@ -18,7 +18,11 @@ import {
   RatingModel,
   type PlayerDoc,
 } from "~/server/models";
-import { lineupOutput, gambleResultOutput, populated } from "~/server/api/schemas/output";
+import {
+  lineupOutput,
+  gambleResultOutput,
+  populated,
+} from "~/server/api/schemas/output";
 import {
   BUDGET_LIMIT,
   DAILY_GAMBLE_LIMIT,
@@ -517,7 +521,9 @@ export const lineupRouter = createTRPCRouter({
       // Get the current player at the position
       const positionField = input.position;
       // After population, players are Player objects, not ObjectIds
-      const currentPlayer = lineup.players[positionField] as unknown as PlayerDoc;
+      const currentPlayer = lineup.players[
+        positionField
+      ] as unknown as PlayerDoc;
 
       if (!currentPlayer?.value) {
         throw new TRPCError({
@@ -621,5 +627,4 @@ export const lineupRouter = createTRPCRouter({
         },
       });
     }),
-
 });

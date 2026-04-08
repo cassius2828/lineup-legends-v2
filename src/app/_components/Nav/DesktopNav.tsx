@@ -8,25 +8,25 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
     <div className="hidden items-center gap-6 md:flex">
       <Link
         href="/players"
-        className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
+        className="hover:text-gold text-foreground/90 hidden capitalize transition-colors sm:block"
       >
         Players
       </Link>
       <Link
         href="/lineups/new"
-        className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
+        className="hover:text-gold text-foreground/90 hidden capitalize transition-colors sm:block"
       >
         create a lineup
       </Link>
       <Link
         href="/lineups/explore"
-        className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
+        className="hover:text-gold text-foreground/90 hidden capitalize transition-colors sm:block"
       >
         Explore
       </Link>
       <Link
         href="/contact"
-        className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
+        className="hover:text-gold text-foreground/90 hidden capitalize transition-colors sm:block"
       >
         Contact
       </Link>
@@ -35,13 +35,13 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
         <>
           <Link
             href="/lineups"
-            className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
+            className="hover:text-gold text-foreground/90 hidden capitalize transition-colors sm:block"
           >
             My Lineups
           </Link>
           <Link
             href="/users/search"
-            className="hover:text-gold hidden text-foreground/90 capitalize transition-colors sm:block"
+            className="hover:text-gold text-foreground/90 hidden capitalize transition-colors sm:block"
           >
             Find Users
           </Link>
@@ -66,7 +66,7 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
                 height={32}
               />
             )}
-            <span className="hidden text-sm text-foreground/60 sm:block">
+            <span className="text-foreground/60 hidden text-sm sm:block">
               {session.user.name}
             </span>
           </Link>
@@ -77,7 +77,7 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
             }}
           >
             <button type="submit" className="cursor-pointer">
-              <IoIosLogOut className="hover:text-gold text-2xl text-foreground transition-colors duration-100" />
+              <IoIosLogOut className="hover:text-gold text-foreground text-2xl transition-colors duration-100" />
             </button>
           </form>
         </>
@@ -91,7 +91,7 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
           </Link>
           <Link
             href="/sign-in"
-            className="border-gold bg-gold/10 hover:bg-gold hover:text-black hover:glow-gold-sm rounded-none border-2 px-4 py-2 text-sm font-medium text-foreground/90 capitalize transition-all"
+            className="border-gold bg-gold/10 hover:bg-gold hover:glow-gold-sm text-foreground/90 rounded-none border-2 px-4 py-2 text-sm font-medium capitalize transition-all hover:text-black"
           >
             Sign in
           </Link>

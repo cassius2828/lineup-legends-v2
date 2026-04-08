@@ -4,7 +4,10 @@ import { logger } from "~/lib/logger";
 
 const log = logger.child({ module: "email" });
 
-const resend = new Resend(env.RESEND_API_KEY);
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  return (_resend ??= new Resend(env.RESEND_API_KEY));
+}
 
 const ADMIN_EMAIL = "cassius.reynolds.dev@gmail.com";
 
@@ -21,7 +24,7 @@ export async function sendFeedbackEmail({
   subject,
   message,
 }: FeedbackEmailParams) {
-  const { error } = await resend.emails.send({
+  const { error } = await getResend().emails.send({
     from: "Lineup Legends <onboarding@resend.dev>",
     to: ADMIN_EMAIL,
     subject: `[Lineup Legends Feedback] ${subject}`,

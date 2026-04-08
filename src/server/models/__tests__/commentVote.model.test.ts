@@ -67,14 +67,7 @@ describe("CommentVoteModel", () => {
     });
 
     it("should only accept 'upvote' and 'downvote' as valid types", () => {
-      const invalidTypes = [
-        "like",
-        "dislike",
-        "up",
-        "down",
-        "vote",
-        "neutral",
-      ];
+      const invalidTypes = ["like", "dislike", "up", "down", "vote", "neutral"];
       for (const type of invalidTypes) {
         const vote = new CommentVoteModel({
           type,
@@ -110,7 +103,9 @@ describe("CommentVoteModel", () => {
         user: mockObjectId(),
         comment: mockObjectId(),
       });
-      expect((vote as unknown as { id: string }).id).toBe(objectId.toHexString());
+      expect((vote as unknown as { id: string }).id).toBe(
+        objectId.toHexString(),
+      );
     });
 
     it("should include virtuals in toJSON", () => {
@@ -120,7 +115,7 @@ describe("CommentVoteModel", () => {
         comment: mockObjectId(),
       });
       const json = vote.toJSON();
-      expect(json).toHaveProperty('id');
+      expect(json).toHaveProperty("id");
     });
 
     it("should include virtuals in toObject", () => {
@@ -130,7 +125,7 @@ describe("CommentVoteModel", () => {
         comment: mockObjectId(),
       });
       const obj = vote.toObject();
-      expect(obj).toHaveProperty('id');
+      expect(obj).toHaveProperty("id");
     });
   });
 });

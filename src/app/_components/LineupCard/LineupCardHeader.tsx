@@ -34,7 +34,7 @@ export function LineupCardHeader({
                 className="rounded-full"
               />
             )}
-            <span className="font-medium text-foreground/90 hover:text-foreground">
+            <span className="text-foreground/90 hover:text-foreground font-medium">
               {lineup.owner?.name ?? lineup.owner?.username ?? "Anonymous"}
             </span>
           </Link>
@@ -45,9 +45,9 @@ export function LineupCardHeader({
           </span>
         )}
       </div>
-      <div className="flex items-center gap-2 text-sm text-foreground/50">
+      <div className="text-foreground/50 flex items-center gap-2 text-sm">
         <span>{relativeTime}</span>
-        <span className="rounded-full bg-foreground/10 px-2 py-1 font-semibold text-foreground">
+        <span className="bg-foreground/10 text-foreground rounded-full px-2 py-1 font-semibold">
           ${totalValue} value
         </span>
       </div>

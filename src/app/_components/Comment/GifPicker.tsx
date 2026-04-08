@@ -51,28 +51,27 @@ export default function GifPicker({ onSelect, onClose }: GifPickerProps) {
   const handleGifClick = useCallback(
     (gif: IGif, e: React.SyntheticEvent) => {
       e.preventDefault();
-      const url =
-        gif.images.fixed_height.url ?? gif.images.original.url;
+      const url = gif.images.fixed_height.url ?? gif.images.original.url;
       onSelect(url);
     },
     [onSelect],
   );
 
   return (
-    <div className="flex max-h-[300px] flex-col overflow-hidden rounded-xl border border-foreground/10 bg-surface-800">
-      <div className="flex items-center gap-2 border-b border-foreground/10 px-3 py-2">
-        <Search className="h-4 w-4 shrink-0 text-foreground/40" />
+    <div className="border-foreground/10 bg-surface-800 flex max-h-[300px] flex-col overflow-hidden rounded-xl border">
+      <div className="border-foreground/10 flex items-center gap-2 border-b px-3 py-2">
+        <Search className="text-foreground/40 h-4 w-4 shrink-0" />
         <input
           ref={inputRef}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search GIFs..."
-          className="flex-1 bg-transparent text-sm text-foreground placeholder:text-foreground/30 focus:outline-none"
+          className="text-foreground placeholder:text-foreground/30 flex-1 bg-transparent text-sm focus:outline-none"
         />
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full p-0.5 text-foreground/40 transition-colors hover:text-foreground"
+          className="text-foreground/40 hover:text-foreground rounded-full p-0.5 transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
@@ -88,14 +87,14 @@ export default function GifPicker({ onSelect, onClose }: GifPickerProps) {
           noLink
           hideAttribution
           noResultsMessage={
-            <p className="py-6 text-center text-sm text-foreground/40">
+            <p className="text-foreground/40 py-6 text-center text-sm">
               No GIFs found
             </p>
           }
         />
       </div>
-      <div className="border-t border-foreground/10 px-3 py-1.5 text-center">
-        <span className="text-[10px] text-foreground/30">Powered by GIPHY</span>
+      <div className="border-foreground/10 border-t px-3 py-1.5 text-center">
+        <span className="text-foreground/30 text-[10px]">Powered by GIPHY</span>
       </div>
     </div>
   );

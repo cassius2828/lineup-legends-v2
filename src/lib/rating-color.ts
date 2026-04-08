@@ -21,9 +21,5 @@ export function getRatingColor(rating: number): string {
   const t = low.at === high.at ? 1 : (r - low.at) / (high.at - low.at);
   const [r1, g1, b1] = hexToRgb(low.hex);
   const [r2, g2, b2] = hexToRgb(high.hex);
-  return rgbToHex(
-    r1 + (r2 - r1) * t,
-    g1 + (g2 - g1) * t,
-    b1 + (b2 - b1) * t,
-  );
+  return rgbToHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
 }

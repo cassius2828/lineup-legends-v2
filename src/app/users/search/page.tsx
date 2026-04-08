@@ -34,10 +34,11 @@ function FollowButton({
         toggleFollow.mutate({ targetUserId });
       }}
       disabled={toggleFollow.isPending}
-      className={`shrink-0 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${followStatus?.following
-        ? "bg-foreground/10 text-foreground hover:bg-red-500/20 hover:text-red-400"
-        : "bg-gold text-black hover:bg-gold-light"
-        }`}
+      className={`shrink-0 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
+        followStatus?.following
+          ? "bg-foreground/10 text-foreground hover:bg-red-500/20 hover:text-red-400"
+          : "bg-gold hover:bg-gold-light text-black"
+      }`}
     >
       {toggleFollow.isPending
         ? "..."
@@ -68,12 +69,12 @@ export default function UserSearchPage() {
   );
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+    <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
       <div className="container mx-auto max-w-2xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Find Users</h1>
-          <p className="mt-2 text-foreground/60">
+          <h1 className="text-foreground text-3xl font-bold">Find Users</h1>
+          <p className="text-foreground/60 mt-2">
             Search for users by name or username
           </p>
         </div>
@@ -81,7 +82,7 @@ export default function UserSearchPage() {
         {/* Search Input */}
         <div className="relative mb-8">
           <svg
-            className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-foreground/40"
+            className="text-foreground/40 absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -98,7 +99,7 @@ export default function UserSearchPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by name or username..."
-            className="w-full rounded-xl border border-foreground/10 bg-foreground/5 py-3.5 pl-12 pr-4 text-foreground placeholder-foreground/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+            className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/40 focus:border-gold focus:ring-gold w-full rounded-xl border py-3.5 pr-4 pl-12 focus:ring-1 focus:outline-none"
             autoFocus
           />
         </div>
@@ -106,9 +107,9 @@ export default function UserSearchPage() {
         {/* Results */}
         <div className="space-y-2">
           {!debouncedQuery && (
-            <div className="rounded-2xl bg-foreground/5 p-12 text-center">
+            <div className="bg-foreground/5 rounded-2xl p-12 text-center">
               <svg
-                className="mx-auto mb-4 h-12 w-12 text-foreground/20"
+                className="text-foreground/20 mx-auto mb-4 h-12 w-12"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -128,12 +129,12 @@ export default function UserSearchPage() {
 
           {isLoading && debouncedQuery && (
             <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-foreground/20 border-t-gold" />
+              <div className="border-foreground/20 border-t-gold h-8 w-8 animate-spin rounded-full border-2" />
             </div>
           )}
 
           {debouncedQuery && !isLoading && users?.length === 0 && (
-            <div className="rounded-2xl bg-foreground/5 p-12 text-center">
+            <div className="bg-foreground/5 rounded-2xl p-12 text-center">
               <p className="text-foreground/50">
                 No users found for &ldquo;{debouncedQuery}&rdquo;
               </p>
@@ -144,29 +145,27 @@ export default function UserSearchPage() {
             <Link
               key={user.id}
               href={`/profile/${user.id}`}
-              className="flex items-center gap-4 rounded-xl bg-foreground/5 p-4 transition-colors hover:bg-foreground/10"
+              className="bg-foreground/5 hover:bg-foreground/10 flex items-center gap-4 rounded-xl p-4 transition-colors"
             >
-              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-surface-700">
+              <div className="bg-surface-700 h-12 w-12 shrink-0 overflow-hidden rounded-full">
                 <Image
                   width={48}
                   height={48}
-                  src={
-                    user.image ?? user.profileImg ?? "/default-avatar.png"
-                  }
+                  src={user.image ?? user.profileImg ?? "/default-avatar.png"}
                   alt={user.name ?? "User"}
                   className="h-full w-full object-cover"
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-foreground">
+                <p className="text-foreground truncate font-medium">
                   {user.name}
                 </p>
                 {user.username && (
-                  <p className="truncate text-sm text-foreground/50">
+                  <p className="text-foreground/50 truncate text-sm">
                     @{user.username}
                   </p>
                 )}
-                <p className="text-xs text-foreground/40">
+                <p className="text-foreground/40 text-xs">
                   {user.followerCount ?? 0} followers
                 </p>
               </div>

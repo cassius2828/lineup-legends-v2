@@ -2,16 +2,13 @@ import { z } from "zod";
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 // Converts MongoDB ObjectId (or string) to a plain string at parse time.
-const mongoId = z.preprocess(
-  (v) => {
-    if (typeof v === "string") return v;
-    if (v && typeof v === "object" && "toHexString" in v) {
-      return (v as { toHexString: () => string }).toHexString();
-    }
-    return String(v);
-  },
-  z.string(),
-);
+const mongoId = z.preprocess((v) => {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object" && "toHexString" in v) {
+    return (v as { toHexString: () => string }).toHexString();
+  }
+  return String(v);
+}, z.string());
 
 // ─── Enums ──────────────────────────────────────────────────────────────────────
 

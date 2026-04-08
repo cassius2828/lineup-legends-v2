@@ -20,8 +20,8 @@ const LineupsHeader = ({
   return (
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 className="text-3xl font-bold text-foreground">{title}</h1>
-        <p className="mt-1 text-foreground/60">{description}</p>
+        <h1 className="text-foreground text-3xl font-bold">{title}</h1>
+        <p className="text-foreground/60 mt-1">{description}</p>
       </div>
       <div className="flex gap-3">
         {exploreLinkText && (

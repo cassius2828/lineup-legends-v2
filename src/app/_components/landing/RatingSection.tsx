@@ -14,8 +14,8 @@ const containerVariants = {
 
 const textVariants = {
   hidden: { opacity: 0, y: 40 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { duration: 0.6, ease: "easeOut" as const },
   },
@@ -23,8 +23,8 @@ const textVariants = {
 
 const imageVariants = {
   hidden: { opacity: 0, scale: 0.95, x: 30 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     scale: 1,
     x: 0,
     transition: { duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] as const },
@@ -33,49 +33,49 @@ const imageVariants = {
 
 export function RatingSection() {
   return (
-    <section className="relative overflow-hidden bg-background px-4 py-24 sm:px-8 lg:px-16">
+    <section className="bg-background relative overflow-hidden px-4 py-24 sm:px-8 lg:px-16">
       {/* Subtle gradient accent */}
-      <div className="pointer-events-none absolute -right-64 top-1/2 h-96 w-96 -translate-y-1/2 rounded-full bg-gold/5 blur-3xl" />
-      
+      <div className="bg-gold/5 pointer-events-none absolute top-1/2 -right-64 h-96 w-96 -translate-y-1/2 rounded-full blur-3xl" />
+
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-12 lg:flex-row">
         {/* Left - Text */}
-        <motion.div 
+        <motion.div
           className="flex-1 text-center lg:text-left"
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
         >
-          <motion.h2 
-            className="font-stencil text-4xl uppercase tracking-wide text-foreground sm:text-5xl lg:text-6xl"
+          <motion.h2
+            className="font-stencil text-foreground text-4xl tracking-wide uppercase sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
             Upvoting and
           </motion.h2>
-          <motion.h2 
-            className="font-stencil text-4xl uppercase tracking-wide sm:text-5xl lg:text-6xl"
+          <motion.h2
+            className="font-stencil text-4xl tracking-wide uppercase sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
             <span className="text-gradient-gold">Rating</span>
           </motion.h2>
 
-          <motion.div 
-            className="mt-6 h-px w-24 bg-gradient-to-r from-gold to-transparent lg:mx-0 mx-auto"
+          <motion.div
+            className="from-gold mx-auto mt-6 h-px w-24 bg-gradient-to-r to-transparent lg:mx-0"
             variants={textVariants}
           />
 
-          <motion.p 
-            className="mt-8 max-w-xl text-lg leading-relaxed text-foreground/70"
+          <motion.p
+            className="text-foreground/70 mt-8 max-w-xl text-lg leading-relaxed"
             variants={textVariants}
           >
-            Engage with the community by upvoting or downvoting lineups you
-            see. Highlight the most popular and highest-rated lineups to help
-            users discover top strategies and standout creations.
+            Engage with the community by upvoting or downvoting lineups you see.
+            Highlight the most popular and highest-rated lineups to help users
+            discover top strategies and standout creations.
           </motion.p>
         </motion.div>
 
         {/* Right - Image */}
-        <motion.div 
+        <motion.div
           className="flex-1"
           variants={imageVariants}
           initial="hidden"

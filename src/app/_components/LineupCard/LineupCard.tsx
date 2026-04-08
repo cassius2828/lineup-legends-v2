@@ -48,7 +48,9 @@ export function LineupCard({
   );
 
   return (
-    <div className={`relative rounded-2xl bg-gradient-to-br from-surface-800/90 to-surface-950/90 p-6 shadow-xl backdrop-blur-sm ${featured ? "glow-gold" : ""}`}>
+    <div
+      className={`from-surface-800/90 to-surface-950/90 relative rounded-2xl bg-gradient-to-br p-6 shadow-xl backdrop-blur-sm ${featured ? "glow-gold" : ""}`}
+    >
       <LineupCardHeader
         lineup={lineup}
         showOwner={showOwner}
@@ -69,7 +71,9 @@ export function LineupCard({
       {!hideFooter && (
         <LineupCardFooter
           lineupId={lineupId}
-          ownerName={lineup.owner?.name ?? lineup.owner?.username ?? "Anonymous"}
+          ownerName={
+            lineup.owner?.name ?? lineup.owner?.username ?? "Anonymous"
+          }
           ownerImage={lineup.owner?.image ?? lineup.owner?.profileImg}
           totalValue={totalValue}
           commentCount={countData?.total ?? 0}

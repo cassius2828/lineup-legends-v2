@@ -30,7 +30,7 @@ const MobileNav = ({ session }: { session: Session | null }) => {
             <div className="flex flex-col gap-4 bg-black/90 p-6">
               {/* Close button */}
               <div className="flex items-center justify-between">
-                <span className="font-stencil text-xl text-foreground uppercase">
+                <span className="font-stencil text-foreground text-xl uppercase">
                   Menu
                 </span>
               </div>
@@ -90,7 +90,7 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                         Admin Dashboard
                       </Link>
                     )}
-                    <div className="border-t border-foreground/10 pt-4">
+                    <div className="border-foreground/10 border-t pt-4">
                       <Link
                         href={`/profile/${session.user.id}`}
                         onClick={closeMenu}
@@ -113,7 +113,7 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                     <Link
                       href="/api/auth/signout"
                       onClick={closeMenu}
-                      className="hover:border-gold/50 hover:bg-gold/10 rounded-none border border-foreground/20 bg-transparent px-4 py-2 text-sm font-medium text-foreground/90 capitalize transition-all hover:text-foreground"
+                      className="hover:border-gold/50 hover:bg-gold/10 border-foreground/20 text-foreground/90 hover:text-foreground rounded-none border bg-transparent px-4 py-2 text-sm font-medium capitalize transition-all"
                     >
                       Sign Out
                     </Link>
@@ -130,7 +130,7 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                     <Link
                       href="/sign-in"
                       onClick={closeMenu}
-                      className="border-gold bg-gold/10 hover:bg-gold hover:text-black hover:glow-gold-sm rounded-none border-2 px-4 py-2 text-center text-sm font-medium text-foreground/90 capitalize transition-all"
+                      className="border-gold bg-gold/10 hover:bg-gold hover:glow-gold-sm text-foreground/90 rounded-none border-2 px-4 py-2 text-center text-sm font-medium capitalize transition-all hover:text-black"
                     >
                       Sign in
                     </Link>

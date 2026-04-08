@@ -95,11 +95,11 @@ function SignInContent() {
   };
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-950 px-4">
+    <main className="bg-surface-950 relative flex min-h-screen items-center justify-center overflow-hidden px-4">
       {/* Background accents */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute top-0 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-gold/[0.03] blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-[300px] w-[400px] rounded-full bg-gold/[0.02] blur-3xl" />
+        <div className="bg-gold/[0.03] absolute top-0 left-1/2 h-[500px] w-[800px] -translate-x-1/2 rounded-full blur-3xl" />
+        <div className="bg-gold/[0.02] absolute bottom-0 left-0 h-[300px] w-[400px] rounded-full blur-3xl" />
       </div>
 
       {/* Corner accents */}
@@ -116,12 +116,12 @@ function SignInContent() {
               <span className="text-gold group-hover:text-gold-light transition-colors">
                 Lineup
               </span>{" "}
-              <span className="text-foreground transition-colors group-hover:text-foreground/90">
+              <span className="text-foreground group-hover:text-foreground/90 transition-colors">
                 Legends
               </span>
             </h1>
           </Link>
-          <p className="mt-3 text-foreground/50">
+          <p className="text-foreground/50 mt-3">
             {isSignUp
               ? "Create your account and start building"
               : "Sign in to build your dream lineup"}
@@ -129,7 +129,7 @@ function SignInContent() {
         </div>
 
         {/* Auth card */}
-        <div className="rounded-xl border border-foreground/10 bg-foreground/[0.03] p-6 backdrop-blur-sm sm:p-8">
+        <div className="border-foreground/10 bg-foreground/[0.03] rounded-xl border p-6 backdrop-blur-sm sm:p-8">
           {/* Error message */}
           {error && (
             <div
@@ -145,14 +145,14 @@ function SignInContent() {
             type="button"
             onClick={handleGoogleSignIn}
             disabled={isLoading !== null}
-            className={`flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-950 disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`focus-visible:ring-gold/50 focus-visible:ring-offset-surface-950 flex w-full cursor-pointer items-center justify-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${
               isSignUp
-                ? "border-gold bg-gold/10 hover:bg-gold border-2 text-foreground hover:text-black"
-                : "border border-foreground/20 bg-foreground/5 text-foreground hover:border-gold/40 hover:bg-foreground/10"
+                ? "border-gold bg-gold/10 hover:bg-gold text-foreground border-2 hover:text-black"
+                : "border-foreground/20 bg-foreground/5 text-foreground hover:border-gold/40 hover:bg-foreground/10 border"
             }`}
           >
             {isLoading === "google" ? (
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-foreground/20 border-t-gold" />
+              <div className="border-foreground/20 border-t-gold h-5 w-5 animate-spin rounded-full border-2" />
             ) : (
               <GoogleIcon />
             )}
@@ -161,35 +161,35 @@ function SignInContent() {
 
           {isSignUp ? (
             /* Sign-up footer inside card */
-            <p className="mt-6 text-center text-sm text-foreground/40">
+            <p className="text-foreground/40 mt-6 text-center text-sm">
               Your Google account is all you need to get started.
             </p>
           ) : (
             <>
               {/* Divider */}
               <div className="my-6 flex items-center gap-4">
-                <div className="h-px flex-1 bg-foreground/10" />
-                <span className="text-xs uppercase tracking-wider text-foreground/30">
+                <div className="bg-foreground/10 h-px flex-1" />
+                <span className="text-foreground/30 text-xs tracking-wider uppercase">
                   or
                 </span>
-                <div className="h-px flex-1 bg-foreground/10" />
+                <div className="bg-foreground/10 h-px flex-1" />
               </div>
 
               {/* Credentials form */}
-          <CredentialsForm
-            handleCredentialsSignIn={handleCredentialsSignIn}
-            identifier={identifier}
-            setIdentifier={setIdentifier}
-            password={password}
-            setPassword={setPassword}
-            isLoading={isLoading}
-          />
+              <CredentialsForm
+                handleCredentialsSignIn={handleCredentialsSignIn}
+                identifier={identifier}
+                setIdentifier={setIdentifier}
+                password={password}
+                setPassword={setPassword}
+                isLoading={isLoading}
+              />
             </>
           )}
         </div>
 
         {/* Footer — cross-link between modes */}
-        <p className="mt-6 text-center text-sm text-foreground/40">
+        <p className="text-foreground/40 mt-6 text-center text-sm">
           {isSignUp ? (
             <>
               Already have an account?{" "}
@@ -221,8 +221,8 @@ export default function SignInPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-screen items-center justify-center bg-surface-950">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-foreground/20 border-t-gold" />
+        <main className="bg-surface-950 flex min-h-screen items-center justify-center">
+          <div className="border-foreground/20 border-t-gold h-10 w-10 animate-spin rounded-full border-4" />
         </main>
       }
     >

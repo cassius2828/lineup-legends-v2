@@ -57,10 +57,7 @@ export const adminRouter = createTRPCRouter({
         .limit(5)
         .select("name email image username")
         .lean(),
-      FeedbackModel.find()
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .lean(),
+      FeedbackModel.find().sort({ createdAt: -1 }).limit(5).lean(),
     ]);
 
     return populated({

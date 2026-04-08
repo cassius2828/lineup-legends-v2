@@ -20,11 +20,7 @@ interface PlayerData {
 }
 
 export default function PlayerImagesTestPage() {
-  const {
-    data: players,
-    isLoading,
-    refetch,
-  } = api.player.getAll.useQuery();
+  const { data: players, isLoading, refetch } = api.player.getAll.useQuery();
 
   const [isRunning, setIsRunning] = useState(false);
   const [runKey, setRunKey] = useState(0);
@@ -36,7 +32,8 @@ export default function PlayerImagesTestPage() {
 
   const totalPlayers = players?.length ?? 0;
   const processedCount = loadedCount + brokenImages.length;
-  const isComplete = isRunning && totalPlayers > 0 && processedCount === totalPlayers;
+  const isComplete =
+    isRunning && totalPlayers > 0 && processedCount === totalPlayers;
 
   const runTest = async () => {
     setBrokenImages([]);
@@ -100,23 +97,33 @@ export default function PlayerImagesTestPage() {
   };
 
   return (
-    <main className="min-h-screen bg-surface-950 p-8">
+    <main className="bg-surface-950 min-h-screen p-8">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/admin"
-            className="mb-4 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
+            className="text-foreground/60 hover:text-foreground/80 mb-4 inline-flex items-center gap-1 text-sm"
           >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Back to Dashboard
           </Link>
-          <h1 className="text-3xl font-bold text-foreground">
+          <h1 className="text-foreground text-3xl font-bold">
             Player Images Test Page
           </h1>
-          <p className="mt-2 text-foreground/60">
+          <p className="text-foreground/60 mt-2">
             Test all player images to find broken ones
           </p>
         </div>
@@ -141,7 +148,7 @@ export default function PlayerImagesTestPage() {
             <button
               onClick={generateReport}
               disabled={brokenImages.length === 0 || isGenerating}
-              className="rounded-lg border border-foreground/20 bg-foreground/10 px-6 py-3 font-semibold text-foreground transition-colors hover:bg-foreground/15 disabled:cursor-not-allowed disabled:opacity-50"
+              className="border-foreground/20 bg-foreground/10 text-foreground hover:bg-foreground/15 rounded-lg border px-6 py-3 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isGenerating
                 ? "Generating..."
@@ -151,7 +158,7 @@ export default function PlayerImagesTestPage() {
             </button>
           )}
           {reportGenerated && (
-            <p className="text-sm text-gold-300">
+            <p className="text-gold-300 text-sm">
               Saved to docs/broken-player-images.md
             </p>
           )}
@@ -160,19 +167,21 @@ export default function PlayerImagesTestPage() {
         {/* Stats */}
         {isRunning && (
           <div className="mb-8 flex flex-wrap gap-4">
-            <div className="rounded-lg bg-foreground/10 px-6 py-4">
-              <p className="text-sm text-foreground/60">Total Players</p>
-              <p className="text-2xl font-bold text-foreground">{totalPlayers}</p>
+            <div className="bg-foreground/10 rounded-lg px-6 py-4">
+              <p className="text-foreground/60 text-sm">Total Players</p>
+              <p className="text-foreground text-2xl font-bold">
+                {totalPlayers}
+              </p>
             </div>
-            <div className="rounded-lg bg-foreground/10 px-6 py-4">
-              <p className="text-sm text-foreground/60">Processed</p>
-              <p className="text-2xl font-bold text-foreground">
+            <div className="bg-foreground/10 rounded-lg px-6 py-4">
+              <p className="text-foreground/60 text-sm">Processed</p>
+              <p className="text-foreground text-2xl font-bold">
                 {processedCount} / {totalPlayers}
               </p>
             </div>
-            <div className="rounded-lg bg-gold-600/20 px-6 py-4">
-              <p className="text-sm text-gold-300">Loaded Successfully</p>
-              <p className="text-2xl font-bold text-gold-300">{loadedCount}</p>
+            <div className="bg-gold-600/20 rounded-lg px-6 py-4">
+              <p className="text-gold-300 text-sm">Loaded Successfully</p>
+              <p className="text-gold-300 text-2xl font-bold">{loadedCount}</p>
             </div>
             <div className="rounded-lg bg-red-600/20 px-6 py-4">
               <p className="text-sm text-red-400">Broken Images</p>
@@ -186,10 +195,10 @@ export default function PlayerImagesTestPage() {
         {/* Idle state — show cached player grid without running checks */}
         {!isRunning && !isLoading && players && players.length > 0 && (
           <>
-            <h2 className="mb-4 text-xl font-semibold text-foreground">
+            <h2 className="text-foreground mb-4 text-xl font-semibold">
               All Players ({totalPlayers})
             </h2>
-            <p className="mb-4 text-sm text-foreground/40">
+            <p className="text-foreground/40 mb-4 text-sm">
               Click &quot;Run Test&quot; to check for broken images
             </p>
             <div className="grid grid-cols-5 gap-4 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">
@@ -218,7 +227,7 @@ export default function PlayerImagesTestPage() {
         {isLoading && (
           <div className="flex h-[40vh] items-center justify-center">
             <div className="text-center">
-              <div className="border-t-gold mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-foreground/20" />
+              <div className="border-t-gold border-foreground/20 mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4" />
               <p className="text-foreground/60">Loading players...</p>
             </div>
           </div>
@@ -231,9 +240,9 @@ export default function PlayerImagesTestPage() {
               Broken Images ({brokenImages.length})
             </h2>
             <div className="max-h-64 overflow-y-auto rounded-lg bg-red-900/20 p-4">
-              <table className="w-full text-sm text-foreground">
+              <table className="text-foreground w-full text-sm">
                 <thead>
-                  <tr className="border-b border-foreground/20">
+                  <tr className="border-foreground/20 border-b">
                     <th className="pb-2 text-left">Player Name</th>
                     <th className="pb-2 text-left">Value</th>
                     <th className="pb-2 text-left">URL</th>
@@ -241,10 +250,10 @@ export default function PlayerImagesTestPage() {
                 </thead>
                 <tbody>
                   {brokenImages.map((img, idx) => (
-                    <tr key={idx} className="border-b border-foreground/10">
+                    <tr key={idx} className="border-foreground/10 border-b">
                       <td className="py-2">{img.name}</td>
                       <td className="py-2">${img.value}</td>
-                      <td className="max-w-xs truncate py-2 text-foreground/60">
+                      <td className="text-foreground/60 max-w-xs truncate py-2">
                         {img.url}
                       </td>
                     </tr>
@@ -258,7 +267,7 @@ export default function PlayerImagesTestPage() {
         {/* Image Grid (active test run) */}
         {isRunning && players && players.length > 0 && (
           <>
-            <h2 className="mb-4 text-xl font-semibold text-foreground">
+            <h2 className="text-foreground mb-4 text-xl font-semibold">
               All Players ({totalPlayers})
             </h2>
             <div

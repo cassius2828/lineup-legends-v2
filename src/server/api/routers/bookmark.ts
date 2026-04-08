@@ -47,10 +47,7 @@ export const bookmarkRouter = createTRPCRouter({
     .input(
       z
         .object({
-          sort: z
-            .enum(["newest", "oldest"])
-            .optional()
-            .default("newest"),
+          sort: z.enum(["newest", "oldest"]).optional().default("newest"),
         })
         .optional(),
     )
@@ -72,9 +69,7 @@ export const bookmarkRouter = createTRPCRouter({
         .populate(lineupPopulateFields)
         .lean();
 
-      const idOrder = new Map(
-        lineupIds.map((id, i) => [id.toString(), i]),
-      );
+      const idOrder = new Map(lineupIds.map((id, i) => [id.toString(), i]));
       lineups.sort(
         (a, b) =>
           (idOrder.get(a._id.toString()) ?? 0) -

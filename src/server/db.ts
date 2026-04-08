@@ -5,10 +5,16 @@ import { logger } from "~/lib/logger";
 
 const log = logger.child({ module: "db" });
 
-const MONGODB_URI = env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable");
+/**
+ * Lazily resolved so importing this module during `next build`
+ * (with SKIP_ENV_VALIDATION=1) doesn't throw at the top level.
+ */
+function getMongoUri(): string {
+  const uri = env.MONGODB_URI;
+  if (!uri) {
+    throw new Error("Please define the MONGODB_URI environment variable");
+  }
+  return uri;
 }
 
 // Type declaration for global mongoose cache
@@ -48,7 +54,7 @@ export async function connectDB(): Promise<typeof mongoose> {
       serverSelectionTimeoutMS: 10000,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(getMongoUri(), opts).then((mongoose) => {
       log.info("Connected to MongoDB via Mongoose");
       return mongoose;
     });
@@ -65,13 +71,18 @@ export async function connectDB(): Promise<typeof mongoose> {
 }
 
 /**
- * Get a MongoDB client for use with NextAuth MongoDB adapter
- * The MongoDB adapter requires a MongoClient, not Mongoose
+ * Get a MongoDB client for use with NextAuth MongoDB adapter.
+ * The MongoDB adapter requires a MongoClient, not Mongoose.
+ * Connection is deferred so importing this module during `next build` is safe.
  */
 export function getMongoClient(): Promise<MongoClient> {
   if (!global.mongoClientPromise) {
-    const client = new MongoClient(MONGODB_URI);
-    global.mongoClientPromise = client.connect();
+    const p = Promise.resolve().then(() => {
+      const client = new MongoClient(getMongoUri());
+      return client.connect();
+    });
+    p.catch(() => {});
+    global.mongoClientPromise = p;
   }
   return global.mongoClientPromise;
 }

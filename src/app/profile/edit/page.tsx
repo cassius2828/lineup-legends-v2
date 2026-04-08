@@ -57,7 +57,7 @@ function ImageUploadField({
 
   return (
     <div>
-      <label className="mb-2 block text-sm font-medium text-foreground/80">
+      <label className="text-foreground/80 mb-2 block text-sm font-medium">
         {label}
       </label>
       <input
@@ -75,7 +75,7 @@ function ImageUploadField({
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={isUploading}
-        className={`group relative w-full overflow-hidden rounded-xl border-2 border-dashed border-foreground/20 transition-colors hover:border-gold/50 ${previewClass}`}
+        className={`group border-foreground/20 hover:border-gold/50 relative w-full overflow-hidden rounded-xl border-2 border-dashed transition-colors ${previewClass}`}
       >
         {currentUrl ? (
           <>
@@ -86,16 +86,16 @@ function ImageUploadField({
               className="h-full w-full object-cover"
             />
             <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/40">
-              <span className="rounded-lg bg-black/60 px-3 py-1.5 text-sm font-medium text-foreground opacity-0 transition-opacity group-hover:opacity-100">
+              <span className="text-foreground rounded-lg bg-black/60 px-3 py-1.5 text-sm font-medium opacity-0 transition-opacity group-hover:opacity-100">
                 {isUploading ? "Uploading..." : "Change Image"}
               </span>
             </div>
           </>
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-foreground/40">
+          <div className="text-foreground/40 flex h-full flex-col items-center justify-center gap-2">
             {isUploading ? (
               <>
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-foreground/20 border-t-gold" />
+                <div className="border-foreground/20 border-t-gold h-8 w-8 animate-spin rounded-full border-2" />
                 <span className="text-sm">Uploading...</span>
               </>
             ) : (
@@ -163,10 +163,10 @@ export default function EditProfilePage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+      <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
         <div className="flex h-64 items-center justify-center">
           <div className="text-center">
-            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-foreground/20 border-t-gold" />
+            <div className="border-foreground/20 border-t-gold mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4" />
             <p className="text-foreground/60">Loading...</p>
           </div>
         </div>
@@ -176,12 +176,12 @@ export default function EditProfilePage() {
 
   if (!profile) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+      <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground">Please sign in</h1>
+          <h1 className="text-foreground text-2xl font-bold">Please sign in</h1>
           <Link
             href="/sign-in"
-            className="mt-4 inline-block text-gold-300 hover:underline"
+            className="text-gold-300 mt-4 inline-block hover:underline"
           >
             Sign in
           </Link>
@@ -191,13 +191,13 @@ export default function EditProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+    <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
       <div className="container mx-auto max-w-2xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <Link
             href={`/profile/${profile.id}`}
-            className="mb-2 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
+            className="text-foreground/60 hover:text-foreground/80 mb-2 inline-flex items-center gap-1 text-sm"
           >
             <svg
               className="h-4 w-4"
@@ -214,13 +214,13 @@ export default function EditProfilePage() {
             </svg>
             Back to Profile
           </Link>
-          <h1 className="text-3xl font-bold text-foreground">Edit Profile</h1>
+          <h1 className="text-foreground text-3xl font-bold">Edit Profile</h1>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Live Preview */}
-          <div className="overflow-hidden rounded-2xl bg-surface-800">
+          <div className="bg-surface-800 overflow-hidden rounded-2xl">
             <div
               className="h-32 bg-cover bg-center"
               style={{
@@ -230,7 +230,7 @@ export default function EditProfilePage() {
               }}
             />
             <div className="relative -mt-12 px-6 pb-6">
-              <div className="h-24 w-24 overflow-hidden rounded-full border-4 border-surface-600 bg-surface-600">
+              <div className="border-surface-600 bg-surface-600 h-24 w-24 overflow-hidden rounded-full border-4">
                 <Image
                   width={96}
                   height={96}
@@ -239,10 +239,10 @@ export default function EditProfilePage() {
                   className="h-full w-full object-cover"
                 />
               </div>
-              <p className="mt-2 font-semibold text-foreground">
+              <p className="text-foreground mt-2 font-semibold">
                 {username || profile.name || "Your Name"}
               </p>
-              {bio && <p className="text-sm text-foreground/60">{bio}</p>}
+              {bio && <p className="text-foreground/60 text-sm">{bio}</p>}
             </div>
           </div>
 
@@ -266,7 +266,7 @@ export default function EditProfilePage() {
 
           {/* Username */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground/80">
+            <label className="text-foreground/80 mb-2 block text-sm font-medium">
               Username
             </label>
             <input
@@ -274,16 +274,16 @@ export default function EditProfilePage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter a unique username"
-              className="w-full rounded-lg border border-foreground/10 bg-foreground/5 px-4 py-3 text-foreground placeholder-foreground/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+              className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/40 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-3 focus:ring-1 focus:outline-none"
               minLength={3}
               maxLength={30}
             />
-            <p className="mt-1 text-xs text-foreground/50">3-30 characters</p>
+            <p className="text-foreground/50 mt-1 text-xs">3-30 characters</p>
           </div>
 
           {/* Bio */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground/80">
+            <label className="text-foreground/80 mb-2 block text-sm font-medium">
               Bio
             </label>
             <textarea
@@ -291,24 +291,24 @@ export default function EditProfilePage() {
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell us about yourself..."
               rows={3}
-              className="w-full resize-none rounded-lg border border-foreground/10 bg-foreground/5 px-4 py-3 text-foreground placeholder-foreground/40 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+              className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/40 focus:border-gold focus:ring-gold w-full resize-none rounded-lg border px-4 py-3 focus:ring-1 focus:outline-none"
               maxLength={250}
             />
-            <p className="mt-1 text-xs text-foreground/50">{bio.length}/250</p>
+            <p className="text-foreground/50 mt-1 text-xs">{bio.length}/250</p>
           </div>
 
           {/* Submit */}
           <div className="flex gap-3 pt-4">
             <Link
               href={`/profile/${profile.id}`}
-              className="flex-1 rounded-lg bg-foreground/10 py-3 text-center font-medium text-foreground transition-colors hover:bg-foreground/20"
+              className="bg-foreground/10 text-foreground hover:bg-foreground/20 flex-1 rounded-lg py-3 text-center font-medium transition-colors"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={updateProfile.isPending}
-              className="flex-1 rounded-lg bg-gold py-3 font-semibold text-black transition-colors hover:bg-gold-light disabled:opacity-50"
+              className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:opacity-50"
             >
               {updateProfile.isPending ? "Saving..." : "Save Changes"}
             </button>

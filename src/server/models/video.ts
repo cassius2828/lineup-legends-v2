@@ -1,4 +1,9 @@
-import mongoose, { Schema, type Document, type Model, type Types } from "mongoose";
+import mongoose, {
+  Schema,
+  type Document,
+  type Model,
+  type Types,
+} from "mongoose";
 
 export interface VideoTimestamp {
   time: number;

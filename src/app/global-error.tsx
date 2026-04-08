@@ -20,10 +20,10 @@ const GlobalError = ({ error, reset }: GlobalErrorProps) => {
         <main className="flex min-h-screen items-center justify-center px-4">
           <div className="w-full max-w-md space-y-6 text-center">
             <div className="space-y-2">
-              <h1 className="font-stencil text-4xl text-foreground uppercase">
+              <h1 className="font-stencil text-foreground text-4xl uppercase">
                 Something Went Wrong
               </h1>
-              <p className="text-lg text-foreground/80">
+              <p className="text-foreground/80 text-lg">
                 An unexpected error occurred.
               </p>
             </div>
@@ -31,13 +31,13 @@ const GlobalError = ({ error, reset }: GlobalErrorProps) => {
             <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:justify-center">
               <button
                 onClick={reset}
-                className="cursor-pointer rounded-lg border-2 border-gold bg-gold/10 px-6 py-3 text-sm font-medium text-foreground/90 capitalize transition-all hover:bg-gold hover:text-black"
+                className="border-gold bg-gold/10 text-foreground/90 hover:bg-gold cursor-pointer rounded-lg border-2 px-6 py-3 text-sm font-medium capitalize transition-all hover:text-black"
               >
                 Try Again
               </button>
               <Link
                 href="/"
-                className="w-full rounded-lg border border-foreground/20 bg-transparent px-6 py-3 text-center text-sm font-medium text-foreground/90 capitalize transition-all hover:border-gold/50 hover:bg-gold/10 hover:text-foreground sm:w-auto"
+                className="border-foreground/20 text-foreground/90 hover:border-gold/50 hover:bg-gold/10 hover:text-foreground w-full rounded-lg border bg-transparent px-6 py-3 text-center text-sm font-medium capitalize transition-all sm:w-auto"
               >
                 Return Home
               </Link>

@@ -128,7 +128,9 @@ describe("PlayerModel", () => {
         imgUrl: "https://example.com/lebron.png",
         value: 5,
       });
-      expect((player as unknown as { id: string }).id).toBe(objectId.toHexString());
+      expect((player as unknown as { id: string }).id).toBe(
+        objectId.toHexString(),
+      );
     });
 
     it("should include virtuals in toJSON output", () => {
@@ -139,7 +141,7 @@ describe("PlayerModel", () => {
         value: 5,
       });
       const json = player.toJSON();
-      expect(json).toHaveProperty('id');
+      expect(json).toHaveProperty("id");
     });
 
     it("should include virtuals in toObject output", () => {
@@ -150,7 +152,7 @@ describe("PlayerModel", () => {
         value: 5,
       });
       const obj = player.toObject();
-      expect(obj).toHaveProperty('id');
+      expect(obj).toHaveProperty("id");
     });
   });
 });

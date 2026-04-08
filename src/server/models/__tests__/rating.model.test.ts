@@ -109,7 +109,9 @@ describe("RatingModel", () => {
         user: mockObjectId(),
         lineup: mockObjectId(),
       });
-      expect((rating as unknown as { id: string }).id).toBe(objectId.toHexString());
+      expect((rating as unknown as { id: string }).id).toBe(
+        objectId.toHexString(),
+      );
     });
 
     it("should include virtuals in toJSON", () => {
@@ -119,7 +121,7 @@ describe("RatingModel", () => {
         lineup: mockObjectId(),
       });
       const json = rating.toJSON();
-      expect(json).toHaveProperty('id');
+      expect(json).toHaveProperty("id");
     });
 
     it("should include virtuals in toObject", () => {
@@ -129,7 +131,7 @@ describe("RatingModel", () => {
         lineup: mockObjectId(),
       });
       const obj = rating.toObject();
-      expect(obj).toHaveProperty('id');
+      expect(obj).toHaveProperty("id");
     });
   });
 

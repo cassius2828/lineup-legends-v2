@@ -32,11 +32,11 @@ export function PlayerCard({
             onClick={handleClick}
             imgUrl={player?.imgUrl}
             alt={player ? `${player.firstName} ${player.lastName}` : ""}
-            className="absolute inset-0 h-full w-full rounded-full object-cover cursor-pointer"
+            className="absolute inset-0 h-full w-full cursor-pointer rounded-full object-cover"
           />
         </div>
         <div className="w-full min-w-0">
-          <p className="truncate text-center text-sm font-medium text-foreground">
+          <p className="text-foreground truncate text-center text-sm font-medium">
             {player?.firstName} {player?.lastName}
           </p>
         </div>
@@ -53,9 +53,11 @@ export function PlayerCard({
     >
       {/* Player Cell - Square with off-white background and value-based glow */}
       <div
-        className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden bg-[#f2f2f2] transition-all duration-200 ${VALUE_SHADOWS[player.value]
-          } ${selected ? "ring-2 ring-gold-300" : ""
-          } ${disabled && !selected ? "cursor-not-allowed opacity-50 grayscale" : "cursor-pointer hover:scale-105"}`}
+        className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden bg-[#f2f2f2] transition-all duration-200 ${
+          VALUE_SHADOWS[player.value]
+        } ${
+          selected ? "ring-gold-300 ring-2" : ""
+        } ${disabled && !selected ? "cursor-not-allowed opacity-50 grayscale" : "cursor-pointer hover:scale-105"}`}
       >
         <PlayerImage
           imgUrl={player.imgUrl}
@@ -64,9 +66,9 @@ export function PlayerCard({
         />
         {/* Selected Indicator Overlay */}
         {selected && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gold-600/30">
+          <div className="bg-gold-600/30 absolute inset-0 flex items-center justify-center">
             <svg
-              className="h-6 w-6 text-gold-300"
+              className="text-gold-300 h-6 w-6"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -82,10 +84,10 @@ export function PlayerCard({
 
       {/* Player Name - Below the cell */}
       <div className="mt-1 h-10 text-center">
-        <p className="text-xs font-medium text-foreground">
+        <p className="text-foreground text-xs font-medium">
           {player.firstName.length < 9 ? player.firstName : ""}
         </p>
-        <p className="text-xs text-foreground/80">
+        <p className="text-foreground/80 text-xs">
           {player.lastName.length < 9 ? player.lastName : ""}
         </p>
       </div>

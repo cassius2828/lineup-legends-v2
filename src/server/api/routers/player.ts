@@ -41,26 +41,11 @@ export const playerRouter = createTRPCRouter({
       const results = await PlayerModel.aggregate([
         {
           $facet: {
-            value1Players: [
-              { $match: { value: 1 } },
-              { $sample: { size: 5 } },
-            ],
-            value2Players: [
-              { $match: { value: 2 } },
-              { $sample: { size: 5 } },
-            ],
-            value3Players: [
-              { $match: { value: 3 } },
-              { $sample: { size: 5 } },
-            ],
-            value4Players: [
-              { $match: { value: 4 } },
-              { $sample: { size: 5 } },
-            ],
-            value5Players: [
-              { $match: { value: 5 } },
-              { $sample: { size: 5 } },
-            ],
+            value1Players: [{ $match: { value: 1 } }, { $sample: { size: 5 } }],
+            value2Players: [{ $match: { value: 2 } }, { $sample: { size: 5 } }],
+            value3Players: [{ $match: { value: 3 } }, { $sample: { size: 5 } }],
+            value4Players: [{ $match: { value: 4 } }, { $sample: { size: 5 } }],
+            value5Players: [{ $match: { value: 5 } }, { $sample: { size: 5 } }],
           },
         },
       ]);
