@@ -31,11 +31,5 @@ export {
   type FeedbackDoc,
   type FeedbackStatus,
 } from "./feedback";
-export {
-  BookmarkModel,
-  type BookmarkDoc,
-} from "./bookmark";
-export {
-  VideoModel,
-  type VideoDoc,
-} from "./video";
+export { BookmarkModel, type BookmarkDoc } from "./bookmark";
+export { VideoModel, type VideoDoc } from "./video";

@@ -46,7 +46,10 @@ export const CantFindPlayerSection = ({
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (requestFirstName.trim().length >= 2 && requestLastName.trim().length >= 2) {
+    if (
+      requestFirstName.trim().length >= 2 &&
+      requestLastName.trim().length >= 2
+    ) {
       timerRef.current = setTimeout(() => {
         setDebouncedFirst(requestFirstName.trim());
         setDebouncedLast(requestLastName.trim());
@@ -66,13 +69,13 @@ export const CantFindPlayerSection = ({
   );
 
   return (
-    <div className="mt-12 rounded-lg border border-foreground/10 bg-foreground/5 p-6">
+    <div className="border-foreground/10 bg-foreground/5 mt-12 rounded-lg border p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">
+          <h2 className="text-foreground text-lg font-semibold">
             Can&apos;t find the player you&apos;re looking for?
           </h2>
-          <p className="mt-1 text-sm text-foreground/60">
+          <p className="text-foreground/60 mt-1 text-sm">
             Submit a request to add a new player to the database
           </p>
         </div>
@@ -89,7 +92,7 @@ export const CantFindPlayerSection = ({
       {showRequestForm && (
         <form onSubmit={handleRequestSubmit} className="mt-6 space-y-4">
           {requestSuccess && (
-            <div className="rounded-lg bg-gold-500/20 p-3 text-sm text-gold-300">
+            <div className="bg-gold-500/20 text-gold-300 rounded-lg p-3 text-sm">
               Player request submitted successfully!
             </div>
           )}
@@ -104,7 +107,7 @@ export const CantFindPlayerSection = ({
             <div>
               <label
                 htmlFor="requestFirstName"
-                className="mb-2 block text-sm font-medium text-foreground/80"
+                className="text-foreground/80 mb-2 block text-sm font-medium"
               >
                 First Name
               </label>
@@ -115,14 +118,14 @@ export const CantFindPlayerSection = ({
                 onChange={(e) => setRequestFirstName(e.target.value)}
                 required
                 placeholder="e.g. LeBron"
-                className="focus:border-gold focus:ring-gold w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
+                className="focus:border-gold focus:ring-gold border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 w-full rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
               />
             </div>
 
             <div>
               <label
                 htmlFor="requestLastName"
-                className="mb-2 block text-sm font-medium text-foreground/80"
+                className="text-foreground/80 mb-2 block text-sm font-medium"
               >
                 Last Name
               </label>
@@ -133,7 +136,7 @@ export const CantFindPlayerSection = ({
                 onChange={(e) => setRequestLastName(e.target.value)}
                 required
                 placeholder="e.g. James"
-                className="focus:border-gold focus:ring-gold w-full rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
+                className="focus:border-gold focus:ring-gold border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 w-full rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
               />
             </div>
           </div>
@@ -143,7 +146,7 @@ export const CantFindPlayerSection = ({
           )}
 
           <div>
-            <label className="mb-2 block text-sm font-medium text-foreground/80">
+            <label className="text-foreground/80 mb-2 block text-sm font-medium">
               Suggested Value ($1-$5)
             </label>
             <div className="flex gap-2">
@@ -167,10 +170,10 @@ export const CantFindPlayerSection = ({
           <div>
             <label
               htmlFor="adminReqNote"
-              className="mb-2 block text-sm font-medium text-foreground/80"
+              className="text-foreground/80 mb-2 block text-sm font-medium"
             >
               Note{" "}
-              <span className="font-normal text-foreground/40">(optional)</span>
+              <span className="text-foreground/40 font-normal">(optional)</span>
             </label>
             <textarea
               id="adminReqNote"
@@ -179,9 +182,9 @@ export const CantFindPlayerSection = ({
               maxLength={500}
               rows={3}
               placeholder="Why do you want this player?"
-              className="focus:border-gold focus:ring-gold w-full resize-none rounded-lg border border-foreground/20 bg-foreground/10 px-4 py-2 text-foreground placeholder-foreground/50 focus:ring-1 focus:outline-none"
+              className="focus:border-gold focus:ring-gold border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 w-full resize-none rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
             />
-            <p className="mt-1 text-right text-xs text-foreground/40">
+            <p className="text-foreground/40 mt-1 text-right text-xs">
               {requestNote.length}/500
             </p>
           </div>
@@ -200,7 +203,7 @@ export const CantFindPlayerSection = ({
                 setShowRequestForm(false);
                 setRequestError("");
               }}
-              className="rounded-lg bg-foreground/10 px-6 py-2 font-medium text-foreground transition-colors hover:bg-foreground/20"
+              className="bg-foreground/10 text-foreground hover:bg-foreground/20 rounded-lg px-6 py-2 font-medium transition-colors"
             >
               Cancel
             </button>
@@ -208,10 +211,10 @@ export const CantFindPlayerSection = ({
         </form>
       )}
 
-      <div className="mt-4 border-t border-foreground/10 pt-4">
+      <div className="border-foreground/10 mt-4 border-t pt-4">
         <Link
           href="/admin/requested"
-          className="text-sm text-foreground/60 hover:text-foreground/80"
+          className="text-foreground/60 hover:text-foreground/80 text-sm"
         >
           View all player requests &rarr;
         </Link>

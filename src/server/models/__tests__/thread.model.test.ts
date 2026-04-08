@@ -66,7 +66,9 @@ describe("ThreadModel", () => {
         user: mockObjectId(),
         comment: mockObjectId(),
       });
-      expect((thread as unknown as { id: string }).id).toBe(objectId.toHexString());
+      expect((thread as unknown as { id: string }).id).toBe(
+        objectId.toHexString(),
+      );
     });
 
     it("should include virtuals in toJSON", () => {
@@ -76,7 +78,7 @@ describe("ThreadModel", () => {
         comment: mockObjectId(),
       });
       const json = thread.toJSON();
-      expect(json).toHaveProperty('id');
+      expect(json).toHaveProperty("id");
     });
 
     it("should include virtuals in toObject", () => {
@@ -86,7 +88,7 @@ describe("ThreadModel", () => {
         comment: mockObjectId(),
       });
       const obj = thread.toObject();
-      expect(obj).toHaveProperty('id');
+      expect(obj).toHaveProperty("id");
     });
   });
 

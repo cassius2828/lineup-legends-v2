@@ -49,7 +49,10 @@ export const feedbackRouter = createTRPCRouter({
           message: input.message.trim(),
         });
       } catch (error) {
-        log.error({ err: error }, "Email notification failed, feedback still saved");
+        log.error(
+          { err: error },
+          "Email notification failed, feedback still saved",
+        );
       }
 
       return {

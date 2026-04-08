@@ -72,7 +72,7 @@ export default function ComposerToolbar({
           <button
             type="button"
             onClick={clearAttachment}
-            className="absolute -right-1.5 -top-1.5 rounded-full bg-surface-800 p-0.5 text-foreground/60 shadow-md transition-colors hover:text-foreground"
+            className="bg-surface-800 text-foreground/60 hover:text-foreground absolute -top-1.5 -right-1.5 rounded-full p-0.5 shadow-md transition-colors"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -92,7 +92,7 @@ export default function ComposerToolbar({
           type="button"
           onClick={() => fileRef.current?.click()}
           disabled={isUploading}
-          className="rounded-md p-1.5 text-foreground/30 transition-colors hover:bg-foreground/5 hover:text-foreground/60 disabled:opacity-40"
+          className="text-foreground/30 hover:bg-foreground/5 hover:text-foreground/60 rounded-md p-1.5 transition-colors disabled:opacity-40"
           aria-label="Attach image"
         >
           {isUploading ? (
@@ -104,12 +104,12 @@ export default function ComposerToolbar({
         <button
           type="button"
           onClick={() => setShowGifPicker((v) => !v)}
-          className={`rounded-md p-1.5 text-foreground/30 transition-colors hover:bg-foreground/5 hover:text-foreground/60 ${
+          className={`text-foreground/30 hover:bg-foreground/5 hover:text-foreground/60 rounded-md p-1.5 transition-colors ${
             showGifPicker ? "bg-foreground/5 text-foreground/60" : ""
           }`}
           aria-label="Add GIF"
         >
-          <span className="text-xs font-bold leading-none">GIF</span>
+          <span className="text-xs leading-none font-bold">GIF</span>
         </button>
       </div>
 

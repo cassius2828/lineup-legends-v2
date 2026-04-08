@@ -14,8 +14,8 @@ const containerVariants = {
 
 const textVariants = {
   hidden: { opacity: 0, x: 40 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     x: 0,
     transition: { duration: 0.6, ease: "easeOut" as const },
   },
@@ -37,12 +37,12 @@ export function ShareSection() {
       />
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-l from-black/95 via-black/80 to-black/40" />
-      
+
       {/* Gold accent line */}
-      <div className="absolute right-0 top-0 h-full w-1 bg-gradient-to-b from-transparent via-gold/50 to-transparent" />
+      <div className="via-gold/50 absolute top-0 right-0 h-full w-1 bg-gradient-to-b from-transparent to-transparent" />
 
       {/* Content */}
-      <motion.div 
+      <motion.div
         className="relative z-10 flex min-h-[70vh] items-center justify-end px-4 py-24 sm:px-8 lg:px-16"
         variants={containerVariants}
         initial="hidden"
@@ -50,26 +50,26 @@ export function ShareSection() {
         viewport={{ once: true, margin: "-100px" }}
       >
         <div className="max-w-xl text-right">
-          <motion.h2 
-            className="font-stencil text-4xl uppercase tracking-wide text-foreground sm:text-5xl lg:text-6xl"
+          <motion.h2
+            className="font-stencil text-foreground text-4xl tracking-wide uppercase sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
             Sharing to
           </motion.h2>
-          <motion.h2 
-            className="font-stencil text-4xl uppercase tracking-wide sm:text-5xl lg:text-6xl"
+          <motion.h2
+            className="font-stencil text-4xl tracking-wide uppercase sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
             <span className="text-gradient-gold">Social Media</span>
           </motion.h2>
 
-          <motion.div 
-            className="mt-6 ml-auto h-px w-24 bg-gradient-to-l from-gold to-transparent"
+          <motion.div
+            className="from-gold mt-6 ml-auto h-px w-24 bg-gradient-to-l to-transparent"
             variants={textVariants}
           />
 
-          <motion.p 
-            className="mt-8 text-lg leading-relaxed text-foreground/70"
+          <motion.p
+            className="text-foreground/70 mt-8 text-lg leading-relaxed"
             variants={textVariants}
           >
             Showcase your fantasy basketball prowess by sharing your lineups on

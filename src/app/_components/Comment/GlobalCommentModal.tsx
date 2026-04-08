@@ -4,8 +4,15 @@ import { useCommentModalStore } from "~/stores/commentModal";
 import CommentModal from "./CommentModal";
 
 export default function GlobalCommentModal() {
-  const { isOpen, mode, lineupId, lineup, parentComment, currentUserId, close } =
-    useCommentModalStore();
+  const {
+    isOpen,
+    mode,
+    lineupId,
+    lineup,
+    parentComment,
+    currentUserId,
+    close,
+  } = useCommentModalStore();
 
   if (!isOpen) return null;
 

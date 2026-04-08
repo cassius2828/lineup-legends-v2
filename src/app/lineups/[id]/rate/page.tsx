@@ -7,7 +7,12 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { PlayerCard } from "~/app/_components/PlayerCard";
-import { RATING_MIN, RATING_MAX, RATING_STEP, RATING_DEFAULT } from "~/lib/constants";
+import {
+  RATING_MIN,
+  RATING_MAX,
+  RATING_STEP,
+  RATING_DEFAULT,
+} from "~/lib/constants";
 import { getRatingColor } from "~/lib/rating-color";
 
 export default function RateLineupPage() {
@@ -48,9 +53,9 @@ export default function RateLineupPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+      <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
         <div className="flex h-64 items-center justify-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-foreground/20 border-t-gold" />
+          <div className="border-foreground/20 border-t-gold mx-auto h-12 w-12 animate-spin rounded-full border-4" />
         </div>
       </main>
     );
@@ -58,12 +63,14 @@ export default function RateLineupPage() {
 
   if (!lineup) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+      <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground">Lineup not found</h1>
+          <h1 className="text-foreground text-2xl font-bold">
+            Lineup not found
+          </h1>
           <Link
             href="/lineups/explore"
-            className="mt-4 text-gold-300 hover:underline"
+            className="text-gold-300 mt-4 hover:underline"
           >
             Back to Explore
           </Link>
@@ -73,13 +80,13 @@ export default function RateLineupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+    <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
       <div className="container mx-auto max-w-2xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/lineups/explore"
-            className="mb-2 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
+            className="text-foreground/60 hover:text-foreground/80 mb-2 inline-flex items-center gap-1 text-sm"
           >
             <svg
               className="h-4 w-4"
@@ -96,18 +103,18 @@ export default function RateLineupPage() {
             </svg>
             Back to Explore
           </Link>
-          <h1 className="text-3xl font-bold text-foreground">Rate Lineup</h1>
-          <p className="mt-1 text-foreground/60">
+          <h1 className="text-foreground text-3xl font-bold">Rate Lineup</h1>
+          <p className="text-foreground/60 mt-1">
             by {lineup.owner.name ?? lineup.owner.username ?? "Anonymous"}
           </p>
         </div>
 
         {/* Lineup Preview */}
-        <div className="mb-8 rounded-2xl bg-surface-800/50 p-6">
+        <div className="bg-surface-800/50 mb-8 rounded-2xl p-6">
           <div className="grid grid-cols-5 gap-3">
             {(["pg", "sg", "sf", "pf", "c"] as const).map((pos) => (
               <div key={pos} className="text-center">
-                <span className="mb-1 block text-xs font-bold text-foreground/50 uppercase">
+                <span className="text-foreground/50 mb-1 block text-xs font-bold uppercase">
                   {pos.toUpperCase()}
                 </span>
                 <PlayerCard player={lineup.players[pos]} compact />
@@ -116,7 +123,7 @@ export default function RateLineupPage() {
           </div>
 
           {/* Current stats */}
-          <div className="mt-4 flex justify-center gap-6 text-sm text-foreground/60">
+          <div className="text-foreground/60 mt-4 flex justify-center gap-6 text-sm">
             <span>
               Number of ratings:{" "}
               <strong className="text-foreground">{lineup.ratingCount}</strong>
@@ -135,12 +142,12 @@ export default function RateLineupPage() {
           className="mb-8"
           style={{ ["--rating-color"]: ratingColor } as React.CSSProperties}
         >
-          <h2 className="mb-4 text-center text-lg font-semibold text-foreground">
+          <h2 className="text-foreground mb-4 text-center text-lg font-semibold">
             How would you rate this lineup?
           </h2>
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-4">
-              <span className="text-sm text-foreground/50">{RATING_MIN}</span>
+              <span className="text-foreground/50 text-sm">{RATING_MIN}</span>
               <input
                 type="range"
                 min={RATING_MIN}
@@ -149,9 +156,9 @@ export default function RateLineupPage() {
                 value={selectedRating}
                 onChange={(e) => setSelectedRating(parseFloat(e.target.value))}
                 style={{ accentColor: ratingColor }}
-                className="h-3 flex-1 appearance-none rounded-full bg-foreground/20 [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[var(--rating-color)] [&::-moz-range-thumb]:bg-stone-100 [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[var(--rating-color)] [&::-webkit-slider-thumb]:bg-stone-100 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:transition-colors [&::-webkit-slider-thumb]:hover:scale-110"
+                className="bg-foreground/20 h-3 flex-1 appearance-none rounded-full [&::-moz-range-thumb]:h-6 [&::-moz-range-thumb]:w-6 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-[var(--rating-color)] [&::-moz-range-thumb]:bg-stone-100 [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-[var(--rating-color)] [&::-webkit-slider-thumb]:bg-stone-100 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:transition-colors [&::-webkit-slider-thumb]:hover:scale-110"
               />
-              <span className="text-sm text-foreground/50">{RATING_MAX}</span>
+              <span className="text-foreground/50 text-sm">{RATING_MAX}</span>
             </div>
             <p
               className="text-center text-2xl font-bold tabular-nums transition-colors duration-150"
@@ -161,7 +168,7 @@ export default function RateLineupPage() {
             </p>
           </div>
           {lineup?.avgRating != null && lineup.avgRating > 0 && (
-            <p className="mt-3 text-center text-sm text-foreground/50">
+            <p className="text-foreground/50 mt-3 text-center text-sm">
               Lineup average: {lineup.avgRating.toFixed(2)}
             </p>
           )}
@@ -172,7 +179,7 @@ export default function RateLineupPage() {
           <div className="flex gap-3">
             <Link
               href="/lineups/explore"
-              className="flex-1 rounded-lg bg-foreground/10 py-3 text-center font-medium text-foreground transition-colors hover:bg-foreground/20"
+              className="bg-foreground/10 text-foreground hover:bg-foreground/20 flex-1 rounded-lg py-3 text-center font-medium transition-colors"
             >
               Cancel
             </Link>
@@ -185,10 +192,15 @@ export default function RateLineupPage() {
             </button>
           </div>
         ) : (
-          <div className="rounded-xl border border-foreground/10 p-6 text-center">
-            <p className="text-sm text-foreground/50">
-              <a href="/api/auth/signin" className="font-medium text-gold hover:text-gold-light">Sign in</a>
-              {" "}to rate this lineup
+          <div className="border-foreground/10 rounded-xl border p-6 text-center">
+            <p className="text-foreground/50 text-sm">
+              <a
+                href="/api/auth/signin"
+                className="text-gold hover:text-gold-light font-medium"
+              >
+                Sign in
+              </a>{" "}
+              to rate this lineup
             </p>
           </div>
         )}

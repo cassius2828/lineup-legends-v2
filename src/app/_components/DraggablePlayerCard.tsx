@@ -55,9 +55,9 @@ export function DraggablePlayerCard({
     >
       {/* Player Cell - Square with off-white background and value-based glow */}
       <div
-        className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden bg-[#f2f2f2] transition-all duration-200 rounded-md ${
+        className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden rounded-md bg-[#f2f2f2] transition-all duration-200 ${
           VALUE_SHADOWS[player.value]
-        } ${selected ? "ring-2 ring-gold-300" : ""} ${
+        } ${selected ? "ring-gold-300 ring-2" : ""} ${
           isDragging
             ? "scale-105 opacity-50 shadow-2xl"
             : disabled && !selected
@@ -72,9 +72,9 @@ export function DraggablePlayerCard({
         />
         {/* Selected Indicator Overlay */}
         {selected && !isDragging && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gold-600/30">
+          <div className="bg-gold-600/30 absolute inset-0 flex items-center justify-center">
             <svg
-              className="h-6 w-6 text-gold-300"
+              className="text-gold-300 h-6 w-6"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -90,10 +90,10 @@ export function DraggablePlayerCard({
 
       {/* Player Name - Below the cell */}
       <div className="mt-1 h-10 text-center">
-        <p className="text-xs font-medium text-foreground">
+        <p className="text-foreground text-xs font-medium">
           {player.firstName.length < 9 ? player.firstName : ""}
         </p>
-        <p className="text-xs text-foreground/80">
+        <p className="text-foreground/80 text-xs">
           {player.lastName.length < 9 ? player.lastName : ""}
         </p>
       </div>

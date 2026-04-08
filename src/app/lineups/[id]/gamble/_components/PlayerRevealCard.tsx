@@ -2,7 +2,10 @@
 
 import { motion } from "framer-motion";
 import { PlayerImage } from "~/app/_components/PlayerImage";
-import type { PlayerOutput, GambleOutcomeTier } from "~/server/api/schemas/output";
+import type {
+  PlayerOutput,
+  GambleOutcomeTier,
+} from "~/server/api/schemas/output";
 import {
   VALUE_COLORS,
   VALUE_LABELS,
@@ -137,7 +140,10 @@ export function PlayerRevealCard({
           <p className="text-base font-bold text-white sm:text-lg">
             {player.firstName} {player.lastName}
           </p>
-          <p className="text-xs font-semibold sm:text-sm" style={{ color: tierColor }}>
+          <p
+            className="text-xs font-semibold sm:text-sm"
+            style={{ color: tierColor }}
+          >
             ${player.value}
           </p>
         </motion.div>
@@ -190,7 +196,7 @@ export function PlayerRevealCard({
       {showCelebration && outcomeTier === "disaster" && (
         <>
           <motion.div
-            className="pointer-events-none absolute left-1/4 top-0 h-full w-px origin-top"
+            className="pointer-events-none absolute top-0 left-1/4 h-full w-px origin-top"
             style={{
               background:
                 "linear-gradient(to bottom, transparent 10%, rgba(239,68,68,0.6) 40%, rgba(239,68,68,0.6) 60%, transparent 90%)",
@@ -201,7 +207,7 @@ export function PlayerRevealCard({
             transition={{ duration: 0.3, delay: 0.2 }}
           />
           <motion.div
-            className="pointer-events-none absolute right-1/3 top-0 h-full w-px origin-top"
+            className="pointer-events-none absolute top-0 right-1/3 h-full w-px origin-top"
             style={{
               background:
                 "linear-gradient(to bottom, transparent 20%, rgba(239,68,68,0.5) 45%, rgba(239,68,68,0.5) 70%, transparent 95%)",

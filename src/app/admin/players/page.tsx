@@ -114,9 +114,7 @@ export default function AdminPlayersPage() {
         <SearchResults filteredPlayers={filteredPlayers ?? []} />
       )}
       {isInitialRender && (
-        <DefaultPlayersOnInitialRender
-          allPlayersData={allPlayersData ?? []}
-        />
+        <DefaultPlayersOnInitialRender allPlayersData={allPlayersData ?? []} />
       )}
 
       {ifNoResults && <NoResults />}

@@ -123,7 +123,7 @@ export default function ShareMenu({ lineupId }: ShareMenuProps) {
         ref={triggerRef}
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="group cursor-pointer text-foreground/40 transition-colors hover:text-gold"
+        className="group text-foreground/40 hover:text-gold cursor-pointer transition-colors"
         aria-label="Share lineup"
         aria-haspopup="menu"
         aria-expanded={open}
@@ -135,13 +135,13 @@ export default function ShareMenu({ lineupId }: ShareMenuProps) {
         <div
           role="menu"
           aria-label="Share options"
-          className="absolute bottom-full right-0 z-50 mb-2 w-48 overflow-hidden rounded-lg border border-foreground/10 bg-background shadow-lg"
+          className="border-foreground/10 bg-background absolute right-0 bottom-full z-50 mb-2 w-48 overflow-hidden rounded-lg border shadow-lg"
         >
           <button
             role="menuitem"
             type="button"
             onClick={handleCopyLink}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-gold"
+            className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
           >
             <Copy className="h-4 w-4 shrink-0" />
             Copy Link
@@ -152,20 +152,20 @@ export default function ShareMenu({ lineupId }: ShareMenuProps) {
               role="menuitem"
               type="button"
               onClick={handleNativeShare}
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-gold"
+              className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
             >
               <ExternalLink className="h-4 w-4 shrink-0" />
               Share&hellip;
             </button>
           )}
 
-          <div className="mx-3 border-t border-foreground/10" />
+          <div className="border-foreground/10 mx-3 border-t" />
 
           <button
             role="menuitem"
             type="button"
             onClick={handleTwitter}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-gold"
+            className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
           >
             <Twitter className="h-4 w-4 shrink-0" />
             Share on X
@@ -175,19 +175,19 @@ export default function ShareMenu({ lineupId }: ShareMenuProps) {
             role="menuitem"
             type="button"
             onClick={handleFacebook}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-gold"
+            className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
           >
             <Facebook className="h-4 w-4 shrink-0" />
             Share on Facebook
           </button>
 
-          <div className="mx-3 border-t border-foreground/10" />
+          <div className="border-foreground/10 mx-3 border-t" />
 
           <button
             role="menuitem"
             type="button"
             onClick={handleSms}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-gold"
+            className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
           >
             <MessageSquare className="h-4 w-4 shrink-0" />
             Send via SMS
@@ -197,7 +197,7 @@ export default function ShareMenu({ lineupId }: ShareMenuProps) {
             role="menuitem"
             type="button"
             onClick={handleEmail}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-foreground/60 transition-colors hover:bg-foreground/5 hover:text-gold"
+            className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
           >
             <Mail className="h-4 w-4 shrink-0" />
             Send via Email

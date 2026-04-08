@@ -51,7 +51,8 @@ export default function ThreadCard({
     initialTotal: thread.totalVotes ?? 0,
     isOwn: isOwnThread,
     currentUserId,
-    onVote: (type) => voteMutation.mutate({ lineupId, commentId, threadId, type }),
+    onVote: (type) =>
+      voteMutation.mutate({ lineupId, commentId, threadId, type }),
   });
 
   const deleteMutation = api.comment.deleteThread.useMutation({
@@ -81,32 +82,31 @@ export default function ThreadCard({
             className="h-9 w-9 shrink-0 rounded-full"
           />
         ) : (
-          <div className="h-9 w-9 shrink-0 rounded-full bg-foreground/10" />
+          <div className="bg-foreground/10 h-9 w-9 shrink-0 rounded-full" />
         )}
         {replyingTo && !isLast && (
-          <div className="mt-2 w-0.5 flex-1 bg-foreground/20" />
+          <div className="bg-foreground/20 mt-2 w-0.5 flex-1" />
         )}
       </div>
 
       <div className="min-w-0 flex-1 pb-3">
         {replyingTo && (
-          <span className="mb-0.5 block text-xs text-foreground/40">
-            Replying to{" "}
-            <span className="text-gold">@{replyingTo}</span>
+          <span className="text-foreground/40 mb-0.5 block text-xs">
+            Replying to <span className="text-gold">@{replyingTo}</span>
           </span>
         )}
         <div className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-medium text-foreground">
+          <span className="text-foreground truncate text-sm font-medium">
             {displayName}
           </span>
           <span className="text-foreground/30">&middot;</span>
-          <span className="shrink-0 text-xs text-foreground/40">
+          <span className="text-foreground/40 shrink-0 text-xs">
             {relativeTime}
           </span>
         </div>
 
         {thread.text && (
-          <p className="mt-1 text-sm leading-relaxed text-foreground/80">
+          <p className="text-foreground/80 mt-1 text-sm leading-relaxed">
             {thread.text}
           </p>
         )}

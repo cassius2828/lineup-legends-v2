@@ -99,24 +99,26 @@ export const profileRouter = createTRPCRouter({
     }),
 
   // Get current user's profile
-  getMe: protectedProcedure.output(profileMeOutput.nullable()).query(async ({ ctx }) => {
-    const cachedUser = await redis.get(`user:${ctx.session.user.id}`);
-    if (cachedUser) {
-      return JSON.parse(cachedUser);
-    }
-    const user = await UserModel.findById(ctx.session.user.id)
-      .select(
-        "name username email image bio profileImg bannerImg socialMedia followerCount followingCount",
-      )
-      .lean();
+  getMe: protectedProcedure
+    .output(profileMeOutput.nullable())
+    .query(async ({ ctx }) => {
+      const cachedUser = await redis.get(`user:${ctx.session.user.id}`);
+      if (cachedUser) {
+        return JSON.parse(cachedUser);
+      }
+      const user = await UserModel.findById(ctx.session.user.id)
+        .select(
+          "name username email image bio profileImg bannerImg socialMedia followerCount followingCount",
+        )
+        .lean();
 
-    if (!user) return null;
+      if (!user) return null;
 
-    return populated({
-      ...user,
-      id: user._id?.toString(),
-    });
-  }),
+      return populated({
+        ...user,
+        id: user._id?.toString(),
+      });
+    }),
 
   // Update current user's profile
   update: protectedProcedure

@@ -32,7 +32,7 @@ if (env.NODE_ENV !== "production") globalForS3.s3 = s3;
 export async function uploadToS3(
   file: Buffer,
   key: string,
-  contentType: string
+  contentType: string,
 ): Promise<string> {
   const command = new PutObjectCommand({
     Bucket: env.BUCKET_NAME,
@@ -48,4 +48,3 @@ export async function uploadToS3(
 
 // Re-export common S3 commands for convenience
 export { PutObjectCommand } from "@aws-sdk/client-s3";
-

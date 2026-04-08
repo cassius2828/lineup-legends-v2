@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { PlayerOutput, GambleOutcomeTier } from "~/server/api/schemas/output";
+import type {
+  PlayerOutput,
+  GambleOutcomeTier,
+} from "~/server/api/schemas/output";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 import { MysteryCard } from "./MysteryCard";
 import { PlayerRevealCard } from "./PlayerRevealCard";
@@ -121,9 +124,9 @@ export function GambleReveal({
         animate={
           phase === "celebration" && config.screenShake
             ? {
-              x: [0, -4, 5, -3, 4, -2, 0],
-              y: [0, 3, -4, 3, -2, 1, 0],
-            }
+                x: [0, -4, 5, -3, 4, -2, 0],
+                y: [0, 3, -4, 3, -2, 1, 0],
+              }
             : phase === "celebration" && category === "negative"
               ? { x: [0, -2, 2, -1, 0] }
               : {}
@@ -167,16 +170,14 @@ export function GambleReveal({
           className="relative"
           style={{ perspective: 1200 }}
           animate={
-            phase === "suspense"
-              ? { y: [0, -8, 0], x: trembleKeyframes }
-              : {}
+            phase === "suspense" ? { y: [0, -8, 0], x: trembleKeyframes } : {}
           }
           transition={
             phase === "suspense"
               ? {
-                y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
-                x: trembleTransition,
-              }
+                  y: { duration: 2, repeat: Infinity, ease: "easeInOut" },
+                  x: trembleTransition,
+                }
               : {}
           }
         >
@@ -189,24 +190,24 @@ export function GambleReveal({
             animate={
               phase === "suspense"
                 ? {
-                  boxShadow: [
-                    `0 0 15px 5px #9ca3af40`,
-                    `0 0 30px 12px #9ca3af60`,
-                    `0 0 20px 8px ${tierColor}50`,
-                    `0 0 30px 12px ${tierColor}70`,
-                    `0 0 15px 5px ${tierColor}40`,
-                  ],
-                }
+                    boxShadow: [
+                      `0 0 15px 5px #9ca3af40`,
+                      `0 0 30px 12px #9ca3af60`,
+                      `0 0 20px 8px ${tierColor}50`,
+                      `0 0 30px 12px ${tierColor}70`,
+                      `0 0 15px 5px ${tierColor}40`,
+                    ],
+                  }
                 : {
-                  boxShadow: `0 0 ${config.glowIntensity * 20}px ${config.glowIntensity * 8}px ${category === "negative" && isFlipped ? "#ef444480" : tierColor + "80"}`,
-                }
+                    boxShadow: `0 0 ${config.glowIntensity * 20}px ${config.glowIntensity * 8}px ${category === "negative" && isFlipped ? "#ef444480" : tierColor + "80"}`,
+                  }
             }
             transition={
               phase === "suspense"
                 ? {
-                  duration: config.suspenseDuration / 1000,
-                  ease: "easeInOut",
-                }
+                    duration: config.suspenseDuration / 1000,
+                    ease: "easeInOut",
+                  }
                 : { duration: 0.4 }
             }
           />
@@ -218,9 +219,7 @@ export function GambleReveal({
             animate={{
               rotateY: isFlipped ? 180 : 0,
               scale:
-                phase === "celebration" && category === "negative"
-                  ? 0.95
-                  : 1,
+                phase === "celebration" && category === "negative" ? 0.95 : 1,
             }}
             transition={{
               rotateY: {
@@ -235,7 +234,10 @@ export function GambleReveal({
               className="absolute inset-0"
               style={{ backfaceVisibility: "hidden" }}
             >
-              <MysteryCard playerValue={newPlayer.value} suspenseDuration={config.suspenseDuration} />
+              <MysteryCard
+                playerValue={newPlayer.value}
+                suspenseDuration={config.suspenseDuration}
+              />
             </div>
 
             {/* Back face (player reveal) */}

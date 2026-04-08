@@ -2,7 +2,9 @@ import { getDisplayName, pluralize } from "../format";
 
 describe("getDisplayName", () => {
   it("returns name when present", () => {
-    expect(getDisplayName({ name: "Alice", username: "alice99" })).toBe("Alice");
+    expect(getDisplayName({ name: "Alice", username: "alice99" })).toBe(
+      "Alice",
+    );
   });
 
   it("falls back to username when name is null", () => {

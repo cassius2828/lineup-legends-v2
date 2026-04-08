@@ -3,7 +3,10 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import type { GambleOutcomeTier, PlayerOutput } from "~/server/api/schemas/output";
+import type {
+  GambleOutcomeTier,
+  PlayerOutput,
+} from "~/server/api/schemas/output";
 import { GambleReveal } from "~/app/lineups/[id]/gamble/_components/GambleReveal";
 import {
   VALUE_COLORS,
@@ -19,56 +22,56 @@ const OUTCOME_TIERS: {
   prevValue: number;
   newValue: number;
 }[] = [
-    {
-      tier: "jackpot",
-      label: "Jackpot",
-      description: "+4 value jump ($1 → $5 Diamond)",
-      prevValue: 1,
-      newValue: 5,
-    },
-    {
-      tier: "big_win",
-      label: "Big Win",
-      description: "+2 value jump ($3 → $5 Diamond)",
-      prevValue: 3,
-      newValue: 5,
-    },
-    {
-      tier: "upgrade",
-      label: "Upgrade",
-      description: "+1 value jump ($3 → $4 Amethyst)",
-      prevValue: 3,
-      newValue: 4,
-    },
-    {
-      tier: "neutral",
-      label: "Neutral",
-      description: "Same value (e.g. $3 → $3)",
-      prevValue: 3,
-      newValue: 3,
-    },
-    {
-      tier: "downgrade",
-      label: "Downgrade",
-      description: "-1 value drop (e.g. $3 → $2)",
-      prevValue: 3,
-      newValue: 2,
-    },
-    {
-      tier: "big_loss",
-      label: "Big Loss",
-      description: "-2 value drop (e.g. $4 → $2)",
-      prevValue: 4,
-      newValue: 2,
-    },
-    {
-      tier: "disaster",
-      label: "Disaster",
-      description: "-3 value drop (e.g. $5 → $2)",
-      prevValue: 5,
-      newValue: 2,
-    },
-  ];
+  {
+    tier: "jackpot",
+    label: "Jackpot",
+    description: "+4 value jump ($1 → $5 Diamond)",
+    prevValue: 1,
+    newValue: 5,
+  },
+  {
+    tier: "big_win",
+    label: "Big Win",
+    description: "+2 value jump ($3 → $5 Diamond)",
+    prevValue: 3,
+    newValue: 5,
+  },
+  {
+    tier: "upgrade",
+    label: "Upgrade",
+    description: "+1 value jump ($3 → $4 Amethyst)",
+    prevValue: 3,
+    newValue: 4,
+  },
+  {
+    tier: "neutral",
+    label: "Neutral",
+    description: "Same value (e.g. $3 → $3)",
+    prevValue: 3,
+    newValue: 3,
+  },
+  {
+    tier: "downgrade",
+    label: "Downgrade",
+    description: "-1 value drop (e.g. $3 → $2)",
+    prevValue: 3,
+    newValue: 2,
+  },
+  {
+    tier: "big_loss",
+    label: "Big Loss",
+    description: "-2 value drop (e.g. $4 → $2)",
+    prevValue: 4,
+    newValue: 2,
+  },
+  {
+    tier: "disaster",
+    label: "Disaster",
+    description: "-3 value drop (e.g. $5 → $2)",
+    prevValue: 5,
+    newValue: 2,
+  },
+];
 
 function mockPlayer(value: number): PlayerOutput {
   const label = VALUE_LABELS[value] ?? "Unknown";
@@ -107,15 +110,15 @@ export default function GambleAnimationsTestPage() {
       <div className="mb-8">
         <Link
           href="/admin"
-          className="mb-2 inline-flex items-center gap-1 text-sm text-foreground/50 hover:text-foreground/80"
+          className="text-foreground/50 hover:text-foreground/80 mb-2 inline-flex items-center gap-1 text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Admin
         </Link>
-        <h1 className="text-3xl font-bold text-foreground">
+        <h1 className="text-foreground text-3xl font-bold">
           Gamble Animation <span className="text-green-400">Tester</span>
         </h1>
-        <p className="mt-1 text-foreground/50">
+        <p className="text-foreground/50 mt-1">
           Preview all 7 outcome tier animations. Pick a tier to demo it.
         </p>
       </div>
@@ -132,10 +135,11 @@ export default function GambleAnimationsTestPage() {
             <button
               key={tier}
               onClick={() => handleSelect(tier)}
-              className={`group relative rounded-xl border p-4 text-left transition-all ${isActive
+              className={`group relative rounded-xl border p-4 text-left transition-all ${
+                isActive
                   ? "border-green-500 bg-green-500/10 ring-1 ring-green-500/50"
                   : "border-foreground/10 bg-foreground/3 hover:border-foreground/20 hover:bg-foreground/5"
-                }`}
+              }`}
             >
               {/* Tier color indicator dot */}
               <div className="mb-2 flex items-center gap-2">
@@ -147,7 +151,7 @@ export default function GambleAnimationsTestPage() {
                   }}
                 />
                 <span
-                  className="text-sm font-bold uppercase tracking-wide"
+                  className="text-sm font-bold tracking-wide uppercase"
                   style={{
                     color:
                       category === "positive"
@@ -161,28 +165,28 @@ export default function GambleAnimationsTestPage() {
                 </span>
               </div>
 
-              <p className="text-xs text-foreground/40">{description}</p>
+              <p className="text-foreground/40 text-xs">{description}</p>
 
               {/* Quick stats */}
               <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded bg-foreground/5 px-1.5 py-0.5 text-[10px] text-foreground/30">
+                <span className="bg-foreground/5 text-foreground/30 rounded px-1.5 py-0.5 text-[10px]">
                   flip: {config.flipDuration}s
                 </span>
-                <span className="rounded bg-foreground/5 px-1.5 py-0.5 text-[10px] text-foreground/30">
+                <span className="bg-foreground/5 text-foreground/30 rounded px-1.5 py-0.5 text-[10px]">
                   suspense: {config.suspenseDuration}ms
                 </span>
                 {config.confettiCount > 0 && (
-                  <span className="rounded bg-foreground/5 px-1.5 py-0.5 text-[10px] text-foreground/30">
+                  <span className="bg-foreground/5 text-foreground/30 rounded px-1.5 py-0.5 text-[10px]">
                     confetti: {config.confettiCount}
                   </span>
                 )}
                 {config.screenShake && (
-                  <span className="rounded bg-foreground/5 px-1.5 py-0.5 text-[10px] text-foreground/30">
+                  <span className="bg-foreground/5 text-foreground/30 rounded px-1.5 py-0.5 text-[10px]">
                     shake
                   </span>
                 )}
                 {config.lightBeams && (
-                  <span className="rounded bg-foreground/5 px-1.5 py-0.5 text-[10px] text-foreground/30">
+                  <span className="bg-foreground/5 text-foreground/30 rounded px-1.5 py-0.5 text-[10px]">
                     beams
                   </span>
                 )}
@@ -193,17 +197,17 @@ export default function GambleAnimationsTestPage() {
       </div>
 
       {/* Animation preview area */}
-      <div className="rounded-2xl border border-foreground/10 bg-surface-800/80 p-6">
+      <div className="border-foreground/10 bg-surface-800/80 rounded-2xl border p-6">
         {activeTier && activeConfig ? (
           <>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-foreground">
+              <h2 className="text-foreground text-lg font-semibold">
                 Preview:{" "}
                 <span className="text-green-400">{activeConfig.label}</span>
               </h2>
               <button
                 onClick={handleReplay}
-                className="rounded-lg bg-foreground/10 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground/20"
+                className="bg-foreground/10 text-foreground hover:bg-foreground/20 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
               >
                 Replay
               </button>
@@ -219,7 +223,7 @@ export default function GambleAnimationsTestPage() {
             />
           </>
         ) : (
-          <div className="flex min-h-[420px] flex-col items-center justify-center gap-3 text-foreground/30">
+          <div className="text-foreground/30 flex min-h-[420px] flex-col items-center justify-center gap-3">
             <span className="text-5xl">🎲</span>
             <p className="text-sm">Select an outcome tier above to preview</p>
           </div>

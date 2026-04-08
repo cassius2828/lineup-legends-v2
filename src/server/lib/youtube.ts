@@ -75,9 +75,7 @@ function parseTimestamps(
   const timestamps: { time: number; label: string }[] = [];
 
   for (const line of lines) {
-    const match = line
-      .trim()
-      .match(/^(\d{1,2}(?::\d{2}){1,2})\s+(.+)$/);
+    const match = line.trim().match(/^(\d{1,2}(?::\d{2}){1,2})\s+(.+)$/);
     if (!match?.[1] || !match[2]) continue;
 
     const parts = match[1].split(":").map(Number);
@@ -125,7 +123,8 @@ export async function fetchYouTubeMetadata(
     youtubeId: videoId,
     title: snippet.title,
     description: snippet.description,
-    thumbnailUrl: thumb?.url ?? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    thumbnailUrl:
+      thumb?.url ?? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
     duration: formatDuration(contentDetails.duration),
     timestamps: parseTimestamps(snippet.description),
   };

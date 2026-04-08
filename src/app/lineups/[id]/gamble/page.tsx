@@ -5,9 +5,16 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import type { PlayerOutput, GambleOutcomeTier } from "~/server/api/schemas/output";
+import type {
+  PlayerOutput,
+  GambleOutcomeTier,
+} from "~/server/api/schemas/output";
 import { PlayerImage } from "~/app/_components/PlayerImage";
-import { POSITIONS_LOWER, POSITION_LABELS, VALUE_SHADOWS } from "~/lib/constants";
+import {
+  POSITIONS_LOWER,
+  POSITION_LABELS,
+  VALUE_SHADOWS,
+} from "~/lib/constants";
 import { GambleReveal } from "./_components/GambleReveal";
 
 type PageView = "selection" | "animating" | "result";
@@ -67,9 +74,9 @@ export default function GambleLineupPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+      <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
         <div className="flex h-64 items-center justify-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-foreground/20 border-t-gold" />
+          <div className="border-foreground/20 border-t-gold mx-auto h-12 w-12 animate-spin rounded-full border-4" />
         </div>
       </main>
     );
@@ -77,9 +84,9 @@ export default function GambleLineupPage() {
 
   if (!lineup) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+      <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
         <div className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold text-foreground">
+          <h1 className="text-foreground text-2xl font-bold">
             Lineup not found
           </h1>
           <Link
@@ -94,13 +101,13 @@ export default function GambleLineupPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-surface-950 via-surface-800 to-surface-950">
+    <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
       <div className="container mx-auto max-w-2xl px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/lineups"
-            className="mb-2 inline-flex items-center gap-1 text-sm text-foreground/60 hover:text-foreground/80"
+            className="text-foreground/60 hover:text-foreground/80 mb-2 inline-flex items-center gap-1 text-sm"
           >
             <svg
               className="h-4 w-4"
@@ -117,17 +124,17 @@ export default function GambleLineupPage() {
             </svg>
             Back to My Lineups
           </Link>
-          <h1 className="text-3xl font-bold text-foreground">
+          <h1 className="text-foreground text-3xl font-bold">
             <span className="text-gold">Gamble</span> a Player
           </h1>
-          <p className="mt-1 text-foreground/60">
+          <p className="text-foreground/60 mt-1">
             Trade a player for a random player of similar value
           </p>
         </div>
 
         {/* Animation View */}
         {view === "animating" && gambleResult && (
-          <div className="mb-8 rounded-2xl bg-surface-800/80 p-6">
+          <div className="bg-surface-800/80 mb-8 rounded-2xl p-6">
             <GambleReveal
               previousPlayer={gambleResult.previousPlayer}
               newPlayer={gambleResult.newPlayer}
@@ -140,8 +147,8 @@ export default function GambleLineupPage() {
 
         {/* Final Result View */}
         {view === "result" && gambleResult && (
-          <div className="mb-8 rounded-2xl bg-surface-800/80 p-6">
-            <h2 className="mb-6 text-center text-xl font-bold text-foreground">
+          <div className="bg-surface-800/80 mb-8 rounded-2xl p-6">
+            <h2 className="text-foreground mb-6 text-center text-xl font-bold">
               Gamble Result
             </h2>
 
@@ -157,10 +164,10 @@ export default function GambleLineupPage() {
                     className="absolute inset-0 h-full w-full rounded-full object-cover"
                   />
                 </div>
-                <p className="mt-2 font-semibold text-foreground line-through">
+                <p className="text-foreground mt-2 font-semibold line-through">
                   {gambleResult.previousPlayer.firstName}
                 </p>
-                <p className="text-sm text-foreground/50">
+                <p className="text-foreground/50 text-sm">
                   ${gambleResult.previousPlayer.value}
                 </p>
               </div>
@@ -179,17 +186,17 @@ export default function GambleLineupPage() {
                     className="absolute inset-0 h-full w-full rounded-full object-cover"
                   />
                   {gambleResult.valueChange > 0 && (
-                    <span className="absolute -top-2 -right-2 rounded-full bg-emerald-500 px-2 py-1 text-xs font-bold text-foreground">
+                    <span className="text-foreground absolute -top-2 -right-2 rounded-full bg-emerald-500 px-2 py-1 text-xs font-bold">
                       +{gambleResult.valueChange}
                     </span>
                   )}
                   {gambleResult.valueChange < 0 && (
-                    <span className="absolute -top-2 -right-2 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-foreground">
+                    <span className="text-foreground absolute -top-2 -right-2 rounded-full bg-red-500 px-2 py-1 text-xs font-bold">
                       {gambleResult.valueChange}
                     </span>
                   )}
                 </div>
-                <p className="mt-2 font-semibold text-foreground">
+                <p className="text-foreground mt-2 font-semibold">
                   {gambleResult.newPlayer.firstName}{" "}
                   {gambleResult.newPlayer.lastName}
                 </p>
@@ -202,13 +209,13 @@ export default function GambleLineupPage() {
             <div className="mt-6 flex gap-3">
               <button
                 onClick={handleReset}
-                className="flex-1 rounded-lg bg-gold py-3 font-semibold text-black transition-colors hover:bg-gold-light"
+                className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors"
               >
                 Gamble Again
               </button>
               <Link
                 href="/lineups"
-                className="flex-1 rounded-lg bg-foreground/10 py-3 text-center font-medium text-foreground transition-colors hover:bg-foreground/20"
+                className="bg-foreground/10 text-foreground hover:bg-foreground/20 flex-1 rounded-lg py-3 text-center font-medium transition-colors"
               >
                 Done
               </Link>
@@ -221,7 +228,7 @@ export default function GambleLineupPage() {
           <>
             {/* Select Position */}
             <div className="mb-6">
-              <h2 className="mb-4 text-lg font-semibold text-foreground">
+              <h2 className="text-foreground mb-4 text-lg font-semibold">
                 Select a player to gamble:
               </h2>
               <div className="flex gap-3 overflow-x-auto">
@@ -236,11 +243,11 @@ export default function GambleLineupPage() {
                       onClick={() => setSelectedPosition(pos)}
                       className={`min-w-[5rem] shrink-0 grow basis-0 rounded-xl p-3 transition-all ${
                         isSelected
-                          ? "bg-gold/20 ring-2 ring-gold"
+                          ? "bg-gold/20 ring-gold ring-2"
                           : "bg-surface-800/80 hover:bg-surface-700"
                       }`}
                     >
-                      <span className="mb-1 block text-xs font-bold text-foreground/50">
+                      <span className="text-foreground/50 mb-1 block text-xs font-bold">
                         {POSITION_LABELS[pos]}
                       </span>
                       <div
@@ -252,12 +259,10 @@ export default function GambleLineupPage() {
                           className="absolute inset-0 h-full w-full rounded-full object-cover"
                         />
                       </div>
-                      <p className="mt-2 truncate text-sm font-medium text-foreground">
+                      <p className="text-foreground mt-2 truncate text-sm font-medium">
                         {player.firstName}
                       </p>
-                      <p className="text-gold text-xs">
-                        ${player.value}
-                      </p>
+                      <p className="text-gold text-xs">${player.value}</p>
                     </button>
                   );
                 })}
@@ -266,8 +271,8 @@ export default function GambleLineupPage() {
 
             {/* Selected Player Info */}
             {selectedPosition && (
-              <div className="mb-6 rounded-xl bg-surface-800/80 p-4">
-                <p className="text-sm text-foreground/60">
+              <div className="bg-surface-800/80 mb-6 rounded-xl p-4">
+                <p className="text-foreground/60 text-sm">
                   Gambling{" "}
                   <strong className="text-foreground">
                     {lineup.players[selectedPosition]?.firstName}{" "}
@@ -282,14 +287,14 @@ export default function GambleLineupPage() {
             <div className="flex gap-3">
               <Link
                 href="/lineups"
-                className="flex-1 rounded-lg bg-foreground/10 py-3 text-center font-medium text-foreground transition-colors hover:bg-foreground/20"
+                className="bg-foreground/10 text-foreground hover:bg-foreground/20 flex-1 rounded-lg py-3 text-center font-medium transition-colors"
               >
                 Cancel
               </Link>
               <button
                 onClick={handleGamble}
                 disabled={!selectedPosition || gambleMutation.isPending}
-                className="flex-1 rounded-lg bg-gold py-3 font-semibold text-black transition-colors hover:bg-gold-light disabled:opacity-50"
+                className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:opacity-50"
               >
                 {gambleMutation.isPending ? "Gambling..." : "🎲 Gamble!"}
               </button>
@@ -298,7 +303,7 @@ export default function GambleLineupPage() {
         )}
 
         {/* Times gambled */}
-        <p className="mt-6 text-center text-sm text-foreground/40">
+        <p className="text-foreground/40 mt-6 text-center text-sm">
           This lineup has been gambled {lineup.timesGambled} time
           {lineup.timesGambled !== 1 ? "s" : ""}
         </p>

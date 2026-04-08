@@ -160,19 +160,21 @@ describe("LineupModel", () => {
     it("should have an id virtual", () => {
       const objectId = new mongoose.Types.ObjectId();
       const lineup = new LineupModel({ _id: objectId, ...validLineupData() });
-      expect((lineup as unknown as { id: string }).id).toBe(objectId.toHexString());
+      expect((lineup as unknown as { id: string }).id).toBe(
+        objectId.toHexString(),
+      );
     });
 
     it("should include virtuals in toJSON output", () => {
       const lineup = new LineupModel(validLineupData());
       const json = lineup.toJSON();
-      expect(json).toHaveProperty('id');
+      expect(json).toHaveProperty("id");
     });
 
     it("should include virtuals in toObject output", () => {
       const lineup = new LineupModel(validLineupData());
       const obj = lineup.toObject();
-      expect(obj).toHaveProperty('id');
+      expect(obj).toHaveProperty("id");
     });
   });
 
