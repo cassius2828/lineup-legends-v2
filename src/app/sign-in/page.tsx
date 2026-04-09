@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import CredentialsForm from "./components/CredentialsForm";
+import SignUpForm from "./components/SignUpForm";
 
 export type LoadingProvider = "credentials" | "google";
 
@@ -49,6 +50,9 @@ function SignInContent() {
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [signUpName, setSignUpName] = useState("");
+  const [signUpEmail, setSignUpEmail] = useState("");
+  const [signUpPassword, setSignUpPassword] = useState("");
   const [isLoading, setIsLoading] = useState<LoadingProvider | null>(null);
   const [error, setError] = useState<string | null>(
     errorType ? (ERROR_MESSAGES[errorType] ?? ERROR_MESSAGES.Default!) : null,
@@ -84,6 +88,54 @@ function SignInContent() {
 
       if (result?.error) {
         setError(ERROR_MESSAGES.CredentialsSignin!);
+        setIsLoading(null);
+      } else {
+        window.location.href = callbackUrl;
+      }
+    } catch {
+      setError(ERROR_MESSAGES.Default!);
+      setIsLoading(null);
+    }
+  };
+
+  const handleCredentialsSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signUpName.trim() || !signUpEmail.trim() || !signUpPassword) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    setIsLoading("credentials");
+    setError(null);
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: signUpName.trim(),
+          email: signUpEmail.trim(),
+          password: signUpPassword,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json()) as { error?: string };
+        setError(data.error ?? "Failed to create account.");
+        setIsLoading(null);
+        return;
+      }
+
+      const result = await signIn("credentials", {
+        identifier: signUpEmail.trim(),
+        password: signUpPassword,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError(
+          "Account created but sign-in failed. Please sign in manually.",
+        );
         setIsLoading(null);
       } else {
         window.location.href = callbackUrl;
@@ -160,10 +212,28 @@ function SignInContent() {
           </button>
 
           {isSignUp ? (
-            /* Sign-up footer inside card */
-            <p className="text-foreground/40 mt-6 text-center text-sm">
-              Your Google account is all you need to get started.
-            </p>
+            <>
+              {/* Divider */}
+              <div className="my-6 flex items-center gap-4">
+                <div className="bg-foreground/10 h-px flex-1" />
+                <span className="text-foreground/30 text-xs tracking-wider uppercase">
+                  or
+                </span>
+                <div className="bg-foreground/10 h-px flex-1" />
+              </div>
+
+              {/* Sign-up credentials form */}
+              <SignUpForm
+                handleCredentialsSignUp={handleCredentialsSignUp}
+                name={signUpName}
+                setName={setSignUpName}
+                email={signUpEmail}
+                setEmail={setSignUpEmail}
+                password={signUpPassword}
+                setPassword={setSignUpPassword}
+                isLoading={isLoading}
+              />
+            </>
           ) : (
             <>
               {/* Divider */}

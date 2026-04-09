@@ -60,15 +60,17 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
             href={`/profile/${session.user.id}`}
             className="flex items-center gap-2 transition-opacity hover:opacity-80"
           >
-            {session.user.image && (
-              <Image
-                src={session.user.image}
-                alt={session.user.name ?? "User"}
-                className="ring-gold/20 rounded-full ring-2"
-                width={32}
-                height={32}
-              />
-            )}
+            <Image
+              src={
+                session.user.image ??
+                session.user.profileImg ??
+                "/default-user.jpg"
+              }
+              alt={session.user.name ?? "User"}
+              className="ring-gold/20 rounded-full ring-2"
+              width={32}
+              height={32}
+            />
             <span className="text-foreground/60 hidden text-sm sm:block">
               {session.user.name}
             </span>

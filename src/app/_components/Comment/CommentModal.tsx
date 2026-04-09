@@ -191,17 +191,13 @@ export default function CommentModal({
               {session ? (
                 <div className="px-5 py-4">
                   <div className="flex gap-3">
-                    {userImage ? (
-                      <Image
-                        src={userImage}
-                        alt={session?.name ?? "You"}
-                        width={36}
-                        height={36}
-                        className="h-9 w-9 shrink-0 rounded-full"
-                      />
-                    ) : (
-                      <div className="bg-foreground/10 h-9 w-9 shrink-0 rounded-full" />
-                    )}
+                    <Image
+                      src={userImage ?? "/default-user.jpg"}
+                      alt={session?.name ?? "You"}
+                      width={36}
+                      height={36}
+                      className="h-9 w-9 shrink-0 rounded-full"
+                    />
                     <div className="flex-1">
                       <textarea
                         ref={textareaRef}
@@ -254,21 +250,17 @@ export default function CommentModal({
                 {/* Parent comment with connector line */}
                 <div className="flex gap-3">
                   <div className="flex w-9 shrink-0 flex-col items-center">
-                    {(parentComment.user.image ??
-                    parentComment.user.profileImg) ? (
-                      <Image
-                        src={
-                          (parentComment.user.image ??
-                            parentComment.user.profileImg)!
-                        }
-                        alt={parentDisplayName}
-                        width={36}
-                        height={36}
-                        className="h-9 w-9 shrink-0 rounded-full"
-                      />
-                    ) : (
-                      <div className="bg-foreground/10 h-9 w-9 shrink-0 rounded-full" />
-                    )}
+                    <Image
+                      src={
+                        parentComment.user.image ??
+                        parentComment.user.profileImg ??
+                        "/default-user.jpg"
+                      }
+                      alt={parentDisplayName}
+                      width={36}
+                      height={36}
+                      className="h-9 w-9 shrink-0 rounded-full"
+                    />
                     {allThreads.length > 0 && (
                       <div className="bg-foreground/20 mt-2 w-0.5 flex-1" />
                     )}
@@ -343,17 +335,13 @@ export default function CommentModal({
                 <div className="border-foreground/10 border-t px-5 py-3">
                   <div className="flex gap-3">
                     <div className="w-9 shrink-0">
-                      {userImage ? (
-                        <Image
-                          src={userImage}
-                          alt={session?.name ?? "You"}
-                          width={36}
-                          height={36}
-                          className="h-9 w-9 shrink-0 rounded-full"
-                        />
-                      ) : (
-                        <div className="bg-foreground/10 h-9 w-9 shrink-0 rounded-full" />
-                      )}
+                      <Image
+                        src={userImage ?? "/default-user.jpg"}
+                        alt={session?.name ?? "You"}
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 shrink-0 rounded-full"
+                      />
                     </div>
                     <div className="min-w-0 flex-1">
                       <span className="text-foreground/40 mb-1 block text-xs">

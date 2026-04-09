@@ -151,7 +151,7 @@ export default function UserSearchPage() {
                 <Image
                   width={48}
                   height={48}
-                  src={user.image ?? user.profileImg ?? "/default-avatar.png"}
+                  src={user.image ?? user.profileImg ?? "/default-user.jpg"}
                   alt={user.name ?? "User"}
                   className="h-full w-full object-cover"
                 />

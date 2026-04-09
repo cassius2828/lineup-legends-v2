@@ -82,9 +82,7 @@ function FollowListModal({
                     <Image
                       width={40}
                       height={40}
-                      src={
-                        user.profileImg ?? user.image ?? "/default-avatar.png"
-                      }
+                      src={user.profileImg ?? user.image ?? "/default-user.jpg"}
                       alt={user.name ?? "User"}
                       className="h-full w-full object-cover"
                     />
@@ -351,7 +349,7 @@ export default function ProfilePage() {
             <Image
               width={128}
               height={128}
-              src={profile.profileImg ?? profile.image ?? "/default-avatar.png"}
+              src={profile.profileImg ?? profile.image ?? "/default-user.jpg"}
               alt={profile.name ?? "User"}
               className="h-full w-full object-cover"
             />

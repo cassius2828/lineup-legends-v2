@@ -215,21 +215,13 @@ export default function RequestedPlayerDetailPage() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  {desc.user?.image ? (
-                    <Image
-                      width={40}
-                      height={40}
-                      src={desc.user.image}
-                      alt={desc.user.name ?? "User"}
-                      className="h-10 w-10 rounded-full"
-                    />
-                  ) : (
-                    <div className="bg-foreground/10 flex h-10 w-10 items-center justify-center rounded-full">
-                      <span className="text-foreground/60 text-sm font-medium">
-                        {desc.user?.name?.charAt(0) ?? "?"}
-                      </span>
-                    </div>
-                  )}
+                  <Image
+                    width={40}
+                    height={40}
+                    src={desc.user?.image ?? "/default-user.jpg"}
+                    alt={desc.user?.name ?? "User"}
+                    className="h-10 w-10 rounded-full"
+                  />
                   <div>
                     <p className="text-foreground font-medium">
                       {desc.user?.name ?? "Unknown User"}

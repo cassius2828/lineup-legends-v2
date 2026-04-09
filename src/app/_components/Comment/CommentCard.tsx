@@ -67,17 +67,13 @@ export default function CommentCard({
   return (
     <div className="border-foreground/10 flex gap-3 border-b py-4 last:border-b-0">
       {/* Avatar */}
-      {avatar ? (
-        <Image
-          src={avatar}
-          alt={displayName}
-          width={36}
-          height={36}
-          className="h-9 w-9 shrink-0 rounded-full"
-        />
-      ) : (
-        <div className="bg-foreground/10 h-9 w-9 shrink-0 rounded-full" />
-      )}
+      <Image
+        src={avatar ?? "/default-user.jpg"}
+        alt={displayName}
+        width={36}
+        height={36}
+        className="h-9 w-9 shrink-0 rounded-full"
+      />
 
       {/* Content */}
       <div className="min-w-0 flex-1">
