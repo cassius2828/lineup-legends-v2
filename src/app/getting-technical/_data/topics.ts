@@ -30,6 +30,7 @@ export interface Topic {
 
 export const CATEGORIES = [
   { key: "features", label: "Core Features", color: "#e3b920" },
+  { key: "security", label: "Auth & Security", color: "#ef4444" },
   { key: "backend", label: "Backend Architecture", color: "#8317e8" },
   { key: "frontend", label: "Frontend & UX", color: "#99fcff" },
 ] as const;
@@ -362,42 +363,185 @@ _Content coming soon — add your video and detailed writeup here._
 
   {
     slug: "authentication",
-    title: "Authentication",
+    title: "Authentication & Sessions",
     description:
-      "NextAuth.js with Google OAuth, JWT sessions, and admin role management.",
-    category: "backend",
+      "NextAuth.js with Google OAuth, credentials login, JWT sessions, and admin role management.",
+    category: "security",
     icon: "🔐",
     videoId: "",
     status: "coming-soon",
     content: `
 ## Overview
 
-Authentication is handled by NextAuth.js (Auth.js) with Google OAuth as the primary provider. Sessions use JWT strategy for stateless auth.
+Authentication is handled by NextAuth.js v5 (Auth.js) with two providers: **Google OAuth** and **Credentials** (email/username + password). Sessions use the JWT strategy for stateless auth.
 
-## Auth Flow
+## Auth Providers
 
+### Google OAuth
 1. User clicks "Sign in with Google"
 2. OAuth flow with Google (consent screen, redirect)
-3. On first login: User document created in MongoDB
-4. JWT token issued with user ID, admin flag
-5. Session available server-side via \`auth()\` and client-side via \`useSession()\`
+3. On first login: User document created in MongoDB via the MongoDB adapter
+4. JWT token issued with user ID, admin flag, and profile data
+
+### Credentials
+1. User enters email/username and password
+2. \`authorize()\` callback finds user by email or username
+3. Password verified with bcrypt
+4. If MFA is enabled, \`mfaPending: true\` is set on the JWT — user must verify before accessing protected routes
+
+## JWT Callback Pipeline
+
+The \`jwt\` callback runs on every token refresh and handles:
+- Initial sign-in: captures user data + MFA flags from the authorize result
+- Session updates (\`trigger === "update"\`): refreshes DB data and checks for MFA verification via Redis
 
 ## Admin System
 
 - \`admin\` boolean on the User model (default \`false\`)
-- Set manually in the database
-- JWT callback reads \`admin\` from DB and stores it in the token
-- \`adminProcedure\` middleware checks the flag on every admin request
+- JWT callback reads \`admin\` from DB and injects it into the token
+- \`adminProcedure\` tRPC middleware checks the flag on every admin request
 
 ## Route Protection
 
+- **Edge middleware** — enforces MFA challenge redirect for users with \`mfaPending\`
 - **Server components** — \`auth()\` + redirect in layout files
-- **tRPC** — procedure-level middleware
-- **Client** — \`useSession()\` for conditional UI
+- **tRPC** — procedure-level middleware (\`protectedProcedure\`, \`adminProcedure\`)
+- **Client** — \`useSession()\` for conditional UI rendering
 
-## Technical Details
+_Content coming soon — add your video and detailed writeup here._
+`,
+  },
 
-<!-- Add details about session strategy decisions, token refresh, etc. -->
+  {
+    slug: "multi-factor-authentication",
+    title: "Multi-Factor Authentication",
+    description:
+      "TOTP authenticator apps, email verification codes, and WebAuthn passkeys as second factors.",
+    category: "security",
+    icon: "🛡️",
+    videoId: "",
+    status: "coming-soon",
+    content: `
+## Overview
+
+Users can enable one or more MFA methods as a second factor after password login. Three methods are supported: **Authenticator App (TOTP)**, **Email codes**, and **Passkeys (WebAuthn)**.
+
+## MFA Methods
+
+### Authenticator App (TOTP)
+- Secret generated with the \`otpauth\` library and encrypted with AES-256-GCM before storage
+- QR code displayed during setup for scanning with Google Authenticator, Authy, etc.
+- User must verify a code during setup to confirm the app is configured correctly
+- On login, the 6-digit time-based code is verified server-side with a ±1 window tolerance
+
+### Email Codes
+- 6-digit code generated with \`crypto.randomInt\` and stored in Redis with a 10-minute TTL
+- Sent via Resend transactional email with a branded HTML template
+- One-time use — deleted from Redis after successful verification
+
+### Passkeys (WebAuthn)
+- Registration and authentication powered by \`@simplewebauthn/server\` and \`@simplewebauthn/browser\`
+- Credentials stored in a dedicated \`Passkey\` MongoDB model with public key, counter, and transport info
+- Challenges stored in Redis with a 5-minute TTL to prevent replay attacks
+- Users can register multiple passkeys and name them for identification
+
+## Login Challenge Flow
+
+1. User signs in with credentials — \`mfaPending: true\` is set on the JWT
+2. Edge middleware intercepts all navigation and redirects to \`/sign-in/mfa-verify\`
+3. User selects a method and verifies
+4. Verify API sets a \`mfa-verified:{userId}\` flag in Redis
+5. Client calls \`updateSession()\` — JWT callback checks Redis, clears \`mfaPending\`
+6. User is redirected to the home page with full access
+
+## TOTP Secret Encryption
+
+Secrets are encrypted at rest using AES-256-GCM with the \`MFA_ENCRYPTION_KEY\` environment variable. The IV and auth tag are stored alongside the ciphertext, ensuring secrets are never in plaintext in the database.
+
+_Content coming soon — add your video and detailed writeup here._
+`,
+  },
+
+  {
+    slug: "password-account-recovery",
+    title: "Password & Account Recovery",
+    description:
+      "Change password, forgot/reset password email flow, and OAuth account password creation.",
+    category: "security",
+    icon: "🔑",
+    videoId: "",
+    status: "coming-soon",
+    content: `
+## Overview
+
+Password management covers three scenarios: changing an existing password, resetting a forgotten password via email, and creating a password for OAuth-only accounts.
+
+## Change Password (Settings)
+
+- Available in Profile Settings under Account Security
+- If the user already has a password: requires current password + new password with confirmation
+- If the user signed up via Google OAuth: shows "Set Password" with just new password + confirmation (no current password required)
+- Password validation enforces minimum length, uppercase, lowercase, number, and special character requirements
+
+## Forgot Password Flow
+
+1. User enters their email on \`/forgot-password\`
+2. API checks if the account exists and has a password
+3. **OAuth-only accounts** — returns a specific error directing the user to sign in with Google and create a password in settings
+4. **Accounts with a password** — generates a secure token (SHA-256 hashed), stores it in the \`PasswordResetToken\` collection with a 5-minute TTL, and sends a branded reset email via Resend
+5. User clicks the link, lands on \`/reset-password?token=...\`
+6. Token is verified and the user sets a new password
+
+## Token Security
+
+- Raw token sent in the email, SHA-256 hash stored in the database — even a database leak doesn't expose valid tokens
+- Tokens are single-use and expire after 5 minutes
+- All existing tokens for the user are deleted before creating a new one
+
+## OAuth Account Handling
+
+When an OAuth-only user hits the forgot password page, they see an informative message explaining they need to sign in with Google first. The "Sign in with Google" button triggers the OAuth flow directly (no extra step) and redirects to Profile Settings where they can create a password.
+
+_Content coming soon — add your video and detailed writeup here._
+`,
+  },
+
+  {
+    slug: "account-security-settings",
+    title: "Account Security Settings",
+    description:
+      "The settings UI for managing passwords, email, and MFA preferences.",
+    category: "security",
+    icon: "⚙️",
+    videoId: "",
+    status: "coming-soon",
+    content: `
+## Overview
+
+The Account Security section in Profile Settings provides a unified interface for managing all security-related account features.
+
+## Sections
+
+### Change / Set Password
+- Detects whether the user has an existing password or is an OAuth-only account
+- Adapts the form accordingly — "Change Password" (3 fields) vs "Set Password" (2 fields)
+
+### Update Email
+- Requires password confirmation before initiating an email change
+- Sends a confirmation link to the **new** email address via Resend
+- The email is only updated in the database after the user clicks the confirmation link
+- Confirmation tokens are stored on the User model and validated via a dedicated API route
+
+### Multi-Factor Authentication
+- Collapsible cards for each MFA method (TOTP, Email, Passkey)
+- TOTP shows a QR code wizard for setup with a verification step before enabling
+- Email MFA is a simple toggle
+- Passkey section shows registered passkeys with names and dates, plus a registration form
+- "Disable All MFA" button with confirmation for quick teardown
+
+## Data Flow
+
+All settings mutations go through the \`account\` tRPC router. The \`getMfaStatus\` query provides the current state of all security features in a single call, minimizing round trips.
 
 _Content coming soon — add your video and detailed writeup here._
 `,
