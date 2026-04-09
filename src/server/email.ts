@@ -119,8 +119,9 @@ export async function sendPasswordResetEmail({
   to,
   resetUrl,
 }: PasswordResetEmailParams) {
-  const { error } = await getResend().emails.send({
-    from: "Lineup Legends <onboarding@resend.dev>",
+  log.info({ to }, "Attempting to send password reset email");
+  const { data, error } = await getResend().emails.send({
+    from: FROM_ADDRESS,
     to,
     subject: "Reset your Lineup Legends password",
     html: `
@@ -174,4 +175,9 @@ export async function sendPasswordResetEmail({
     log.error({ err: error }, "Failed to send password reset email");
     throw new Error("Failed to send password reset email");
   }
+
+  log.info(
+    { to, emailId: data?.id },
+    "Password reset email accepted by Resend",
+  );
 }

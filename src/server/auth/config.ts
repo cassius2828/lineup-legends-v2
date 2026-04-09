@@ -6,6 +6,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { env } from "~/env";
 import { ensureEnvs } from "~/lib/ensureEnvs";
 import { connectDB, getMongoClient } from "~/server/db";
+import { redis } from "~/server/redis";
 import { UserModel } from "../models";
 
 /**
@@ -171,14 +172,14 @@ export const authConfig = {
           token.name = dbUser?.name ?? null;
           token.image = dbUser?.image ?? null;
 
-          // On session update (after MFA verification), clear mfaPending
-          if (trigger === "update") {
-            if (dbUser.mfaEnabled) {
-              // Keep mfaPending only if explicitly set (cleared via session update)
-              // If the trigger is "update" and token already has mfaPending=false, keep it
-            } else {
+          if (trigger === "update" && token.mfaPending === true) {
+            const verified = await redis.get(
+              `mfa-verified:${dbUser._id.toString()}`,
+            );
+            if (verified) {
               delete token.mfaPending;
               delete token.mfaMethods;
+              await redis.del(`mfa-verified:${dbUser._id.toString()}`);
             }
           }
         }

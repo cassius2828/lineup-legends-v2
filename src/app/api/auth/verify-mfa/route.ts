@@ -150,6 +150,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // Store verification flag so the JWT callback can trust the session update
+    await redis.set(`mfa-verified:${userId}`, "1", "EX", 60);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("MFA verification error:", error);

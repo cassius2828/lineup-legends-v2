@@ -26,7 +26,6 @@ const PasskeySchema = new Schema<PasskeyDoc>({
 });
 
 PasskeySchema.index({ userId: 1 });
-PasskeySchema.index({ credentialId: 1 }, { unique: true });
 
 PasskeySchema.virtual("id").get(function (this: PasskeyDoc) {
   return this._id.toHexString();

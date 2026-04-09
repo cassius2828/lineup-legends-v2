@@ -111,8 +111,8 @@ export default function MfaVerifyPage() {
         }
       }
 
-      // Clear mfaPending from session
-      await updateSession();
+      // Trigger session refresh — JWT callback checks Redis for verification flag
+      await updateSession({ mfaVerified: true });
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification failed");

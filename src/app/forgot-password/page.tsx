@@ -1,9 +1,10 @@
 "use client";
 
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useState } from "react";
 
-type PageState = "form" | "loading" | "success";
+type PageState = "form" | "loading" | "success" | "oauth_only";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -28,7 +29,11 @@ export default function ForgotPasswordPage() {
       });
 
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
+        const data = (await res.json()) as { error?: string; code?: string };
+        if (data.code === "OAUTH_ONLY") {
+          setState("oauth_only");
+          return;
+        }
         setError(data.error ?? "Something went wrong. Please try again.");
         setState("form");
         return;
@@ -73,7 +78,43 @@ export default function ForgotPasswordPage() {
 
         {/* Card */}
         <div className="border-foreground/10 bg-foreground/[0.03] rounded-xl border p-6 backdrop-blur-sm sm:p-8">
-          {state === "success" ? (
+          {state === "oauth_only" ? (
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-amber-500/20 bg-amber-500/10">
+                <svg
+                  className="h-7 w-7 text-amber-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-foreground mb-2 text-lg font-semibold">
+                No password on this account
+              </h2>
+              <p className="text-foreground/50 mb-6 text-sm">
+                This account was created with Google sign-in and doesn&apos;t
+                have a password yet. Sign in with Google, then go to{" "}
+                <span className="text-gold font-medium">Profile Settings</span>{" "}
+                to create a password.
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  signIn("google", { callbackUrl: "/profile/settings" })
+                }
+                className="border-gold bg-gold/10 hover:bg-gold hover:glow-gold-sm text-foreground cursor-pointer rounded-lg border-2 px-6 py-2.5 text-sm font-semibold transition-all hover:text-black"
+              >
+                Sign in with Google
+              </button>
+            </div>
+          ) : state === "success" ? (
             <div className="text-center">
               <div className="bg-gold/10 border-gold/20 mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border">
                 <svg

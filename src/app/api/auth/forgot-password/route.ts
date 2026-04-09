@@ -32,8 +32,21 @@ export async function POST(request: Request) {
 
     const user = await UserModel.findOne({ email }).lean();
 
-    if (!user || !user.password) {
+    if (!user) {
+      log.info({ email }, "Password reset requested for non-existent email");
       return NextResponse.json({ message: genericMessage });
+    }
+
+    if (!user.password) {
+      log.info({ email }, "Password reset requested for OAuth-only account");
+      return NextResponse.json(
+        {
+          error:
+            "This account uses Google sign-in and doesn't have a password yet. Please sign in with Google, then create a password in your profile settings.",
+          code: "OAUTH_ONLY",
+        },
+        { status: 400 },
+      );
     }
 
     await PasswordResetTokenModel.deleteMany({ userId: user._id });
@@ -54,6 +67,7 @@ export async function POST(request: Request) {
     const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
 
     await sendPasswordResetEmail({ to: email, resetUrl });
+    log.info({ email }, "Password reset email sent successfully");
 
     return NextResponse.json({ message: genericMessage });
   } catch (error) {
