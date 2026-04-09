@@ -20,6 +20,8 @@ declare module "next-auth" {
       admin?: boolean;
       username?: string | null;
       profileImg?: string | null;
+      mfaPending?: boolean;
+      mfaMethods?: string[];
     } & DefaultSession["user"];
   }
 }
@@ -115,7 +117,6 @@ export const authConfig = {
           throw new Error("Invalid credentials2");
         }
 
-        // Return user object with id as string
         return {
           id: user._id.toString(),
           name: user.name,
@@ -123,6 +124,8 @@ export const authConfig = {
           email: user.email,
           image: user.image,
           profileImg: user.profileImg,
+          mfaPending: user.mfaEnabled === true,
+          mfaMethods: (user.mfaMethods ?? []) as string[],
         };
       },
     }),
@@ -130,10 +133,20 @@ export const authConfig = {
   adapter: MongoDBAdapter(getMongoClient()),
   callbacks: {
     async jwt({ token, user, trigger }) {
-      // On initial sign-in, user object is available
-      // Store the user id in the token
+      // On initial sign-in, capture MFA flags from the authorize result
+      if (user) {
+        const u = user as typeof user & {
+          mfaPending?: boolean;
+          mfaMethods?: string[];
+        };
+        if (u.mfaPending) {
+          token.mfaPending = true;
+          token.mfaMethods = u.mfaMethods ?? [];
+        }
+      }
+
+      // On sign-in or explicit session update, refresh DB data
       if (user || trigger === "update") {
-        // Fetch admin status from database
         await connectDB();
         const email =
           typeof user?.email === "string"
@@ -147,7 +160,6 @@ export const authConfig = {
         const dbUser = await UserModel.findOne({ email }).lean();
         if (dbUser) {
           token.id = dbUser?._id.toString() ?? "";
-          // Only store true on the JWT; missing/false/undefined in DB → no flag
           if (dbUser.admin === true) {
             token.admin = true;
           } else {
@@ -158,6 +170,17 @@ export const authConfig = {
           token.email = dbUser?.email ?? null;
           token.name = dbUser?.name ?? null;
           token.image = dbUser?.image ?? null;
+
+          // On session update (after MFA verification), clear mfaPending
+          if (trigger === "update") {
+            if (dbUser.mfaEnabled) {
+              // Keep mfaPending only if explicitly set (cleared via session update)
+              // If the trigger is "update" and token already has mfaPending=false, keep it
+            } else {
+              delete token.mfaPending;
+              delete token.mfaMethods;
+            }
+          }
         }
       }
       return token;
@@ -166,8 +189,6 @@ export const authConfig = {
       if (typeof token.id !== "string") {
         throw new Error("User ID is not a string");
       }
-
-      // Fetch fresh user data from database (in case it changed)
 
       if (token.admin === true) {
         session.user.admin = true;
@@ -180,6 +201,14 @@ export const authConfig = {
       session.user.email = token.email!;
       session.user.name = (token.name as string | null) ?? null;
       session.user.image = (token.image as string | null) ?? null;
+
+      if (token.mfaPending === true) {
+        session.user.mfaPending = true;
+        session.user.mfaMethods = (token.mfaMethods as string[]) ?? [];
+      } else {
+        delete session.user.mfaPending;
+        delete session.user.mfaMethods;
+      }
 
       return session;
     },

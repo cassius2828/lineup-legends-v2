@@ -90,7 +90,17 @@ function SignInContent() {
         setError(ERROR_MESSAGES.CredentialsSignin!);
         setIsLoading(null);
       } else {
-        window.location.href = callbackUrl;
+        // Check if MFA is required by fetching the session
+        const sessionRes = await fetch("/api/auth/session");
+        const sessionData = (await sessionRes.json()) as {
+          user?: { mfaPending?: boolean };
+        };
+
+        if (sessionData?.user?.mfaPending) {
+          window.location.href = "/sign-in/mfa-verify";
+        } else {
+          window.location.href = callbackUrl;
+        }
       }
     } catch {
       setError(ERROR_MESSAGES.Default!);

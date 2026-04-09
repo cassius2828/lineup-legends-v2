@@ -1,18 +1,37 @@
 "use client";
 
-import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import DisplaySection from "./_components/DisplaySection";
+import ChangePasswordSection from "./_components/ChangePasswordSection";
+import UpdateEmailSection from "./_components/UpdateEmailSection";
+import PhoneNumberSection from "./_components/PhoneNumberSection";
+import MfaSection from "./_components/MfaSection";
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { data: profile } = api.profile.getMe.useQuery();
+  const { data: mfaStatus } = api.account.getMfaStatus.useQuery();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get("email-updated") === "true") {
+      toast.success("Email address updated successfully");
+    }
+    if (searchParams.get("error") === "invalid-token") {
+      toast.error("Invalid or expired confirmation link");
+    }
+    if (searchParams.get("error") === "confirmation-failed") {
+      toast.error("Email confirmation failed. Please try again.");
+    }
+  }, [searchParams]);
 
   if (!mounted) {
     return (
@@ -54,77 +73,44 @@ export default function SettingsPage() {
             </Link>
           )}
           <h1 className="text-foreground text-3xl font-bold">Settings</h1>
-          <p className="text-foreground/60 mt-1">Manage your preferences</p>
+          <p className="text-foreground/60 mt-1">
+            Manage your account and preferences
+          </p>
         </div>
 
-        {/* Display Section */}
-        <section className="border-foreground/10 bg-surface-800 rounded-2xl border p-6">
-          <h2 className="text-foreground mb-1 text-lg font-semibold">
-            Display
-          </h2>
-          <p className="text-foreground/50 mb-6 text-sm">
-            Choose your preferred appearance
-          </p>
+        <div className="space-y-6">
+          {/* Display Section */}
+          <DisplaySection />
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-foreground font-medium">Theme</p>
-              <p className="text-foreground/50 text-sm">
-                Select light or dark mode
-              </p>
-            </div>
+          {/* Account Security Section */}
+          <section className="border-foreground/10 bg-surface-800 rounded-2xl border p-6">
+            <h2 className="text-foreground mb-1 text-lg font-semibold">
+              Account Security
+            </h2>
+            <p className="text-foreground/50 mb-6 text-sm">
+              Manage your password, email, and phone number
+            </p>
 
-            {/* Theme Toggle */}
-            <div className="border-foreground/10 bg-surface-700 flex items-center gap-1 rounded-full border p-1">
-              <button
-                onClick={() => setTheme("dark")}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                  theme === "dark"
-                    ? "bg-foreground/10 text-foreground shadow-sm"
-                    : "text-foreground/50 hover:text-foreground/70"
-                }`}
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-                  />
-                </svg>
-                Dark
-              </button>
-              <button
-                onClick={() => setTheme("light")}
-                className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                  theme === "light"
-                    ? "bg-foreground/10 text-foreground shadow-sm"
-                    : "text-foreground/50 hover:text-foreground/70"
-                }`}
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                  />
-                </svg>
-                Light
-              </button>
+            <div className="space-y-4">
+              <ChangePasswordSection
+                hasPassword={mfaStatus?.hasPassword ?? false}
+              />
+
+              <UpdateEmailSection
+                currentEmail={mfaStatus?.email ?? profile?.email ?? ""}
+                hasPassword={mfaStatus?.hasPassword ?? false}
+              />
+
+              <PhoneNumberSection
+                currentPhone={mfaStatus?.phone ?? null}
+                phoneVerified={mfaStatus?.phoneVerified ?? false}
+              />
             </div>
-          </div>
-        </section>
+          </section>
+
+          {/* MFA Section */}
+          <MfaSection />
+        </div>
       </div>
     </main>
   );

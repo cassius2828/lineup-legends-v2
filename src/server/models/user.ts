@@ -1,5 +1,7 @@
 import mongoose, { Schema, type Document, type Model } from "mongoose";
 
+export type MfaMethod = "totp" | "sms" | "email" | "passkey";
+
 export interface SocialMedia {
   twitter?: string | null;
   instagram?: string | null;
@@ -24,6 +26,12 @@ export interface User {
   newEmail?: string | null;
   emailConfirmationToken?: string | null;
   admin?: boolean;
+  phone?: string | null;
+  phoneVerified?: boolean;
+  mfaEnabled: boolean;
+  mfaMethods: MfaMethod[];
+  totpSecret?: string | null;
+  pendingTotpSecret?: string | null;
 }
 
 // DB Type - for database operations
@@ -44,6 +52,12 @@ export interface UserDoc extends Document {
   newEmail?: string | null;
   emailConfirmationToken?: string | null;
   admin?: boolean;
+  phone?: string | null;
+  phoneVerified?: boolean;
+  mfaEnabled: boolean;
+  mfaMethods: MfaMethod[];
+  totpSecret?: string | null;
+  pendingTotpSecret?: string | null;
 }
 
 const SocialMediaSchema = new Schema<SocialMedia>(
@@ -72,6 +86,12 @@ const UserSchema = new Schema<UserDoc>(
     newEmail: { type: String, default: null },
     emailConfirmationToken: { type: String, default: null },
     admin: { type: Boolean, default: false },
+    phone: { type: String, default: null },
+    phoneVerified: { type: Boolean, default: false },
+    mfaEnabled: { type: Boolean, default: false },
+    mfaMethods: { type: [String], default: [] },
+    totpSecret: { type: String, default: null },
+    pendingTotpSecret: { type: String, default: null },
   },
   {
     timestamps: false,

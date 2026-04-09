@@ -1,6 +1,6 @@
 // Barrel export for all Mongoose models
 export { PlayerModel, type PlayerDoc } from "./player";
-export { UserModel, type UserDoc } from "./user";
+export { UserModel, type UserDoc, type MfaMethod } from "./user";
 export {
   LineupModel,
   type LineupDoc,
@@ -37,3 +37,4 @@ export {
   PasswordResetTokenModel,
   type PasswordResetTokenDoc,
 } from "./password-reset-token";
+export { PasskeyModel, type PasskeyDoc } from "./passkey";

@@ -10,6 +10,7 @@ function getResend(): Resend {
 }
 
 const ADMIN_EMAIL = "cassius.reynolds.dev@gmail.com";
+const FROM_ADDRESS = "Lineup Legends <onboarding@resend.dev>";
 
 interface FeedbackEmailParams {
   name: string;
@@ -25,7 +26,7 @@ export async function sendFeedbackEmail({
   message,
 }: FeedbackEmailParams) {
   const { error } = await getResend().emails.send({
-    from: "Lineup Legends <onboarding@resend.dev>",
+    from: FROM_ADDRESS,
     to: ADMIN_EMAIL,
     subject: `[Lineup Legends Feedback] ${subject}`,
     html: `
@@ -48,6 +49,64 @@ export async function sendFeedbackEmail({
   if (error) {
     log.error({ err: error }, "Failed to send feedback email");
     throw new Error("Failed to send feedback email");
+  }
+}
+
+export async function sendEmailChangeConfirmation({
+  to,
+  confirmUrl,
+}: {
+  to: string;
+  confirmUrl: string;
+}) {
+  const { error } = await getResend().emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: "Confirm Your New Email Address",
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #d4a843;">Email Change Confirmation</h2>
+        <hr style="border: 1px solid #e5e7eb;" />
+        <p>You requested to change your email address on Lineup Legends. Click the button below to confirm:</p>
+        <div style="text-align: center; margin: 32px 0;">
+          <a href="${confirmUrl}" style="background: #d4a843; color: #000; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">Confirm Email</a>
+        </div>
+        <p style="color: #6b7280; font-size: 14px;">If you didn't request this change, you can safely ignore this email.</p>
+        <hr style="border: 1px solid #e5e7eb; margin-top: 24px;" />
+        <p style="color: #6b7280; font-size: 12px;">Lineup Legends</p>
+      </div>
+    `,
+  });
+
+  if (error) {
+    log.error({ err: error }, "Failed to send email change confirmation");
+    throw new Error("Failed to send email change confirmation");
+  }
+}
+
+export async function sendMfaCode({ to, code }: { to: string; code: string }) {
+  const { error } = await getResend().emails.send({
+    from: FROM_ADDRESS,
+    to,
+    subject: "Your Lineup Legends Verification Code",
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #d4a843;">Verification Code</h2>
+        <hr style="border: 1px solid #e5e7eb;" />
+        <p>Your verification code is:</p>
+        <div style="text-align: center; margin: 32px 0;">
+          <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #d4a843;">${code}</span>
+        </div>
+        <p style="color: #6b7280; font-size: 14px;">This code expires in 10 minutes. If you didn't request this code, please secure your account.</p>
+        <hr style="border: 1px solid #e5e7eb; margin-top: 24px;" />
+        <p style="color: #6b7280; font-size: 12px;">Lineup Legends</p>
+      </div>
+    `,
+  });
+
+  if (error) {
+    log.error({ err: error }, "Failed to send MFA code email");
+    throw new Error("Failed to send verification code");
   }
 }
 
