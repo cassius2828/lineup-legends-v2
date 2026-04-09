@@ -33,3 +33,7 @@ export {
 } from "./feedback";
 export { BookmarkModel, type BookmarkDoc } from "./bookmark";
 export { VideoModel, type VideoDoc } from "./video";
+export {
+  PasswordResetTokenModel,
+  type PasswordResetTokenDoc,
+} from "./password-reset-token";

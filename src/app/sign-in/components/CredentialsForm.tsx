@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { LoadingProvider } from "../page";
 
 export default function CredentialsForm({
@@ -38,12 +39,20 @@ export default function CredentialsForm({
       </div>
 
       <div>
-        <label
-          htmlFor="password"
-          className="text-foreground/70 mb-2 block text-sm font-medium"
-        >
-          Password
-        </label>
+        <div className="mb-2 flex items-center justify-between">
+          <label
+            htmlFor="password"
+            className="text-foreground/70 text-sm font-medium"
+          >
+            Password
+          </label>
+          <Link
+            href="/forgot-password"
+            className="text-gold hover:text-gold-light text-xs transition-colors"
+          >
+            Forgot password?
+          </Link>
+        </div>
         <input
           id="password"
           type="password"

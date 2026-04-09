@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
+import { validatePassword } from "~/lib/password-validation";
 import { connectDB } from "~/server/db";
 import { UserModel } from "~/server/models";
 
@@ -17,6 +18,16 @@ export async function POST(request: Request) {
     if (!name?.trim() || !email?.trim() || !password) {
       return NextResponse.json(
         { error: "Name, email, and password are required" },
+        { status: 400 },
+      );
+    }
+
+    if (!validatePassword(password).isValid) {
+      return NextResponse.json(
+        {
+          error:
+            "Password must be at least 8 characters with one number and one special character",
+        },
         { status: 400 },
       );
     }
