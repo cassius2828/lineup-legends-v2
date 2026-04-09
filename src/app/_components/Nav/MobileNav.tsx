@@ -97,15 +97,17 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                         onClick={closeMenu}
                         className="flex items-center gap-3 transition-opacity hover:opacity-80"
                       >
-                        {session.user.image && (
-                          <Image
-                            src={session.user.image}
-                            alt={session.user.name ?? "User"}
-                            className="ring-gold/20 rounded-full ring-2"
-                            width={40}
-                            height={40}
-                          />
-                        )}
+                        <Image
+                          src={
+                            session.user.image ??
+                            session.user.profileImg ??
+                            "/default-user.jpg"
+                          }
+                          alt={session.user.name ?? "User"}
+                          className="ring-gold/20 rounded-full ring-2"
+                          width={40}
+                          height={40}
+                        />
                         <span className="text-foreground/90">
                           {session.user.name}
                         </span>

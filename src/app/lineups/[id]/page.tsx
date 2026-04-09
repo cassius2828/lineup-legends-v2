@@ -81,17 +81,13 @@ const LineupCardPage = () => {
       {session ? (
         <div className="border-foreground/10 mt-4 rounded-xl border p-4">
           <div className="flex gap-3">
-            {(session.image ?? session.profileImg) ? (
-              <Image
-                src={(session.image ?? session.profileImg)!}
-                alt={session.name ?? "You"}
-                width={36}
-                height={36}
-                className="h-9 w-9 shrink-0 rounded-full"
-              />
-            ) : (
-              <div className="bg-foreground/10 h-9 w-9 shrink-0 rounded-full" />
-            )}
+            <Image
+              src={session.image ?? session.profileImg ?? "/default-user.jpg"}
+              alt={session.name ?? "You"}
+              width={36}
+              height={36}
+              className="h-9 w-9 shrink-0 rounded-full"
+            />
             <div className="flex-1">
               <textarea
                 value={text}

@@ -234,7 +234,7 @@ export default function EditProfilePage() {
                 <Image
                   width={96}
                   height={96}
-                  src={profileImg || profile.image || "/default-avatar.png"}
+                  src={profileImg || profile.image || "/default-user.jpg"}
                   alt="Preview"
                   className="h-full w-full object-cover"
                 />

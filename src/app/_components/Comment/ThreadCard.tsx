@@ -73,17 +73,13 @@ export default function ThreadCard({
   return (
     <div className="flex gap-3">
       <div className="flex w-9 shrink-0 flex-col items-center">
-        {avatar ? (
-          <Image
-            src={avatar}
-            alt={displayName}
-            width={36}
-            height={36}
-            className="h-9 w-9 shrink-0 rounded-full"
-          />
-        ) : (
-          <div className="bg-foreground/10 h-9 w-9 shrink-0 rounded-full" />
-        )}
+        <Image
+          src={avatar ?? "/default-user.jpg"}
+          alt={displayName}
+          width={36}
+          height={36}
+          className="h-9 w-9 shrink-0 rounded-full"
+        />
         {replyingTo && !isLast && (
           <div className="bg-foreground/20 mt-2 w-0.5 flex-1" />
         )}

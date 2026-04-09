@@ -137,21 +137,13 @@ export default function AdminDashboardPage() {
                 key={user.id}
                 className="border-foreground/5 bg-foreground/2 flex items-center gap-3 rounded-lg border p-3"
               >
-                {user.image ? (
-                  <Image
-                    width={36}
-                    height={36}
-                    src={user.image}
-                    alt={user.name}
-                    className="h-9 w-9 rounded-full"
-                  />
-                ) : (
-                  <div className="bg-foreground/10 flex h-9 w-9 items-center justify-center rounded-full">
-                    <span className="text-foreground/50 text-sm font-medium">
-                      {user.name.charAt(0)}
-                    </span>
-                  </div>
-                )}
+                <Image
+                  width={36}
+                  height={36}
+                  src={user.image ?? "/default-user.jpg"}
+                  alt={user.name}
+                  className="h-9 w-9 rounded-full"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="text-foreground truncate text-sm font-medium">
                     {user.name}

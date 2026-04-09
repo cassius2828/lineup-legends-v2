@@ -25,15 +25,17 @@ export function LineupCardHeader({
             href={`/profile/${lineup.owner._id?.toString() ?? ""}`}
             className="flex items-center gap-2 transition-opacity hover:opacity-80"
           >
-            {lineup.owner.image && (
-              <Image
-                width={32}
-                height={32}
-                src={lineup.owner?.image ?? lineup.owner?.profileImg ?? ""}
-                alt={lineup.owner?.name ?? "User"}
-                className="rounded-full"
-              />
-            )}
+            <Image
+              width={32}
+              height={32}
+              src={
+                lineup.owner?.image ??
+                lineup.owner?.profileImg ??
+                "/default-user.jpg"
+              }
+              alt={lineup.owner?.name ?? "User"}
+              className="rounded-full"
+            />
             <span className="text-foreground/90 hover:text-foreground font-medium">
               {lineup.owner?.name ?? lineup.owner?.username ?? "Anonymous"}
             </span>
