@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { validatePassword } from "~/lib/password-validation";
+import PasswordInput from "~/app/_components/ui/PasswordInput";
 import PasswordRequirements from "~/app/_components/ui/PasswordRequirements";
 
 export default function ChangePasswordSection({
@@ -86,8 +87,7 @@ export default function ChangePasswordSection({
               <label className="text-foreground/70 mb-1.5 block text-sm font-medium">
                 Current Password
               </label>
-              <input
-                type="password"
+              <PasswordInput
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Enter current password"
@@ -101,8 +101,7 @@ export default function ChangePasswordSection({
             <label className="text-foreground/70 mb-1.5 block text-sm font-medium">
               New Password
             </label>
-            <input
-              type="password"
+            <PasswordInput
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Enter new password"
@@ -116,8 +115,7 @@ export default function ChangePasswordSection({
             <label className="text-foreground/70 mb-1.5 block text-sm font-medium">
               Confirm New Password
             </label>
-            <input
-              type="password"
+            <PasswordInput
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Confirm new password"

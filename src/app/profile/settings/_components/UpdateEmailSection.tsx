@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import PasswordInput from "~/app/_components/ui/PasswordInput";
 
 export default function UpdateEmailSection({
   currentEmail,
@@ -85,8 +86,7 @@ export default function UpdateEmailSection({
             <label className="text-foreground/70 mb-1.5 block text-sm font-medium">
               Confirm Password
             </label>
-            <input
-              type="password"
+            <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter your password"

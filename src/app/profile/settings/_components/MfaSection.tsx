@@ -5,6 +5,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { startRegistration } from "@simplewebauthn/browser";
 import { api } from "~/trpc/react";
+import PasswordInput from "~/app/_components/ui/PasswordInput";
 
 function PasswordConfirmDialog({
   title,
@@ -22,8 +23,7 @@ function PasswordConfirmDialog({
   return (
     <div className="mt-3 space-y-3 rounded-lg border border-red-500/20 bg-red-500/5 p-4">
       <p className="text-foreground/70 text-sm">{title}</p>
-      <input
-        type="password"
+      <PasswordInput
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Enter your password"

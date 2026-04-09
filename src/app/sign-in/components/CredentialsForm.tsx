@@ -1,4 +1,5 @@
 import Link from "next/link";
+import PasswordInput from "~/app/_components/ui/PasswordInput";
 import type { LoadingProvider } from "../page";
 
 export default function CredentialsForm({
@@ -53,9 +54,8 @@ export default function CredentialsForm({
             Forgot password?
           </Link>
         </div>
-        <input
+        <PasswordInput
           id="password"
-          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"

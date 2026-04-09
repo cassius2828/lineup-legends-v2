@@ -1,4 +1,5 @@
 import { validatePassword } from "~/lib/password-validation";
+import PasswordInput from "~/app/_components/ui/PasswordInput";
 import PasswordRequirements from "~/app/_components/ui/PasswordRequirements";
 import type { LoadingProvider } from "../page";
 
@@ -72,9 +73,8 @@ export default function SignUpForm({
         >
           Password
         </label>
-        <input
+        <PasswordInput
           id="signup-password"
-          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="••••••••"

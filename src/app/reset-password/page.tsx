@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { validatePassword } from "~/lib/password-validation";
+import PasswordInput from "~/app/_components/ui/PasswordInput";
 import PasswordRequirements from "~/app/_components/ui/PasswordRequirements";
 
 type PageState = "form" | "loading" | "success" | "error";
@@ -185,9 +186,8 @@ function ResetPasswordContent() {
                     >
                       New Password
                     </label>
-                    <input
+                    <PasswordInput
                       id="password"
-                      type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
@@ -206,9 +206,8 @@ function ResetPasswordContent() {
                     >
                       Confirm Password
                     </label>
-                    <input
+                    <PasswordInput
                       id="confirmPassword"
-                      type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
