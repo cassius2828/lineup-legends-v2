@@ -202,23 +202,6 @@ export default function MfaSection() {
 
   const [disablingMethod, setDisablingMethod] = useState<string | null>(null);
 
-  const enableSmsMfa = api.account.enableSmsMfa.useMutation({
-    onSuccess: () => {
-      toast.success("SMS MFA enabled");
-      void utils.account.getMfaStatus.invalidate();
-    },
-    onError: (error) => toast.error(error.message),
-  });
-
-  const disableSmsMfa = api.account.disableSmsMfa.useMutation({
-    onSuccess: () => {
-      toast.success("SMS MFA disabled");
-      setDisablingMethod(null);
-      void utils.account.getMfaStatus.invalidate();
-    },
-    onError: (error) => toast.error(error.message),
-  });
-
   const enableEmailMfa = api.account.enableEmailMfa.useMutation({
     onSuccess: () => {
       toast.success("Email MFA enabled");
@@ -308,7 +291,6 @@ export default function MfaSection() {
   }
 
   const isTotpEnabled = mfaStatus.methods.includes("totp");
-  const isSmsEnabled = mfaStatus.methods.includes("sms");
   const isEmailEnabled = mfaStatus.methods.includes("email");
   const isPasskeyEnabled = mfaStatus.methods.includes("passkey");
 
@@ -357,49 +339,6 @@ export default function MfaSection() {
             </>
           ) : (
             <TotpSetup />
-          )}
-        </MfaMethodCard>
-
-        {/* SMS */}
-        <MfaMethodCard
-          title="SMS Verification"
-          description={
-            mfaStatus.hasPhone && mfaStatus.phoneVerified
-              ? "Receive a code via text message"
-              : "A verified phone number is required"
-          }
-          enabled={isSmsEnabled}
-        >
-          {isSmsEnabled ? (
-            <>
-              {disablingMethod === "sms" ? (
-                <PasswordConfirmDialog
-                  title="Enter your password to disable SMS MFA"
-                  onConfirm={(pw) => disableSmsMfa.mutate({ password: pw })}
-                  onCancel={() => setDisablingMethod(null)}
-                  isPending={disableSmsMfa.isPending}
-                />
-              ) : (
-                <button
-                  onClick={() => setDisablingMethod("sms")}
-                  className="rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10"
-                >
-                  Disable
-                </button>
-              )}
-            </>
-          ) : (
-            <button
-              onClick={() => enableSmsMfa.mutate()}
-              disabled={
-                !mfaStatus.hasPhone ||
-                !mfaStatus.phoneVerified ||
-                enableSmsMfa.isPending
-              }
-              className="bg-gold hover:bg-gold-light rounded-lg px-4 py-2 text-sm font-semibold text-black transition-colors disabled:opacity-50"
-            >
-              {enableSmsMfa.isPending ? "Enabling..." : "Enable"}
-            </button>
           )}
         </MfaMethodCard>
 

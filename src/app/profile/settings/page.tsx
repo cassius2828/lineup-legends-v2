@@ -8,7 +8,6 @@ import { api } from "~/trpc/react";
 import DisplaySection from "./_components/DisplaySection";
 import ChangePasswordSection from "./_components/ChangePasswordSection";
 import UpdateEmailSection from "./_components/UpdateEmailSection";
-import PhoneNumberSection from "./_components/PhoneNumberSection";
 import MfaSection from "./_components/MfaSection";
 
 export default function SettingsPage() {
@@ -88,7 +87,7 @@ export default function SettingsPage() {
               Account Security
             </h2>
             <p className="text-foreground/50 mb-6 text-sm">
-              Manage your password, email, and phone number
+              Manage your password and email
             </p>
 
             <div className="space-y-4">
@@ -99,11 +98,6 @@ export default function SettingsPage() {
               <UpdateEmailSection
                 currentEmail={mfaStatus?.email ?? profile?.email ?? ""}
                 hasPassword={mfaStatus?.hasPassword ?? false}
-              />
-
-              <PhoneNumberSection
-                currentPhone={mfaStatus?.phone ?? null}
-                phoneVerified={mfaStatus?.phoneVerified ?? false}
               />
             </div>
           </section>

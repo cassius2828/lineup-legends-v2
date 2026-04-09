@@ -7,11 +7,10 @@ import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { startAuthentication } from "@simplewebauthn/browser";
 
-type MfaMethod = "totp" | "sms" | "email" | "passkey";
+type MfaMethod = "totp" | "email" | "passkey";
 
 const METHOD_LABELS: Record<MfaMethod, string> = {
   totp: "Authenticator App",
-  sms: "SMS",
   email: "Email",
   passkey: "Passkey",
 };
@@ -30,7 +29,7 @@ export default function MfaVerifyPage() {
   const [error, setError] = useState<string | null>(null);
   const [codeSent, setCodeSent] = useState(false);
 
-  const handleSendCode = useCallback(async (method: "sms" | "email") => {
+  const handleSendCode = useCallback(async (method: "email") => {
     setIsSending(true);
     setError(null);
     try {
@@ -224,12 +223,12 @@ export default function MfaVerifyPage() {
                 </p>
               )}
 
-              {(activeMethod === "sms" || activeMethod === "email") && (
+              {activeMethod === "email" && (
                 <div className="space-y-3">
                   <p className="text-foreground/60 text-sm">
                     {codeSent
-                      ? `A verification code has been sent via ${activeMethod === "sms" ? "SMS" : "email"}.`
-                      : `Click below to receive a verification code via ${activeMethod === "sms" ? "SMS" : "email"}.`}
+                      ? "A verification code has been sent to your email."
+                      : "Click below to receive a verification code via email."}
                   </p>
                   {!codeSent && (
                     <button
@@ -273,16 +272,15 @@ export default function MfaVerifyPage() {
                 )}
               </button>
 
-              {(activeMethod === "sms" || activeMethod === "email") &&
-                codeSent && (
-                  <button
-                    onClick={() => handleSendCode(activeMethod)}
-                    disabled={isSending}
-                    className="text-foreground/50 hover:text-foreground/70 w-full text-center text-sm transition-colors"
-                  >
-                    {isSending ? "Resending..." : "Resend code"}
-                  </button>
-                )}
+              {activeMethod === "email" && codeSent && (
+                <button
+                  onClick={() => handleSendCode(activeMethod)}
+                  disabled={isSending}
+                  className="text-foreground/50 hover:text-foreground/70 w-full text-center text-sm transition-colors"
+                >
+                  {isSending ? "Resending..." : "Resend code"}
+                </button>
+              )}
             </div>
           )}
 

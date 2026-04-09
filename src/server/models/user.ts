@@ -1,6 +1,6 @@
 import mongoose, { Schema, type Document, type Model } from "mongoose";
 
-export type MfaMethod = "totp" | "sms" | "email" | "passkey";
+export type MfaMethod = "totp" | "email" | "passkey";
 
 export interface SocialMedia {
   twitter?: string | null;
@@ -26,8 +26,6 @@ export interface User {
   newEmail?: string | null;
   emailConfirmationToken?: string | null;
   admin?: boolean;
-  phone?: string | null;
-  phoneVerified?: boolean;
   mfaEnabled: boolean;
   mfaMethods: MfaMethod[];
   totpSecret?: string | null;
@@ -52,8 +50,6 @@ export interface UserDoc extends Document {
   newEmail?: string | null;
   emailConfirmationToken?: string | null;
   admin?: boolean;
-  phone?: string | null;
-  phoneVerified?: boolean;
   mfaEnabled: boolean;
   mfaMethods: MfaMethod[];
   totpSecret?: string | null;
@@ -86,8 +82,6 @@ const UserSchema = new Schema<UserDoc>(
     newEmail: { type: String, default: null },
     emailConfirmationToken: { type: String, default: null },
     admin: { type: Boolean, default: false },
-    phone: { type: String, default: null },
-    phoneVerified: { type: Boolean, default: false },
     mfaEnabled: { type: Boolean, default: false },
     mfaMethods: { type: [String], default: [] },
     totpSecret: { type: String, default: null },

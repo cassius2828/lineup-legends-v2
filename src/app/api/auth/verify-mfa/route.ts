@@ -4,9 +4,7 @@ import { auth } from "~/server/auth";
 import { connectDB } from "~/server/db";
 import { UserModel, PasskeyModel } from "~/server/models";
 import { redis } from "~/server/redis";
-import { verifyTotpCode, generateMfaCode, decryptSecret } from "~/server/mfa";
-import { sendMfaCode } from "~/server/email";
-import { sendSmsCode } from "~/server/sms";
+import { verifyTotpCode, decryptSecret } from "~/server/mfa";
 import { env } from "~/env";
 
 const MFA_CODE_PREFIX = "mfa-code:";
@@ -22,7 +20,7 @@ function getRpId(): string {
 }
 
 interface VerifyMfaBody {
-  method: "totp" | "sms" | "email" | "passkey";
+  method: "totp" | "email" | "passkey";
   code?: string;
   passkeyResponse?: unknown;
 }
@@ -39,7 +37,7 @@ export async function POST(request: Request) {
     const userId = session.user.id;
 
     const user = await UserModel.findById(userId)
-      .select("totpSecret phone email mfaMethods")
+      .select("totpSecret email mfaMethods")
       .lean();
 
     if (!user) {
@@ -61,7 +59,6 @@ export async function POST(request: Request) {
         break;
       }
 
-      case "sms":
       case "email": {
         if (!body.code) {
           return NextResponse.json(

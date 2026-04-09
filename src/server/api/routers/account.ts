@@ -26,7 +26,6 @@ import {
   sendEmailChangeConfirmation,
   sendMfaCode,
 } from "~/server/email";
-import { sendSmsCode } from "~/server/sms";
 import {
   generateTotpSecret,
   verifyTotpCode,
@@ -87,9 +86,8 @@ async function removeMfaMethod(
   await user.save();
 }
 
-// Store pending MFA/phone verification codes in Redis (10 min TTL)
+// Store pending MFA verification codes in Redis (10 min TTL)
 const MFA_CODE_PREFIX = "mfa-code:";
-const PHONE_CODE_PREFIX = "phone-code:";
 const WEBAUTHN_CHALLENGE_PREFIX = "webauthn-challenge:";
 
 export const accountRouter = createTRPCRouter({
@@ -266,66 +264,11 @@ export const accountRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  // ─── Phone Management ──────────────────────────────────────────────────
-
-  updatePhone: protectedProcedure
-    .input(z.object({ phone: z.string().min(10).max(15) }))
-    .mutation(async ({ ctx, input }) => {
-      await UserModel.findByIdAndUpdate(ctx.session.user.id, {
-        phone: input.phone,
-        phoneVerified: false,
-      });
-
-      const code = generateMfaCode();
-      await redis.setex(
-        `${PHONE_CODE_PREFIX}${ctx.session.user.id}`,
-        600,
-        code,
-      );
-
-      await sendSmsCode({ to: input.phone, code });
-
-      return { success: true };
-    }),
-
-  verifyPhone: protectedProcedure
-    .input(z.object({ code: z.string().length(6) }))
-    .mutation(async ({ ctx, input }) => {
-      const stored = await redis.get(
-        `${PHONE_CODE_PREFIX}${ctx.session.user.id}`,
-      );
-
-      if (!stored || stored !== input.code) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invalid or expired verification code",
-        });
-      }
-
-      await UserModel.findByIdAndUpdate(ctx.session.user.id, {
-        phoneVerified: true,
-      });
-      await redis.del(`${PHONE_CODE_PREFIX}${ctx.session.user.id}`);
-
-      return { success: true };
-    }),
-
-  removePhone: protectedProcedure.mutation(async ({ ctx }) => {
-    await removeMfaMethod(ctx.session.user.id, "sms");
-
-    await UserModel.findByIdAndUpdate(ctx.session.user.id, {
-      phone: null,
-      phoneVerified: false,
-    });
-
-    return { success: true };
-  }),
-
   // ─── MFA Status ─────────────────────────────────────────────────────────
 
   getMfaStatus: protectedProcedure.query(async ({ ctx }) => {
     const user = await UserModel.findById(ctx.session.user.id)
-      .select("mfaEnabled mfaMethods phone phoneVerified email password")
+      .select("mfaEnabled mfaMethods email password")
       .lean();
 
     if (!user) {
@@ -339,9 +282,6 @@ export const accountRouter = createTRPCRouter({
     return {
       mfaEnabled: user.mfaEnabled ?? false,
       methods: (user.mfaMethods ?? []) as string[],
-      hasPhone: !!user.phone,
-      phoneVerified: user.phoneVerified ?? false,
-      phone: user.phone ?? null,
       email: user.email,
       hasPassword: !!user.password,
       passkeys: passkeys.map((p) => ({
@@ -426,39 +366,6 @@ export const accountRouter = createTRPCRouter({
 
       await removeMfaMethod(ctx.session.user.id, "totp");
 
-      return { success: true };
-    }),
-
-  // ─── SMS MFA ────────────────────────────────────────────────────────────
-
-  enableSmsMfa: protectedProcedure.mutation(async ({ ctx }) => {
-    const user = await UserModel.findById(ctx.session.user.id)
-      .select("phone phoneVerified mfaMethods")
-      .lean();
-
-    if (!user?.phone || !user.phoneVerified) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "A verified phone number is required to enable SMS MFA",
-      });
-    }
-
-    const methods = new Set(user.mfaMethods ?? []);
-    methods.add("sms");
-
-    await UserModel.findByIdAndUpdate(ctx.session.user.id, {
-      mfaMethods: Array.from(methods),
-      mfaEnabled: true,
-    });
-
-    return { success: true };
-  }),
-
-  disableSmsMfa: protectedProcedure
-    .input(z.object({ password: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      await verifyUserPassword(ctx.session.user.id, input.password);
-      await removeMfaMethod(ctx.session.user.id, "sms");
       return { success: true };
     }),
 
@@ -666,12 +573,12 @@ export const accountRouter = createTRPCRouter({
     .input(
       z.object({
         userId: z.string(),
-        method: z.enum(["sms", "email"]),
+        method: z.enum(["email"]),
       }),
     )
     .mutation(async ({ input }) => {
       const user = await UserModel.findById(input.userId)
-        .select("email phone mfaMethods")
+        .select("email mfaMethods")
         .lean();
 
       if (!user) {
@@ -681,18 +588,14 @@ export const accountRouter = createTRPCRouter({
       if (!user.mfaMethods?.includes(input.method)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `${input.method.toUpperCase()} MFA is not enabled`,
+          message: "Email MFA is not enabled",
         });
       }
 
       const code = generateMfaCode();
       await redis.setex(`${MFA_CODE_PREFIX}${input.userId}`, 600, code);
 
-      if (input.method === "sms" && user.phone) {
-        await sendSmsCode({ to: user.phone, code });
-      } else if (input.method === "email") {
-        await sendMfaCode({ to: user.email, code });
-      }
+      await sendMfaCode({ to: user.email, code });
 
       return { success: true };
     }),
@@ -701,7 +604,7 @@ export const accountRouter = createTRPCRouter({
     .input(
       z.object({
         userId: z.string(),
-        method: z.enum(["totp", "sms", "email"]),
+        method: z.enum(["totp", "email"]),
         code: z.string().length(6),
       }),
     )

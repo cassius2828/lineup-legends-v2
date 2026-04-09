@@ -6,7 +6,6 @@ import { UserModel, PasskeyModel } from "~/server/models";
 import { redis } from "~/server/redis";
 import { generateMfaCode } from "~/server/mfa";
 import { sendMfaCode } from "~/server/email";
-import { sendSmsCode } from "~/server/sms";
 import { env } from "~/env";
 
 const MFA_CODE_PREFIX = "mfa-code:";
@@ -22,7 +21,7 @@ function getRpId(): string {
 }
 
 interface SendCodeBody {
-  method: "sms" | "email" | "passkey";
+  method: "email" | "passkey";
 }
 
 export async function POST(request: Request) {
@@ -37,7 +36,7 @@ export async function POST(request: Request) {
     const userId = session.user.id;
 
     const user = await UserModel.findById(userId)
-      .select("email phone mfaMethods")
+      .select("email mfaMethods")
       .lean();
 
     if (!user) {
@@ -72,21 +71,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ options });
     }
 
-    const code = generateMfaCode();
-    await redis.setex(`${MFA_CODE_PREFIX}${userId}`, 600, code);
-
-    if (body.method === "sms" && user.phone) {
-      await sendSmsCode({ to: user.phone, code });
-    } else if (body.method === "email") {
+    if (body.method === "email") {
+      const code = generateMfaCode();
+      await redis.setex(`${MFA_CODE_PREFIX}${userId}`, 600, code);
       await sendMfaCode({ to: user.email, code });
-    } else {
-      return NextResponse.json(
-        { error: "Invalid method or missing phone" },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: true });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ error: "Invalid method" }, { status: 400 });
   } catch (error) {
     console.error("Send MFA code error:", error);
     return NextResponse.json({ error: "Failed to send code" }, { status: 500 });
