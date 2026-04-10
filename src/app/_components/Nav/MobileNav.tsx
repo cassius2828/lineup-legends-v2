@@ -58,13 +58,6 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                 >
                   Explore
                 </Link>
-                <Link
-                  href="/contact"
-                  onClick={closeMenu}
-                  className="hover:text-gold text-foreground/90 capitalize transition-colors"
-                >
-                  Contact
-                </Link>
 
                 {session ? (
                   <>
@@ -81,6 +74,13 @@ const MobileNav = ({ session }: { session: Session | null }) => {
                       className="hover:text-gold text-foreground/90 capitalize transition-colors"
                     >
                       Find Users
+                    </Link>
+                    <Link
+                      href="/contact"
+                      onClick={closeMenu}
+                      className="hover:text-gold text-foreground/90 capitalize transition-colors"
+                    >
+                      Contact
                     </Link>
                     {session.user.admin && (
                       <Link

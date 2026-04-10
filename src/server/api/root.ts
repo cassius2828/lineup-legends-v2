@@ -8,6 +8,7 @@ import { feedbackRouter } from "~/server/api/routers/feedback";
 import { adminRouter } from "~/server/api/routers/admin";
 import { videoRouter } from "~/server/api/routers/video";
 import { bookmarkRouter } from "~/server/api/routers/bookmark";
+import { accountRouter } from "~/server/api/routers/account";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -26,6 +27,7 @@ export const appRouter = createTRPCRouter({
   admin: adminRouter,
   video: videoRouter,
   bookmark: bookmarkRouter,
+  account: accountRouter,
 });
 
 // export type definition of API

@@ -121,6 +121,12 @@ export const adminProcedure = t.procedure
     if (!ctx.session || ctx.session.user.admin !== true) {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
+    if (ctx.session.user.mfaPending) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "MFA verification required",
+      });
+    }
     return next({
       ctx: {
         session: { ...ctx.session, user: ctx.session.user },
@@ -141,9 +147,14 @@ export const protectedProcedure = t.procedure
     if (!ctx.session?.user) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
     }
+    if (ctx.session.user.mfaPending) {
+      throw new TRPCError({
+        code: "FORBIDDEN",
+        message: "MFA verification required",
+      });
+    }
     return next({
       ctx: {
-        // infers the `session` as non-nullable
         session: { ...ctx.session, user: ctx.session.user },
       },
     });

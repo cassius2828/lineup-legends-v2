@@ -3,7 +3,6 @@
  * for Docker builds.
  */
 import "./src/env.js";
-import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import("next").NextConfig} */
 const config = {
@@ -34,15 +33,10 @@ const config = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  reactCompiler: true,
+  experimental: {
+    reactCompiler: true,
+  },
   serverExternalPackages: ["pino", "pino-pretty"],
 };
 
-export default withSentryConfig(config, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  disableLogger: true,
-  tunnelRoute: "/monitoring",
-});
+export default config;
