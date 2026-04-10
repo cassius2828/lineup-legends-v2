@@ -27,12 +27,6 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
       >
         Explore
       </Link>
-      <Link
-        href="/contact"
-        className="hover:text-gold text-foreground/90 hidden capitalize transition-colors sm:block"
-      >
-        Contact
-      </Link>
 
       {session ? (
         <>
@@ -47,6 +41,12 @@ const DesktopNav = ({ session }: { session: Session | null }) => {
             className="hover:text-gold text-foreground/90 hidden capitalize transition-colors sm:block"
           >
             Find Users
+          </Link>
+          <Link
+            href="/contact"
+            className="hover:text-gold text-foreground/90 hidden capitalize transition-colors sm:block"
+          >
+            Contact
           </Link>
           {session.user.admin && (
             <Link
