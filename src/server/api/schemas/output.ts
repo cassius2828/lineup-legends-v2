@@ -344,7 +344,6 @@ const descriptionUserOutput = z
   .object({
     id: z.string(),
     name: z.string(),
-    email: z.string(),
     image: z.string().nullable().optional(),
   })
   .nullable();

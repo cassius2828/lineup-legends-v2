@@ -12,6 +12,7 @@ import {
   redisWebauthnChallengeKey,
   WEBAUTHN_CHALLENGE_TTL_SECONDS,
 } from "~/server/constants";
+import { rateLimit, getClientIp } from "~/server/rate-limit";
 import { logger } from "~/lib/logger";
 
 const log = logger.child({ module: "send-mfa-code" });
@@ -22,6 +23,18 @@ interface SendCodeBody {
 
 export async function POST(request: Request) {
   try {
+    const { ok } = await rateLimit(
+      `rl:send-mfa-code:${getClientIp(request)}`,
+      5,
+      300,
+    );
+    if (!ok) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": "300" } },
+      );
+    }
+
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

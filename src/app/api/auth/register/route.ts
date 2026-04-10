@@ -5,6 +5,7 @@ import { validatePassword } from "~/lib/password-validation";
 import { connectDB } from "~/server/db";
 import { UserModel } from "~/server/models";
 import { BCRYPT_ROUNDS } from "~/server/constants";
+import { rateLimit, getClientIp } from "~/server/rate-limit";
 import { logger } from "~/lib/logger";
 
 const log = logger.child({ module: "register" });
@@ -17,6 +18,17 @@ const registerSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const { ok } = await rateLimit(
+      `rl:register:${getClientIp(request)}`,
+      5,
+      900,
+    );
+    if (!ok) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": "900" } },
+      );
+    }
     const json: unknown = await request.json();
     const parsed = registerSchema.safeParse(json);
     if (!parsed.success) {

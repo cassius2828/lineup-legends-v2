@@ -63,17 +63,17 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      if (Object.values(players).length !== 5) {
+      const dbPlayers = await PlayerModel.find({
+        _id: { $in: playerIds },
+      }).lean();
+      if (dbPlayers.length !== 5) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "One or more selected players not found.",
         });
       }
 
-      const totalValue = Object.values(players).reduce(
-        (sum, player) => sum + player.value,
-        0,
-      );
+      const totalValue = dbPlayers.reduce((sum, p) => sum + p.value, 0);
       if (totalValue > BUDGET_LIMIT) {
         throw new TRPCError({
           code: "BAD_REQUEST",

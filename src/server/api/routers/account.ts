@@ -13,6 +13,7 @@ import type { RegistrationResponseJSON } from "@simplewebauthn/types";
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { requireUserById } from "~/server/auth/require-user";
 import { UserModel, PasskeyModel } from "~/server/models";
+import { validatePassword } from "~/lib/password-validation";
 import type { MfaMethod } from "~/server/models/user";
 import type { PasskeyDeviceType } from "~/server/models/passkey";
 import { redis } from "~/server/redis";
@@ -99,6 +100,14 @@ export const accountRouter = createTRPCRouter({
             message: "Current password is incorrect",
           });
         }
+      }
+
+      if (!validatePassword(input.newPassword).isValid) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Password must be at least 8 characters with one number and one special character",
+        });
       }
 
       const hashed = await bcrypt.hash(input.newPassword, BCRYPT_ROUNDS);

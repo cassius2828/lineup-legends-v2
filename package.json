@@ -48,6 +48,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "dotenv": "^17.4.1",
+    "file-type": "^22.0.1",
     "framer-motion": "^12.38.0",
     "fuse.js": "^7.3.0",
     "ioredis": "^5.10.1",

@@ -42,9 +42,21 @@ function GoogleIcon() {
   );
 }
 
+function safePath(url: string | null): string {
+  if (
+    !url ||
+    !url.startsWith("/") ||
+    url.startsWith("//") ||
+    url.startsWith("/\\")
+  ) {
+    return "/";
+  }
+  return url;
+}
+
 function SignInContent() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  const callbackUrl = safePath(searchParams.get("callbackUrl"));
   const errorType = searchParams.get("error");
   const isSignUp = searchParams.get("mode") === "signup";
 

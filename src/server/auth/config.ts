@@ -173,6 +173,11 @@ export const authConfig = {
           token.name = dbUser?.name ?? null;
           token.image = dbUser?.image ?? null;
 
+          if (user && dbUser.mfaEnabled === true && !token.mfaPending) {
+            token.mfaPending = true;
+            token.mfaMethods = (dbUser.mfaMethods ?? []) as string[];
+          }
+
           if (trigger === "update" && token.mfaPending === true) {
             const uid = dbUser._id.toString();
             const verified = await redis.get(redisMfaVerifiedKey(uid));

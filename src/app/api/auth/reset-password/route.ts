@@ -5,12 +5,24 @@ import { PasswordResetTokenModel, UserModel } from "~/server/models";
 import { BCRYPT_ROUNDS } from "~/server/constants";
 import { hashSha256Hex } from "~/server/tokens";
 import { validatePassword } from "~/lib/password-validation";
+import { rateLimit, getClientIp } from "~/server/rate-limit";
 import { logger } from "~/lib/logger";
 
 const log = logger.child({ module: "reset-password" });
 
 export async function POST(request: Request) {
   try {
+    const { ok } = await rateLimit(
+      `rl:reset-password:${getClientIp(request)}`,
+      5,
+      900,
+    );
+    if (!ok) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again later." },
+        { status: 429, headers: { "Retry-After": "900" } },
+      );
+    }
     const body = (await request.json()) as {
       token?: string;
       password?: string;
