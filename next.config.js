@@ -3,7 +3,6 @@
  * for Docker builds.
  */
 import "./src/env.js";
-import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import("next").NextConfig} */
 const config = {
@@ -40,10 +39,4 @@ const config = {
   serverExternalPackages: ["pino", "pino-pretty"],
 };
 
-export default withSentryConfig(config, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
-  ...(process.env.NEXT_PUBLIC_SENTRY_DSN && { tunnelRoute: "/monitoring" }),
-});
+export default config;

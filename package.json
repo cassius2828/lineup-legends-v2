@@ -34,7 +34,6 @@
     "@giphy/js-fetch-api": "^5.7.0",
     "@giphy/js-types": "^5.1.0",
     "@giphy/react-components": "^10.1.1",
-    "@sentry/nextjs": "^10.48.0",
     "@simplewebauthn/browser": "^9.0.1",
     "@simplewebauthn/server": "^9.0.3",
     "@t3-oss/env-nextjs": "^0.12.0",

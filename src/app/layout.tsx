@@ -12,6 +12,7 @@ import GlobalCommentModal from "./_components/Comment/GlobalCommentModal";
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
+import { env } from "~/env";
 
 export const metadata: Metadata = {
   title: {
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
   description:
     "Build your dream fantasy basketball lineup with a $15 budget. Create, rate, gamble, and compete with friends.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL!),
+  metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
   openGraph: {
     type: "website",
     siteName: "Lineup Legends",
