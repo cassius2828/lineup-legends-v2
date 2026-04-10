@@ -35,6 +35,7 @@ export default function MfaVerifyPage() {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [codeSent, setCodeSent] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   const shouldRedirectHome =
     session?.user != null && session.user.mfaPending === false;
@@ -44,6 +45,12 @@ export default function MfaVerifyPage() {
       router.replace("/");
     }
   }, [shouldRedirectHome, router]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   const handleSendCode = useCallback(async (method: "email") => {
     setIsSending(true);
@@ -57,6 +64,7 @@ export default function MfaVerifyPage() {
         setError(result.error ?? "Failed to send code");
       } else {
         setCodeSent(true);
+        setCooldown(60);
       }
     } catch {
       setError("Failed to send code");
@@ -64,6 +72,12 @@ export default function MfaVerifyPage() {
       setIsSending(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (activeMethod === "email" && !codeSent && !isSending && session?.user) {
+      void handleSendCode("email");
+    }
+  }, [activeMethod, codeSent, isSending, session?.user, handleSendCode]);
 
   const handleVerify = useCallback(async () => {
     if (activeMethod !== "passkey" && !code.trim()) {
@@ -212,18 +226,8 @@ export default function MfaVerifyPage() {
                 <p className="text-foreground/60 text-sm">
                   {codeSent
                     ? "A verification code has been sent to your email."
-                    : "Click below to receive a verification code via email."}
+                    : "Sending a verification code to your email..."}
                 </p>
-                {!codeSent && (
-                  <button
-                    type="button"
-                    onClick={() => handleSendCode(activeMethod)}
-                    disabled={isSending}
-                    className="border-gold text-gold hover:bg-gold/10 w-full rounded-lg border py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
-                  >
-                    {isSending ? "Sending..." : "Send Code"}
-                  </button>
-                )}
               </div>
             )}
 
@@ -250,11 +254,15 @@ export default function MfaVerifyPage() {
             {activeMethod === "email" && codeSent && (
               <button
                 type="button"
-                onClick={() => handleSendCode(activeMethod)}
-                disabled={isSending}
-                className="text-foreground/50 hover:text-foreground/70 w-full text-center text-sm transition-colors"
+                onClick={() => handleSendCode("email")}
+                disabled={isSending || cooldown > 0}
+                className="text-foreground/50 hover:text-foreground/70 w-full text-center text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSending ? "Resending..." : "Resend code"}
+                {isSending
+                  ? "Resending..."
+                  : cooldown > 0
+                    ? `Resend code in ${cooldown}s`
+                    : "Resend code"}
               </button>
             )}
           </div>
