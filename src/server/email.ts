@@ -1,6 +1,8 @@
 import { Resend } from "resend";
+import { escapeHtml } from "~/lib/html-escape";
 import { env } from "~/env";
 import { logger } from "~/lib/logger";
+import { APP_DISPLAY_NAME } from "~/server/constants";
 
 const log = logger.child({ module: "email" });
 
@@ -10,7 +12,7 @@ function getResend(): Resend {
 }
 
 const ADMIN_EMAIL = "cassius.reynolds.dev@gmail.com";
-const FROM_ADDRESS = "Lineup Legends <onboarding@resend.dev>";
+const FROM_ADDRESS = `${APP_DISPLAY_NAME} <onboarding@resend.dev>`;
 
 interface FeedbackEmailParams {
   name: string;
@@ -28,18 +30,18 @@ export async function sendFeedbackEmail({
   const { error } = await getResend().emails.send({
     from: FROM_ADDRESS,
     to: ADMIN_EMAIL,
-    subject: `[Lineup Legends Feedback] ${subject}`,
+    subject: `[${APP_DISPLAY_NAME} Feedback] ${subject}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #d4a843;">New Feedback from Lineup Legends</h2>
+        <h2 style="color: #d4a843;">New Feedback from ${APP_DISPLAY_NAME}</h2>
         <hr style="border: 1px solid #e5e7eb;" />
-        <p><strong>From:</strong> ${name} (${email})</p>
-        <p><strong>Subject:</strong> ${subject}</p>
+        <p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p>
+        <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
         <h3 style="margin-top: 24px;">Message:</h3>
-        <div style="background: #f9fafb; padding: 16px; border-radius: 8px; white-space: pre-wrap;">${message}</div>
+        <div style="background: #f9fafb; padding: 16px; border-radius: 8px; white-space: pre-wrap;">${escapeHtml(message)}</div>
         <hr style="border: 1px solid #e5e7eb; margin-top: 24px;" />
         <p style="color: #6b7280; font-size: 12px;">
-          This email was sent from the Lineup Legends contact form.
+          This email was sent from the ${APP_DISPLAY_NAME} contact form.
         </p>
       </div>
     `,
@@ -67,13 +69,13 @@ export async function sendEmailChangeConfirmation({
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #d4a843;">Email Change Confirmation</h2>
         <hr style="border: 1px solid #e5e7eb;" />
-        <p>You requested to change your email address on Lineup Legends. Click the button below to confirm:</p>
+        <p>You requested to change your email address on ${APP_DISPLAY_NAME}. Click the button below to confirm:</p>
         <div style="text-align: center; margin: 32px 0;">
           <a href="${confirmUrl}" style="background: #d4a843; color: #000; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">Confirm Email</a>
         </div>
         <p style="color: #6b7280; font-size: 14px;">If you didn't request this change, you can safely ignore this email.</p>
         <hr style="border: 1px solid #e5e7eb; margin-top: 24px;" />
-        <p style="color: #6b7280; font-size: 12px;">Lineup Legends</p>
+        <p style="color: #6b7280; font-size: 12px;">${APP_DISPLAY_NAME}</p>
       </div>
     `,
   });
@@ -88,7 +90,7 @@ export async function sendMfaCode({ to, code }: { to: string; code: string }) {
   const { error } = await getResend().emails.send({
     from: FROM_ADDRESS,
     to,
-    subject: "Your Lineup Legends Verification Code",
+    subject: `Your ${APP_DISPLAY_NAME} Verification Code`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #d4a843;">Verification Code</h2>
@@ -99,7 +101,7 @@ export async function sendMfaCode({ to, code }: { to: string; code: string }) {
         </div>
         <p style="color: #6b7280; font-size: 14px;">This code expires in 10 minutes. If you didn't request this code, please secure your account.</p>
         <hr style="border: 1px solid #e5e7eb; margin-top: 24px;" />
-        <p style="color: #6b7280; font-size: 12px;">Lineup Legends</p>
+        <p style="color: #6b7280; font-size: 12px;">${APP_DISPLAY_NAME}</p>
       </div>
     `,
   });
@@ -123,7 +125,7 @@ export async function sendPasswordResetEmail({
   const { data, error } = await getResend().emails.send({
     from: FROM_ADDRESS,
     to,
-    subject: "Reset your Lineup Legends password",
+    subject: `Reset your ${APP_DISPLAY_NAME} password`,
     html: `
       <div style="background-color: #0a0a0a; padding: 40px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
         <div style="max-width: 480px; margin: 0 auto; background-color: #141414; border: 1px solid rgba(212, 175, 55, 0.15); border-radius: 12px; overflow: hidden;">

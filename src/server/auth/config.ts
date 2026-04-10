@@ -7,6 +7,7 @@ import { env } from "~/env";
 import { ensureEnvs } from "~/lib/ensureEnvs";
 import { connectDB, getMongoClient } from "~/server/db";
 import { redis } from "~/server/redis";
+import { redisMfaVerifiedKey } from "~/server/constants";
 import { UserModel } from "../models";
 
 /**
@@ -51,7 +52,7 @@ async function findUserByIdentifier(identifier: string) {
   await connectDB();
 
   const query = isEmail(identifier)
-    ? { email: identifier }
+    ? { email: identifier.toLowerCase() }
     : { username: identifier.toLowerCase() };
 
   return UserModel.findOne(query).lean();
@@ -107,7 +108,7 @@ export const authConfig = {
 
         const user = await findUserByIdentifier(identifier);
         if (!user) {
-          throw new Error("Invalid credentials1");
+          throw new Error("Invalid credentials");
         }
 
         const isValidPassword = await verifyPassword(
@@ -115,7 +116,7 @@ export const authConfig = {
           user.password ?? null,
         );
         if (!isValidPassword) {
-          throw new Error("Invalid credentials2");
+          throw new Error("Invalid credentials");
         }
 
         return {
@@ -173,13 +174,12 @@ export const authConfig = {
           token.image = dbUser?.image ?? null;
 
           if (trigger === "update" && token.mfaPending === true) {
-            const verified = await redis.get(
-              `mfa-verified:${dbUser._id.toString()}`,
-            );
+            const uid = dbUser._id.toString();
+            const verified = await redis.get(redisMfaVerifiedKey(uid));
             if (verified) {
               delete token.mfaPending;
               delete token.mfaMethods;
-              await redis.del(`mfa-verified:${dbUser._id.toString()}`);
+              await redis.del(redisMfaVerifiedKey(uid));
             }
           }
         }

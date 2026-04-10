@@ -1,12 +1,14 @@
 import mongoose, { Schema, type Document, type Model } from "mongoose";
 
+export type PasskeyDeviceType = "singleDevice" | "multiDevice";
+
 export interface PasskeyDoc extends Document {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   credentialId: string;
   publicKey: Buffer;
   counter: number;
-  deviceType: string;
+  deviceType: PasskeyDeviceType;
   backedUp: boolean;
   transports?: string[];
   name: string;
@@ -18,7 +20,12 @@ const PasskeySchema = new Schema<PasskeyDoc>({
   credentialId: { type: String, required: true, unique: true },
   publicKey: { type: Buffer, required: true },
   counter: { type: Number, required: true, default: 0 },
-  deviceType: { type: String, required: true, default: "singleDevice" },
+  deviceType: {
+    type: String,
+    enum: ["singleDevice", "multiDevice"],
+    required: true,
+    default: "singleDevice",
+  },
   backedUp: { type: Boolean, required: true, default: false },
   transports: { type: [String], default: undefined },
   name: { type: String, required: true, default: "My Passkey" },

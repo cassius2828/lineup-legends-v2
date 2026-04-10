@@ -1,13 +1,37 @@
 import crypto from "crypto";
 import * as OTPAuth from "otpauth";
 import { env } from "~/env";
+import { APP_DISPLAY_NAME } from "~/server/constants";
 
 const ALGORITHM = "aes-256-gcm";
 const IV_LENGTH = 16;
-const TAG_LENGTH = 16;
+const AES_256_KEY_BYTES = 32;
+
+const RP_ID_FALLBACK = "localhost";
 
 function getEncryptionKey(): Buffer {
-  return Buffer.from(env.MFA_ENCRYPTION_KEY, "hex");
+  const buf = Buffer.from(env.MFA_ENCRYPTION_KEY, "hex");
+  if (buf.length !== AES_256_KEY_BYTES) {
+    throw new Error(
+      `MFA_ENCRYPTION_KEY must be ${AES_256_KEY_BYTES} bytes (${AES_256_KEY_BYTES * 2} hex characters)`,
+    );
+  }
+  return buf;
+}
+
+/** WebAuthn relying party id from public app URL hostname */
+export function getWebAuthnRpId(): string {
+  try {
+    const url = new URL(env.NEXT_PUBLIC_APP_URL);
+    return url.hostname;
+  } catch {
+    return RP_ID_FALLBACK;
+  }
+}
+
+/** Expected origin for WebAuthn (no trailing slash) */
+export function getWebAuthnOrigin(): string {
+  return env.NEXT_PUBLIC_APP_URL;
 }
 
 export function encryptSecret(plaintext: string): string {
@@ -40,7 +64,7 @@ export function generateTotpSecret(email: string): {
   otpauthUrl: string;
 } {
   const totp = new OTPAuth.TOTP({
-    issuer: "Lineup Legends",
+    issuer: APP_DISPLAY_NAME,
     label: email,
     algorithm: "SHA1",
     digits: 6,
@@ -56,7 +80,7 @@ export function generateTotpSecret(email: string): {
 
 export function verifyTotpCode(secret: string, code: string): boolean {
   const totp = new OTPAuth.TOTP({
-    issuer: "Lineup Legends",
+    issuer: APP_DISPLAY_NAME,
     algorithm: "SHA1",
     digits: 6,
     period: 30,

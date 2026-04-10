@@ -3,18 +3,12 @@ import { NextResponse } from "next/server";
 import { connectDB } from "~/server/db";
 import { sendPasswordResetEmail } from "~/server/email";
 import { PasswordResetTokenModel, UserModel } from "~/server/models";
+import { PASSWORD_RESET_TTL_MS } from "~/server/constants";
+import { hashSha256Hex } from "~/server/tokens";
+import { env } from "~/env";
 import { logger } from "~/lib/logger";
 
 const log = logger.child({ module: "forgot-password" });
-
-const TOKEN_EXPIRY_MS = 5 * 60 * 1000;
-
-function getBaseUrl(request: Request): string {
-  const host =
-    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  const protocol = request.headers.get("x-forwarded-proto") ?? "https";
-  return `${protocol}://${host}`;
-}
 
 export async function POST(request: Request) {
   try {
@@ -52,18 +46,15 @@ export async function POST(request: Request) {
     await PasswordResetTokenModel.deleteMany({ userId: user._id });
 
     const rawToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto
-      .createHash("sha256")
-      .update(rawToken)
-      .digest("hex");
+    const hashedToken = hashSha256Hex(rawToken);
 
     await PasswordResetTokenModel.create({
       userId: user._id,
       token: hashedToken,
-      expiresAt: new Date(Date.now() + TOKEN_EXPIRY_MS),
+      expiresAt: new Date(Date.now() + PASSWORD_RESET_TTL_MS),
     });
 
-    const baseUrl = getBaseUrl(request);
+    const baseUrl = env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
     const resetUrl = `${baseUrl}/reset-password?token=${rawToken}`;
 
     await sendPasswordResetEmail({ to: email, resetUrl });

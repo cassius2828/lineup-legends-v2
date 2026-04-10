@@ -8,48 +8,31 @@ import {
   verifyRegistrationResponse,
   type VerifiedRegistrationResponse,
 } from "@simplewebauthn/server";
+import type { RegistrationResponseJSON } from "@simplewebauthn/types";
 
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from "~/server/api/trpc";
-import {
-  UserModel,
-  PasswordResetTokenModel,
-  PasskeyModel,
-} from "~/server/models";
+import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
+import { requireUserById } from "~/server/auth/require-user";
+import { UserModel, PasskeyModel } from "~/server/models";
 import type { MfaMethod } from "~/server/models/user";
+import type { PasskeyDeviceType } from "~/server/models/passkey";
 import { redis } from "~/server/redis";
-import {
-  sendPasswordResetEmail,
-  sendEmailChangeConfirmation,
-  sendMfaCode,
-} from "~/server/email";
+import { sendEmailChangeConfirmation } from "~/server/email";
 import {
   generateTotpSecret,
   verifyTotpCode,
-  generateMfaCode,
   encryptSecret,
   decryptSecret,
+  getWebAuthnOrigin,
+  getWebAuthnRpId,
 } from "~/server/mfa";
+import {
+  APP_DISPLAY_NAME,
+  BCRYPT_ROUNDS,
+  EMAIL_CONFIRMATION_TTL_MS,
+  redisWebauthnChallengeKey,
+  WEBAUTHN_CHALLENGE_TTL_SECONDS,
+} from "~/server/constants";
 import { env } from "~/env";
-
-const RP_NAME = "Lineup Legends";
-const RP_ID_FALLBACK = "localhost";
-
-function getRpId(): string {
-  try {
-    const url = new URL(env.NEXT_PUBLIC_APP_URL);
-    return url.hostname;
-  } catch {
-    return RP_ID_FALLBACK;
-  }
-}
-
-function getOrigin(): string {
-  return env.NEXT_PUBLIC_APP_URL;
-}
 
 async function verifyUserPassword(
   userId: string,
@@ -86,10 +69,6 @@ async function removeMfaMethod(
   await user.save();
 }
 
-// Store pending MFA verification codes in Redis (10 min TTL)
-const MFA_CODE_PREFIX = "mfa-code:";
-const WEBAUTHN_CHALLENGE_PREFIX = "webauthn-challenge:";
-
 export const accountRouter = createTRPCRouter({
   // ─── Password Management ────────────────────────────────────────────────
 
@@ -101,14 +80,8 @@ export const accountRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const user = await UserModel.findById(ctx.session.user.id)
-        .select("password")
-        .lean();
-      if (!user) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-      }
+      const user = await requireUserById(ctx.session.user.id, "password");
 
-      // If user has a password, require current password
       if (user.password) {
         if (!input.currentPassword) {
           throw new TRPCError({
@@ -128,76 +101,10 @@ export const accountRouter = createTRPCRouter({
         }
       }
 
-      const hashed = await bcrypt.hash(input.newPassword, 12);
+      const hashed = await bcrypt.hash(input.newPassword, BCRYPT_ROUNDS);
       await UserModel.findByIdAndUpdate(ctx.session.user.id, {
         password: hashed,
       });
-
-      return { success: true };
-    }),
-
-  requestPasswordReset: publicProcedure
-    .input(z.object({ email: z.string().email() }))
-    .mutation(async ({ input }) => {
-      // Always return success to prevent email enumeration
-      const user = await UserModel.findOne({
-        email: input.email.toLowerCase(),
-      }).lean();
-
-      if (user) {
-        // Delete any existing tokens for this user
-        await PasswordResetTokenModel.deleteMany({ userId: user._id });
-
-        const rawToken = crypto.randomBytes(32).toString("hex");
-        const hashedToken = crypto
-          .createHash("sha256")
-          .update(rawToken)
-          .digest("hex");
-
-        await PasswordResetTokenModel.create({
-          userId: user._id,
-          token: hashedToken,
-          expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1 hour
-        });
-
-        const resetUrl = `${env.NEXT_PUBLIC_APP_URL}/reset-password?token=${rawToken}`;
-        await sendPasswordResetEmail({ to: input.email, resetUrl });
-      }
-
-      return { success: true };
-    }),
-
-  resetPassword: publicProcedure
-    .input(
-      z.object({
-        token: z.string(),
-        newPassword: z.string().min(8).max(128),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      const hashedToken = crypto
-        .createHash("sha256")
-        .update(input.token)
-        .digest("hex");
-
-      const resetToken = await PasswordResetTokenModel.findOne({
-        token: hashedToken,
-        expiresAt: { $gt: new Date() },
-      }).lean();
-
-      if (!resetToken) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invalid or expired reset token",
-        });
-      }
-
-      const hashed = await bcrypt.hash(input.newPassword, 12);
-      await UserModel.findByIdAndUpdate(resetToken.userId, {
-        password: hashed,
-      });
-
-      await PasswordResetTokenModel.deleteMany({ userId: resetToken.userId });
 
       return { success: true };
     }),
@@ -225,10 +132,12 @@ export const accountRouter = createTRPCRouter({
       }
 
       const token = crypto.randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + EMAIL_CONFIRMATION_TTL_MS);
 
       await UserModel.findByIdAndUpdate(ctx.session.user.id, {
         newEmail: input.newEmail.toLowerCase(),
         emailConfirmationToken: token,
+        emailConfirmationExpiresAt: expiresAt,
       });
 
       const confirmUrl = `${env.NEXT_PUBLIC_APP_URL}/api/auth/confirm-email?token=${token}`;
@@ -240,40 +149,13 @@ export const accountRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  confirmEmailChange: publicProcedure
-    .input(z.object({ token: z.string() }))
-    .mutation(async ({ input }) => {
-      const user = await UserModel.findOne({
-        emailConfirmationToken: input.token,
-      });
-
-      if (!user || !user.newEmail) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Invalid or expired confirmation token",
-        });
-      }
-
-      user.email = user.newEmail;
-      user.newEmail = null;
-      user.emailConfirmationToken = null;
-      await user.save();
-
-      await redis.del(`user:${user._id.toString()}`);
-
-      return { success: true };
-    }),
-
   // ─── MFA Status ─────────────────────────────────────────────────────────
 
   getMfaStatus: protectedProcedure.query(async ({ ctx }) => {
-    const user = await UserModel.findById(ctx.session.user.id)
-      .select("mfaEnabled mfaMethods email password")
-      .lean();
-
-    if (!user) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-    }
+    const user = await requireUserById(
+      ctx.session.user.id,
+      "mfaEnabled mfaMethods email password",
+    );
 
     const passkeys = await PasskeyModel.find({ userId: user._id })
       .select("name createdAt")
@@ -281,7 +163,7 @@ export const accountRouter = createTRPCRouter({
 
     return {
       mfaEnabled: user.mfaEnabled ?? false,
-      methods: (user.mfaMethods ?? []) as string[],
+      methods: (user.mfaMethods ?? []) as MfaMethod[],
       email: user.email,
       hasPassword: !!user.password,
       passkeys: passkeys.map((p) => ({
@@ -295,16 +177,10 @@ export const accountRouter = createTRPCRouter({
   // ─── TOTP (Authenticator App) ───────────────────────────────────────────
 
   setupTotp: protectedProcedure.mutation(async ({ ctx }) => {
-    const user = await UserModel.findById(ctx.session.user.id)
-      .select("email")
-      .lean();
-    if (!user) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-    }
+    const user = await requireUserById(ctx.session.user.id, "email");
 
     const { secret, otpauthUrl } = generateTotpSecret(user.email);
 
-    // Store the pending (unverified) secret
     await UserModel.findByIdAndUpdate(ctx.session.user.id, {
       pendingTotpSecret: encryptSecret(secret),
     });
@@ -372,12 +248,7 @@ export const accountRouter = createTRPCRouter({
   // ─── Email MFA ──────────────────────────────────────────────────────────
 
   enableEmailMfa: protectedProcedure.mutation(async ({ ctx }) => {
-    const user = await UserModel.findById(ctx.session.user.id)
-      .select("mfaMethods")
-      .lean();
-    if (!user) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-    }
+    const user = await requireUserById(ctx.session.user.id, "mfaMethods");
 
     const methods = new Set(user.mfaMethods ?? []);
     methods.add("email");
@@ -402,20 +273,18 @@ export const accountRouter = createTRPCRouter({
 
   generatePasskeyRegistrationOptions: protectedProcedure.mutation(
     async ({ ctx }) => {
-      const user = await UserModel.findById(ctx.session.user.id)
-        .select("email name username")
-        .lean();
-      if (!user) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-      }
+      const user = await requireUserById(
+        ctx.session.user.id,
+        "email name username",
+      );
 
       const existingPasskeys = await PasskeyModel.find({
         userId: user._id,
       }).lean();
 
       const options = await generateRegistrationOptions({
-        rpName: RP_NAME,
-        rpID: getRpId(),
+        rpName: APP_DISPLAY_NAME,
+        rpID: getWebAuthnRpId(),
         userID: user._id.toString(),
         userName: user.email,
         userDisplayName: user.name,
@@ -430,10 +299,9 @@ export const accountRouter = createTRPCRouter({
         },
       });
 
-      // Store challenge in Redis for verification
       await redis.setex(
-        `${WEBAUTHN_CHALLENGE_PREFIX}${ctx.session.user.id}`,
-        300,
+        redisWebauthnChallengeKey(ctx.session.user.id),
+        WEBAUTHN_CHALLENGE_TTL_SECONDS,
         options.challenge,
       );
 
@@ -444,13 +312,20 @@ export const accountRouter = createTRPCRouter({
   verifyPasskeyRegistration: protectedProcedure
     .input(
       z.object({
-        credential: z.any(),
+        credential: z.custom<RegistrationResponseJSON>(
+          (val): val is RegistrationResponseJSON =>
+            typeof val === "object" &&
+            val !== null &&
+            "id" in val &&
+            "rawId" in val &&
+            "response" in val,
+        ),
         name: z.string().min(1).max(50).default("My Passkey"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const expectedChallenge = await redis.get(
-        `${WEBAUTHN_CHALLENGE_PREFIX}${ctx.session.user.id}`,
+        redisWebauthnChallengeKey(ctx.session.user.id),
       );
 
       if (!expectedChallenge) {
@@ -465,16 +340,13 @@ export const accountRouter = createTRPCRouter({
         verification = await verifyRegistrationResponse({
           response: input.credential,
           expectedChallenge,
-          expectedOrigin: getOrigin(),
-          expectedRPID: getRpId(),
+          expectedOrigin: getWebAuthnOrigin(),
+          expectedRPID: getWebAuthnRpId(),
         });
-      } catch (error) {
+      } catch {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Passkey verification failed",
+          message: "Passkey verification failed",
         });
       }
 
@@ -493,7 +365,6 @@ export const accountRouter = createTRPCRouter({
         credentialBackedUp,
       } = verification.registrationInfo;
 
-      // Convert Uint8Array credentialID to base64url string for storage
       const credIdBase64 = Buffer.from(credentialID).toString("base64url");
 
       await PasskeyModel.create({
@@ -501,7 +372,7 @@ export const accountRouter = createTRPCRouter({
         credentialId: credIdBase64,
         publicKey: Buffer.from(credentialPublicKey),
         counter,
-        deviceType: credentialDeviceType,
+        deviceType: credentialDeviceType as PasskeyDeviceType,
         backedUp: credentialBackedUp,
         name: input.name,
       });
@@ -517,7 +388,7 @@ export const accountRouter = createTRPCRouter({
         mfaEnabled: true,
       });
 
-      await redis.del(`${WEBAUTHN_CHALLENGE_PREFIX}${ctx.session.user.id}`);
+      await redis.del(redisWebauthnChallengeKey(ctx.session.user.id));
 
       return { success: true };
     }),
@@ -532,12 +403,18 @@ export const accountRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       await verifyUserPassword(ctx.session.user.id, input.password);
 
-      await PasskeyModel.findOneAndDelete({
+      const deleted = await PasskeyModel.findOneAndDelete({
         _id: input.passkeyId,
         userId: ctx.session.user.id,
       });
 
-      // If no more passkeys, remove method
+      if (!deleted) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Passkey not found",
+        });
+      }
+
       const remaining = await PasskeyModel.countDocuments({
         userId: ctx.session.user.id,
       });
@@ -563,85 +440,6 @@ export const accountRouter = createTRPCRouter({
       });
 
       await PasskeyModel.deleteMany({ userId: ctx.session.user.id });
-
-      return { success: true };
-    }),
-
-  // ─── MFA Login Verification Helpers ─────────────────────────────────────
-
-  sendMfaLoginCode: publicProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-        method: z.enum(["email"]),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      const user = await UserModel.findById(input.userId)
-        .select("email mfaMethods")
-        .lean();
-
-      if (!user) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-      }
-
-      if (!user.mfaMethods?.includes(input.method)) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Email MFA is not enabled",
-        });
-      }
-
-      const code = generateMfaCode();
-      await redis.setex(`${MFA_CODE_PREFIX}${input.userId}`, 600, code);
-
-      await sendMfaCode({ to: user.email, code });
-
-      return { success: true };
-    }),
-
-  verifyMfaLoginCode: publicProcedure
-    .input(
-      z.object({
-        userId: z.string(),
-        method: z.enum(["totp", "email"]),
-        code: z.string().length(6),
-      }),
-    )
-    .mutation(async ({ input }) => {
-      const user = await UserModel.findById(input.userId)
-        .select("totpSecret mfaMethods")
-        .lean();
-
-      if (!user) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-      }
-
-      if (input.method === "totp") {
-        if (!user.totpSecret) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "TOTP is not configured",
-          });
-        }
-        const secret = decryptSecret(user.totpSecret);
-        const valid = verifyTotpCode(secret, input.code);
-        if (!valid) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Invalid verification code",
-          });
-        }
-      } else {
-        const stored = await redis.get(`${MFA_CODE_PREFIX}${input.userId}`);
-        if (!stored || stored !== input.code) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "Invalid or expired verification code",
-          });
-        }
-        await redis.del(`${MFA_CODE_PREFIX}${input.userId}`);
-      }
 
       return { success: true };
     }),

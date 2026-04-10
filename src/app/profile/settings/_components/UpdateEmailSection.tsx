@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import PasswordInput from "~/app/_components/ui/PasswordInput";
+import CollapsibleSettingsCard from "./CollapsibleSettingsCard";
 
 export default function UpdateEmailSection({
   currentEmail,
@@ -35,85 +36,64 @@ export default function UpdateEmailSection({
   };
 
   return (
-    <div className="border-foreground/10 rounded-xl border p-5">
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex w-full items-center justify-between"
-      >
-        <div className="text-left">
-          <h3 className="text-foreground font-medium">Email Address</h3>
-          <p className="text-foreground/50 text-sm">{currentEmail}</p>
-        </div>
-        <svg
-          className={`text-foreground/40 h-5 w-5 transition-transform ${isOpen ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
+    <CollapsibleSettingsCard
+      title="Email Address"
+      description={currentEmail}
+      isOpen={isOpen}
+      onToggle={() => setIsOpen(!isOpen)}
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {!hasPassword ? (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
+            You need to set a password before you can change your email.
+          </div>
+        ) : null}
+
+        <div>
+          <label className="text-foreground/70 mb-1.5 block text-sm font-medium">
+            New Email Address
+          </label>
+          <input
+            type="email"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            placeholder="new@example.com"
+            disabled={!hasPassword}
+            className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/30 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2.5 text-sm focus:ring-1 focus:outline-none disabled:opacity-50"
           />
-        </svg>
-      </button>
+        </div>
 
-      {isOpen && (
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {!hasPassword && (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
-              You need to set a password before you can change your email.
-            </div>
-          )}
+        <div>
+          <label className="text-foreground/70 mb-1.5 block text-sm font-medium">
+            Confirm Password
+          </label>
+          <PasswordInput
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            disabled={!hasPassword}
+            autoComplete="current-password"
+            className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/30 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2.5 text-sm focus:ring-1 focus:outline-none disabled:opacity-50"
+          />
+        </div>
 
-          <div>
-            <label className="text-foreground/70 mb-1.5 block text-sm font-medium">
-              New Email Address
-            </label>
-            <input
-              type="email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="new@example.com"
-              disabled={!hasPassword}
-              className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/30 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2.5 text-sm focus:ring-1 focus:outline-none disabled:opacity-50"
-            />
-          </div>
+        <button
+          type="submit"
+          disabled={
+            !hasPassword ||
+            !newEmail.trim() ||
+            !password ||
+            updateEmail.isPending
+          }
+          className="bg-gold hover:bg-gold-light rounded-lg px-6 py-2.5 text-sm font-semibold text-black transition-colors disabled:opacity-50"
+        >
+          {updateEmail.isPending ? "Sending..." : "Update Email"}
+        </button>
 
-          <div>
-            <label className="text-foreground/70 mb-1.5 block text-sm font-medium">
-              Confirm Password
-            </label>
-            <PasswordInput
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              disabled={!hasPassword}
-              autoComplete="current-password"
-              className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/30 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2.5 text-sm focus:ring-1 focus:outline-none disabled:opacity-50"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={
-              !hasPassword ||
-              !newEmail.trim() ||
-              !password ||
-              updateEmail.isPending
-            }
-            className="bg-gold hover:bg-gold-light rounded-lg px-6 py-2.5 text-sm font-semibold text-black transition-colors disabled:opacity-50"
-          >
-            {updateEmail.isPending ? "Sending..." : "Update Email"}
-          </button>
-
-          <p className="text-foreground/40 text-xs">
-            A confirmation link will be sent to your new email address.
-          </p>
-        </form>
-      )}
-    </div>
+        <p className="text-foreground/40 text-xs">
+          A confirmation link will be sent to your new email address.
+        </p>
+      </form>
+    </CollapsibleSettingsCard>
   );
 }

@@ -2,52 +2,17 @@
 
 import { useState, useCallback } from "react";
 import Image from "next/image";
+import type { inferRouterOutputs } from "@trpc/server";
 import { toast } from "sonner";
 import { startRegistration } from "@simplewebauthn/browser";
 import { api } from "~/trpc/react";
+import type { AppRouter } from "~/server/api/root";
 import PasswordInput from "~/app/_components/ui/PasswordInput";
+import OtpCodeInput from "~/app/_components/ui/OtpCodeInput";
+import PasswordConfirmDialog from "./PasswordConfirmDialog";
+import { PasskeyAddForm, PasskeyList } from "./PasskeyList";
 
-function PasswordConfirmDialog({
-  title,
-  onConfirm,
-  onCancel,
-  isPending,
-}: {
-  title: string;
-  onConfirm: (password: string) => void;
-  onCancel: () => void;
-  isPending: boolean;
-}) {
-  const [password, setPassword] = useState("");
-
-  return (
-    <div className="mt-3 space-y-3 rounded-lg border border-red-500/20 bg-red-500/5 p-4">
-      <p className="text-foreground/70 text-sm">{title}</p>
-      <PasswordInput
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Enter your password"
-        autoComplete="current-password"
-        className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/30 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2.5 text-sm focus:ring-1 focus:outline-none"
-      />
-      <div className="flex gap-2">
-        <button
-          onClick={() => onConfirm(password)}
-          disabled={!password || isPending}
-          className="rounded-lg bg-red-500/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/30 disabled:opacity-50"
-        >
-          {isPending ? "Disabling..." : "Confirm Disable"}
-        </button>
-        <button
-          onClick={onCancel}
-          className="text-foreground/50 hover:text-foreground/70 px-4 py-2 text-sm transition-colors"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
+type MfaStatusData = inferRouterOutputs<AppRouter>["account"]["getMfaStatus"];
 
 function TotpSetup() {
   const utils = api.useUtils();
@@ -130,16 +95,11 @@ function TotpSetup() {
         <label className="text-foreground/70 mb-1.5 block text-sm font-medium">
           Enter the 6-digit code from your app
         </label>
-        <input
-          type="text"
-          inputMode="numeric"
-          maxLength={6}
+        <OtpCodeInput
+          variant="default"
           value={code}
-          onChange={(e) =>
-            setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
-          }
+          onChange={setCode}
           placeholder="000000"
-          className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/30 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2.5 text-center text-lg tracking-[0.3em] focus:ring-1 focus:outline-none"
         />
       </div>
 
@@ -196,8 +156,15 @@ function MfaMethodCard({
   );
 }
 
-export default function MfaSection() {
-  const { data: mfaStatus, isLoading } = api.account.getMfaStatus.useQuery();
+export default function MfaSection({
+  mfaStatus,
+  isLoading,
+  isError,
+}: {
+  mfaStatus: MfaStatusData | undefined;
+  isLoading: boolean;
+  isError: boolean;
+}) {
   const utils = api.useUtils();
 
   const [disablingMethod, setDisablingMethod] = useState<string | null>(null);
@@ -276,6 +243,16 @@ export default function MfaSection() {
       }
     }
   }, [generatePasskeyOptions, verifyPasskeyReg, passkeyName]);
+
+  if (isError) {
+    return (
+      <section className="border-foreground/10 bg-surface-800 rounded-2xl border p-6">
+        <p className="text-sm text-red-400">
+          Could not load MFA settings. Please refresh the page.
+        </p>
+      </section>
+    );
+  }
 
   if (isLoading || !mfaStatus) {
     return (
@@ -383,90 +360,25 @@ export default function MfaSection() {
           description="Use your device's biometrics or security key for passwordless verification"
           enabled={isPasskeyEnabled}
         >
-          {/* Existing passkeys */}
-          {mfaStatus.passkeys.length > 0 && (
-            <div className="mb-3 space-y-2">
-              {mfaStatus.passkeys.map((passkey) => (
-                <div
-                  key={passkey.id}
-                  className="border-foreground/10 bg-foreground/5 flex items-center justify-between rounded-lg border px-4 py-3"
-                >
-                  <div>
-                    <p className="text-foreground text-sm font-medium">
-                      {passkey.name}
-                    </p>
-                    <p className="text-foreground/40 text-xs">
-                      Added{" "}
-                      {new Date(passkey.createdAt).toLocaleDateString(
-                        undefined,
-                        {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        },
-                      )}
-                    </p>
-                  </div>
-                  {removingPasskeyId === passkey.id ? (
-                    <PasswordConfirmDialog
-                      title="Enter your password to remove this passkey"
-                      onConfirm={(pw) =>
-                        removePasskey.mutate({
-                          passkeyId: passkey.id,
-                          password: pw,
-                        })
-                      }
-                      onCancel={() => setRemovingPasskeyId(null)}
-                      isPending={removePasskey.isPending}
-                    />
-                  ) : (
-                    <button
-                      onClick={() => setRemovingPasskeyId(passkey.id)}
-                      className="text-foreground/40 transition-colors hover:text-red-400"
-                    >
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          <PasskeyList
+            passkeys={mfaStatus.passkeys}
+            removingPasskeyId={removingPasskeyId}
+            onRemoveClick={setRemovingPasskeyId}
+            onCancelRemove={() => setRemovingPasskeyId(null)}
+            onConfirmRemove={(passkeyId, password) =>
+              removePasskey.mutate({ passkeyId, password })
+            }
+            isRemovePending={removePasskey.isPending}
+          />
 
-          {/* Add passkey */}
-          <div className="flex items-end gap-2">
-            <div className="flex-1">
-              <input
-                type="text"
-                value={passkeyName}
-                onChange={(e) => setPasskeyName(e.target.value)}
-                placeholder="Passkey name (e.g., iPhone)"
-                className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/30 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2.5 text-sm focus:ring-1 focus:outline-none"
-              />
-            </div>
-            <button
-              onClick={handleRegisterPasskey}
-              disabled={
-                generatePasskeyOptions.isPending || verifyPasskeyReg.isPending
-              }
-              className="bg-gold hover:bg-gold-light rounded-lg px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-black transition-colors disabled:opacity-50"
-            >
-              {generatePasskeyOptions.isPending || verifyPasskeyReg.isPending
-                ? "Adding..."
-                : "Add Passkey"}
-            </button>
-          </div>
+          <PasskeyAddForm
+            name={passkeyName}
+            onNameChange={setPasskeyName}
+            onAdd={handleRegisterPasskey}
+            isBusy={
+              generatePasskeyOptions.isPending || verifyPasskeyReg.isPending
+            }
+          />
         </MfaMethodCard>
 
         {/* Disable All MFA */}

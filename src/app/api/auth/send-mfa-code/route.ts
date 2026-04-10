@@ -4,21 +4,17 @@ import { auth } from "~/server/auth";
 import { connectDB } from "~/server/db";
 import { UserModel, PasskeyModel } from "~/server/models";
 import { redis } from "~/server/redis";
-import { generateMfaCode } from "~/server/mfa";
+import { generateMfaCode, getWebAuthnRpId } from "~/server/mfa";
 import { sendMfaCode } from "~/server/email";
-import { env } from "~/env";
+import {
+  MFA_CODE_TTL_SECONDS,
+  redisMfaCodeKey,
+  redisWebauthnChallengeKey,
+  WEBAUTHN_CHALLENGE_TTL_SECONDS,
+} from "~/server/constants";
+import { logger } from "~/lib/logger";
 
-const MFA_CODE_PREFIX = "mfa-code:";
-const WEBAUTHN_CHALLENGE_PREFIX = "webauthn-challenge:";
-
-function getRpId(): string {
-  try {
-    const url = new URL(env.NEXT_PUBLIC_APP_URL);
-    return url.hostname;
-  } catch {
-    return "localhost";
-  }
-}
+const log = logger.child({ module: "send-mfa-code" });
 
 interface SendCodeBody {
   method: "email" | "passkey";
@@ -35,6 +31,10 @@ export async function POST(request: Request) {
     const body = (await request.json()) as SendCodeBody;
     const userId = session.user.id;
 
+    if (body.method !== "email" && body.method !== "passkey") {
+      return NextResponse.json({ error: "Invalid method" }, { status: 400 });
+    }
+
     const user = await UserModel.findById(userId)
       .select("email mfaMethods")
       .lean();
@@ -44,6 +44,13 @@ export async function POST(request: Request) {
     }
 
     if (body.method === "passkey") {
+      if (!user.mfaMethods?.includes("passkey")) {
+        return NextResponse.json(
+          { error: "Passkey MFA is not enabled" },
+          { status: 400 },
+        );
+      }
+
       const passkeys = await PasskeyModel.find({ userId: user._id }).lean();
       if (passkeys.length === 0) {
         return NextResponse.json(
@@ -53,7 +60,7 @@ export async function POST(request: Request) {
       }
 
       const options = await generateAuthenticationOptions({
-        rpID: getRpId(),
+        rpID: getWebAuthnRpId(),
         allowCredentials: passkeys.map((p) => ({
           id: Buffer.from(p.credentialId, "base64url"),
           type: "public-key" as const,
@@ -63,24 +70,27 @@ export async function POST(request: Request) {
       });
 
       await redis.setex(
-        `${WEBAUTHN_CHALLENGE_PREFIX}${userId}`,
-        300,
+        redisWebauthnChallengeKey(userId),
+        WEBAUTHN_CHALLENGE_TTL_SECONDS,
         options.challenge,
       );
 
       return NextResponse.json({ options });
     }
 
-    if (body.method === "email") {
-      const code = generateMfaCode();
-      await redis.setex(`${MFA_CODE_PREFIX}${userId}`, 600, code);
-      await sendMfaCode({ to: user.email, code });
-      return NextResponse.json({ success: true });
+    if (!user.mfaMethods?.includes("email")) {
+      return NextResponse.json(
+        { error: "Email MFA is not enabled" },
+        { status: 400 },
+      );
     }
 
-    return NextResponse.json({ error: "Invalid method" }, { status: 400 });
+    const code = generateMfaCode();
+    await redis.setex(redisMfaCodeKey(userId), MFA_CODE_TTL_SECONDS, code);
+    await sendMfaCode({ to: user.email, code });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Send MFA code error:", error);
+    log.error({ err: error }, "Send MFA code error");
     return NextResponse.json({ error: "Failed to send code" }, { status: 500 });
   }
 }

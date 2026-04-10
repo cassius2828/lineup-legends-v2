@@ -37,4 +37,8 @@ export {
   PasswordResetTokenModel,
   type PasswordResetTokenDoc,
 } from "./password-reset-token";
-export { PasskeyModel, type PasskeyDoc } from "./passkey";
+export {
+  PasskeyModel,
+  type PasskeyDoc,
+  type PasskeyDeviceType,
+} from "./passkey";

@@ -1,22 +1,33 @@
+import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { auth } from "~/server/auth";
 import { connectDB } from "~/server/db";
 import { UserModel, PasskeyModel } from "~/server/models";
 import { redis } from "~/server/redis";
-import { verifyTotpCode, decryptSecret } from "~/server/mfa";
-import { env } from "~/env";
+import {
+  decryptSecret,
+  getWebAuthnOrigin,
+  getWebAuthnRpId,
+  verifyTotpCode,
+} from "~/server/mfa";
+import {
+  MFA_VERIFIED_TTL_SECONDS,
+  redisMfaCodeKey,
+  redisMfaVerifiedKey,
+  redisWebauthnChallengeKey,
+} from "~/server/constants";
+import { logger } from "~/lib/logger";
 
-const MFA_CODE_PREFIX = "mfa-code:";
-const WEBAUTHN_CHALLENGE_PREFIX = "webauthn-challenge:";
+const log = logger.child({ module: "verify-mfa" });
 
-function getRpId(): string {
-  try {
-    const url = new URL(env.NEXT_PUBLIC_APP_URL);
-    return url.hostname;
-  } catch {
-    return "localhost";
+function timingSafeEqualString(a: string, b: string): boolean {
+  const bufA = Buffer.from(a, "utf8");
+  const bufB = Buffer.from(b, "utf8");
+  if (bufA.length !== bufB.length) {
+    return false;
   }
+  return crypto.timingSafeEqual(bufA, bufB);
 }
 
 interface VerifyMfaBody {
@@ -48,7 +59,7 @@ export async function POST(request: Request) {
 
     switch (body.method) {
       case "totp": {
-        if (!body.code || !user.totpSecret) {
+        if (!body.code || !/^\d{6}$/.test(body.code) || !user.totpSecret) {
           return NextResponse.json(
             { error: "Invalid request" },
             { status: 400 },
@@ -60,16 +71,16 @@ export async function POST(request: Request) {
       }
 
       case "email": {
-        if (!body.code) {
+        if (!body.code || !/^\d{6}$/.test(body.code)) {
           return NextResponse.json(
             { error: "Code is required" },
             { status: 400 },
           );
         }
-        const stored = await redis.get(`${MFA_CODE_PREFIX}${userId}`);
-        if (stored && stored === body.code) {
+        const stored = await redis.get(redisMfaCodeKey(userId));
+        if (stored && timingSafeEqualString(stored, body.code)) {
           verified = true;
-          await redis.del(`${MFA_CODE_PREFIX}${userId}`);
+          await redis.del(redisMfaCodeKey(userId));
         }
         break;
       }
@@ -82,9 +93,7 @@ export async function POST(request: Request) {
           );
         }
 
-        const challenge = await redis.get(
-          `${WEBAUTHN_CHALLENGE_PREFIX}${userId}`,
-        );
+        const challenge = await redis.get(redisWebauthnChallengeKey(userId));
         if (!challenge) {
           return NextResponse.json(
             { error: "Challenge expired" },
@@ -112,8 +121,8 @@ export async function POST(request: Request) {
           const verification = await verifyAuthenticationResponse({
             response: authResponse,
             expectedChallenge: challenge,
-            expectedOrigin: env.NEXT_PUBLIC_APP_URL,
-            expectedRPID: getRpId(),
+            expectedOrigin: getWebAuthnOrigin(),
+            expectedRPID: getWebAuthnRpId(),
             authenticator: {
               credentialID: new Uint8Array(
                 Buffer.from(passkey.credentialId, "base64url"),
@@ -138,9 +147,12 @@ export async function POST(request: Request) {
           );
         }
 
-        await redis.del(`${WEBAUTHN_CHALLENGE_PREFIX}${userId}`);
+        await redis.del(redisWebauthnChallengeKey(userId));
         break;
       }
+
+      default:
+        return NextResponse.json({ error: "Invalid method" }, { status: 400 });
     }
 
     if (!verified) {
@@ -150,12 +162,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Store verification flag so the JWT callback can trust the session update
-    await redis.set(`mfa-verified:${userId}`, "1", "EX", 60);
+    await redis.set(
+      redisMfaVerifiedKey(userId),
+      "1",
+      "EX",
+      MFA_VERIFIED_TTL_SECONDS,
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("MFA verification error:", error);
+    log.error({ err: error }, "MFA verification error");
     return NextResponse.json({ error: "Verification failed" }, { status: 500 });
   }
 }

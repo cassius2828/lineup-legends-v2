@@ -25,6 +25,7 @@ export interface User {
   followingCount: number;
   newEmail?: string | null;
   emailConfirmationToken?: string | null;
+  emailConfirmationExpiresAt?: Date | null;
   admin?: boolean;
   mfaEnabled: boolean;
   mfaMethods: MfaMethod[];
@@ -49,6 +50,7 @@ export interface UserDoc extends Document {
   followingCount: number;
   newEmail?: string | null;
   emailConfirmationToken?: string | null;
+  emailConfirmationExpiresAt?: Date | null;
   admin?: boolean;
   mfaEnabled: boolean;
   mfaMethods: MfaMethod[];
@@ -81,9 +83,13 @@ const UserSchema = new Schema<UserDoc>(
     followingCount: { type: Number, default: 0 },
     newEmail: { type: String, default: null },
     emailConfirmationToken: { type: String, default: null },
+    emailConfirmationExpiresAt: { type: Date, default: null },
     admin: { type: Boolean, default: false },
     mfaEnabled: { type: Boolean, default: false },
-    mfaMethods: { type: [String], default: [] },
+    mfaMethods: {
+      type: [{ type: String, enum: ["totp", "email", "passkey"] }],
+      default: [],
+    },
     totpSecret: { type: String, default: null },
     pendingTotpSecret: { type: String, default: null },
   },

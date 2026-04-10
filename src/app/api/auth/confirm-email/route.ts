@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { connectDB } from "~/server/db";
 import { UserModel } from "~/server/models";
 import { redis } from "~/server/redis";
+import { redisUserProfileCacheKey } from "~/server/constants";
 import { env } from "~/env";
+import { logger } from "~/lib/logger";
+
+const log = logger.child({ module: "confirm-email" });
 
 export async function GET(request: Request) {
   try {
@@ -19,7 +23,13 @@ export async function GET(request: Request) {
 
     const user = await UserModel.findOne({ emailConfirmationToken: token });
 
-    if (!user || !user.newEmail) {
+    const now = new Date();
+    if (
+      !user ||
+      !user.newEmail ||
+      !user.emailConfirmationExpiresAt ||
+      user.emailConfirmationExpiresAt < now
+    ) {
       return NextResponse.redirect(
         `${env.NEXT_PUBLIC_APP_URL}/profile/settings?error=invalid-token`,
       );
@@ -28,15 +38,16 @@ export async function GET(request: Request) {
     user.email = user.newEmail;
     user.newEmail = null;
     user.emailConfirmationToken = null;
+    user.emailConfirmationExpiresAt = null;
     await user.save();
 
-    await redis.del(`user:${user._id.toString()}`);
+    await redis.del(redisUserProfileCacheKey(user._id.toString()));
 
     return NextResponse.redirect(
       `${env.NEXT_PUBLIC_APP_URL}/profile/settings?email-updated=true`,
     );
   } catch (error) {
-    console.error("Email confirmation error:", error);
+    log.error({ err: error }, "Email confirmation error");
     return NextResponse.redirect(
       `${env.NEXT_PUBLIC_APP_URL}/profile/settings?error=confirmation-failed`,
     );
