@@ -13,7 +13,11 @@ import MfaSection from "./_components/MfaSection";
 export default function SettingsPage() {
   const [mounted, setMounted] = useState(false);
   const { data: profile } = api.profile.getMe.useQuery();
-  const mfaQuery = api.account.getMfaStatus.useQuery();
+  const {
+    data: mfaQueryData,
+    isLoading: isMFALoading,
+    isError: isMFAError,
+  } = api.account.getMfaStatus.useQuery();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -92,21 +96,21 @@ export default function SettingsPage() {
 
             <div className="space-y-4">
               <ChangePasswordSection
-                hasPassword={mfaQuery.data?.hasPassword ?? false}
+                hasPassword={mfaQueryData?.hasPassword ?? false}
               />
 
               <UpdateEmailSection
-                currentEmail={mfaQuery.data?.email ?? profile?.email ?? ""}
-                hasPassword={mfaQuery.data?.hasPassword ?? false}
+                currentEmail={mfaQueryData?.email ?? profile?.email ?? ""}
+                hasPassword={mfaQueryData?.hasPassword ?? false}
               />
             </div>
           </section>
 
           {/* MFA Section */}
           <MfaSection
-            mfaStatus={mfaQuery.data}
-            isLoading={mfaQuery.isLoading}
-            isError={mfaQuery.isError}
+            mfaStatus={mfaQueryData}
+            isLoading={isMFALoading}
+            isError={isMFAError}
           />
         </div>
       </div>

@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import { startRegistration } from "@simplewebauthn/browser";
 import { api } from "~/trpc/react";
 import type { AppRouter } from "~/server/api/root";
-import PasswordInput from "~/app/_components/ui/PasswordInput";
 import OtpCodeInput from "~/app/_components/ui/OtpCodeInput";
 import PasswordConfirmDialog from "./PasswordConfirmDialog";
 import { PasskeyAddForm, PasskeyList } from "./PasskeyList";

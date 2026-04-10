@@ -34,7 +34,9 @@ const config = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  reactCompiler: true,
+  experimental: {
+    reactCompiler: true,
+  },
   serverExternalPackages: ["pino", "pino-pretty"],
 };
 
@@ -43,6 +45,5 @@ export default withSentryConfig(config, {
   project: process.env.SENTRY_PROJECT,
   silent: !process.env.CI,
   widenClientFileUpload: true,
-  disableLogger: true,
-  tunnelRoute: "/monitoring",
+  ...(process.env.NEXT_PUBLIC_SENTRY_DSN && { tunnelRoute: "/monitoring" }),
 });
