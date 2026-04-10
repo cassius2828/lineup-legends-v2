@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { fileTypeFromBuffer } from "file-type";
 import { auth } from "~/server/auth";
 import { uploadToS3 } from "~/server/s3";
 import { env } from "~/env";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const ALLOWED_MIMES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function POST(request: Request) {
@@ -28,13 +29,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Invalid file type. Allowed: JPEG, PNG, WebP, GIF" },
-        { status: 400 },
-      );
-    }
-
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
         { error: "File too large. Maximum size is 5MB" },
@@ -42,7 +36,16 @@ export async function POST(request: Request) {
       );
     }
 
-    const ext = file.name.split(".").pop() ?? "jpg";
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const detected = await fileTypeFromBuffer(buffer);
+    if (!detected || !ALLOWED_MIMES.includes(detected.mime)) {
+      return NextResponse.json(
+        { error: "Invalid file type. Allowed: JPEG, PNG, WebP, GIF" },
+        { status: 400 },
+      );
+    }
+
+    const ext = detected.ext;
     const subPath =
       type === "comment"
         ? `comments/${session.user.id}/${Date.now()}.${ext}`
@@ -52,8 +55,7 @@ export async function POST(request: Request) {
     const bucketPrefix = cdnUrl.pathname.replace(/^\//, "");
     const s3Key = bucketPrefix ? `${bucketPrefix}/${subPath}` : subPath;
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await uploadToS3(buffer, s3Key, file.type);
+    await uploadToS3(buffer, s3Key, detected.mime);
 
     const publicUrl = `${env.NEXT_PUBLIC_CLOUDFRONT_URL}/${subPath}`;
 

@@ -6,6 +6,7 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { PlayerModel } from "~/server/models";
+import { escapeRegex } from "~/server/lib/escape-regex";
 import {
   getPlayersFromCacheOrDb,
   invalidatePlayersCache,
@@ -54,7 +55,7 @@ export const playerRouter = createTRPCRouter({
     }),
 
   search: publicProcedure
-    .input(z.object({ query: z.string() }))
+    .input(z.object({ query: z.string().max(100) }))
     .output(z.array(playerOutput))
     .query(async ({ input }) => {
       if (!input.query.trim()) {
@@ -63,7 +64,7 @@ export const playerRouter = createTRPCRouter({
         );
       }
 
-      const searchRegex = new RegExp(input.query, "i");
+      const searchRegex = new RegExp(escapeRegex(input.query), "i");
       const players = await PlayerModel.find({
         $or: [
           { firstName: { $regex: searchRegex } },

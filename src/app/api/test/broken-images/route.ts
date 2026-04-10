@@ -1,6 +1,7 @@
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { NextResponse } from "next/server";
+import { auth } from "~/server/auth";
 
 interface BrokenImage {
   name: string;
@@ -70,6 +71,14 @@ Total broken images: ${count}
 }
 
 export async function POST(request: Request) {
+  if (process.env.NODE_ENV !== "development") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  const session = await auth();
+  if (!session?.user?.admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  }
+
   try {
     const body = (await request.json()) as RequestBody;
     const { brokenImages } = body;

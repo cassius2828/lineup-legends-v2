@@ -7,6 +7,7 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { FollowModel, UserModel } from "~/server/models";
+import { escapeRegex } from "~/server/lib/escape-regex";
 import {
   paginatedFollowOutput,
   searchUserOutput,
@@ -174,7 +175,7 @@ export const followRouter = createTRPCRouter({
     )
     .output(z.array(searchUserOutput))
     .query(async ({ input }) => {
-      const searchRegex = new RegExp(input.query, "i");
+      const searchRegex = new RegExp(escapeRegex(input.query), "i");
 
       const users = await UserModel.find({
         $or: [{ name: searchRegex }, { username: searchRegex }],

@@ -42,9 +42,21 @@ function GoogleIcon() {
   );
 }
 
+function safePath(url: string | null): string {
+  if (
+    !url ||
+    !url.startsWith("/") ||
+    url.startsWith("//") ||
+    url.startsWith("/\\")
+  ) {
+    return "/";
+  }
+  return url;
+}
+
 function SignInContent() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  const callbackUrl = safePath(searchParams.get("callbackUrl"));
   const errorType = searchParams.get("error");
   const isSignUp = searchParams.get("mode") === "signup";
 
@@ -90,7 +102,17 @@ function SignInContent() {
         setError(ERROR_MESSAGES.CredentialsSignin!);
         setIsLoading(null);
       } else {
-        window.location.href = callbackUrl;
+        // Check if MFA is required by fetching the session
+        const sessionRes = await fetch("/api/auth/session");
+        const sessionData = (await sessionRes.json()) as {
+          user?: { mfaPending?: boolean };
+        };
+
+        if (sessionData?.user?.mfaPending) {
+          window.location.href = "/sign-in/mfa-verify";
+        } else {
+          window.location.href = callbackUrl;
+        }
       }
     } catch {
       setError(ERROR_MESSAGES.Default!);

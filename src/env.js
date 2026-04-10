@@ -33,6 +33,9 @@ export const env = createEnv({
     REDIS_URL: z.string().url(),
 
     YOUTUBE_API_KEY: z.string(),
+
+    // MFA
+    MFA_ENCRYPTION_KEY: z.string().length(64),
   },
 
   /**
@@ -44,6 +47,10 @@ export const env = createEnv({
     // CloudFront URL is safe to expose - it's a public CDN endpoint
     NEXT_PUBLIC_CLOUDFRONT_URL: z.string().url(),
     NEXT_PUBLIC_GIPHY_API_KEY: z.string(),
+    NEXT_PUBLIC_APP_URL: z
+      .string()
+      .url()
+      .default("https://lineup-legends-v2.vercel.app"),
   },
 
   /**
@@ -70,9 +77,14 @@ export const env = createEnv({
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     REDIS_URL: process.env.REDIS_URL,
     YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
+
+    // MFA (server-only)
+    MFA_ENCRYPTION_KEY: process.env.MFA_ENCRYPTION_KEY,
+
     // Public (safe for client exposure)
     NEXT_PUBLIC_CLOUDFRONT_URL: process.env.NEXT_PUBLIC_CLOUDFRONT_URL,
     NEXT_PUBLIC_GIPHY_API_KEY: process.env.NEXT_PUBLIC_GIPHY_API_KEY,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   },
 
   /**
