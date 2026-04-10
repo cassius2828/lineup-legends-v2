@@ -22,7 +22,9 @@ export const metadata: Metadata = {
   description:
     "Build your dream fantasy basketball lineup with a $15 budget. Create, rate, gamble, and compete with friends.",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
-  metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
+  metadataBase: new URL(
+    env.NEXT_PUBLIC_APP_URL || "https://lineup-legends-v2.vercel.app",
+  ),
   openGraph: {
     type: "website",
     siteName: "Lineup Legends",
