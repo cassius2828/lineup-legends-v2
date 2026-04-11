@@ -2,6 +2,12 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { Coffee } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 
 const containerVariants = {
   hidden: {},
@@ -129,6 +135,36 @@ export function Footer() {
           <SocialLink href="https://github.com/cassius2828" label="GitHub">
             <GitHubIcon />
           </SocialLink>
+          <motion.div variants={socialItemVariants}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href="https://buy.stripe.com/fZu5kwaPN5ML48L1Hw2Ry01"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Buy me a coffee"
+                  className="group text-foreground/60 hover:text-gold relative block transition-all duration-300"
+                >
+                  <span className="bg-gold/0 group-hover:bg-gold/10 absolute -inset-2 rounded-full transition-all duration-300" />
+                  <span className="relative block transition-transform duration-300 group-hover:scale-110">
+                    <Coffee className="h-6 w-6" strokeWidth={2} aria-hidden />
+                  </span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent
+                sideOffset={6}
+                className="max-w-[min(18rem,calc(100vw-2rem))] px-3 py-2 text-left"
+              >
+                <p className="text-background leading-snug font-semibold">
+                  Buy me a coffee
+                </p>
+                <p className="text-background/90 mt-1.5 text-xs leading-relaxed">
+                  If you chip in, thank you from the bottom of my heart—it
+                  genuinely means the world and helps keep Lineup Legends alive.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </motion.div>
         </motion.div>
 
         {/* Legal Links */}
