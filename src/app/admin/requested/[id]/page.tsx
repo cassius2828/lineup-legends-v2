@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { api } from "~/trpc/react";
+import { Button } from "~/app/_components/ui/Button";
 import { isValidImageUrl } from "~/lib/utils";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
@@ -182,12 +183,14 @@ export default function RequestedPlayerDetailPage() {
             </div>
           </div>
 
-          <button
+          <Button
             onClick={() => setShowDeleteConfirm(true)}
-            className="rounded-lg bg-red-600/20 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-600/30"
+            color="red"
+            variant="subtle"
+            className="px-4 py-2"
           >
             Delete Request
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -271,13 +274,16 @@ export default function RequestedPlayerDetailPage() {
                 added to the database!
               </p>
             </div>
-            <button
+            <Button
               onClick={handleAddAndRemoveRequest}
-              disabled={deleteRequest.isPending}
-              className="w-full rounded-lg bg-red-600/20 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-600/30 disabled:opacity-50"
+              color="red"
+              variant="subtle"
+              loading={deleteRequest.isPending}
+              loadingText="Removing..."
+              className="w-full py-2.5"
             >
-              {deleteRequest.isPending ? "Removing..." : "Remove this request"}
-            </button>
+              Remove this request
+            </Button>
           </div>
         ) : (
           <form onSubmit={handleQuickAdd} className="space-y-4">
@@ -330,15 +336,17 @@ export default function RequestedPlayerDetailPage() {
               />
             </div>
 
-            <button
+            <Button
               type="submit"
-              disabled={createPlayer.isPending || !playerImgUrl.trim()}
-              className="bg-gold hover:bg-gold-light w-full rounded-lg py-2.5 text-sm font-semibold text-black transition-colors disabled:opacity-50"
+              disabled={!playerImgUrl.trim()}
+              color="gold"
+              variant="solid"
+              loading={createPlayer.isPending}
+              loadingText="Adding Player..."
+              className="w-full py-2.5 font-semibold"
             >
-              {createPlayer.isPending
-                ? "Adding Player..."
-                : "Add Player to Database"}
-            </button>
+              Add Player to Database
+            </Button>
           </form>
         )}
       </div>

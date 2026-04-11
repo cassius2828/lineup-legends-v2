@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Button } from "~/app/_components/ui/Button";
 
 export default function Error({
   error,
@@ -19,12 +20,14 @@ export default function Error({
           {error.message || "An unexpected error occurred."}
         </p>
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <button
+          <Button
             onClick={reset}
-            className="border-gold bg-gold/10 text-foreground/90 hover:bg-gold cursor-pointer rounded-lg border-2 px-6 py-3 text-sm font-medium transition-all hover:text-black"
+            color="gold"
+            variant="subtle"
+            className="px-6 py-3"
           >
             Try Again
-          </button>
+          </Button>
           <Link
             href="/"
             className="border-foreground/20 text-foreground/90 hover:border-gold/50 hover:bg-gold/10 rounded-lg border bg-transparent px-6 py-3 text-center text-sm font-medium transition-all"

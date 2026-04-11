@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle, XCircle, Ban, Clock } from "lucide-react";
+import { Button } from "~/app/_components/ui/Button";
 import {
   AdminFilterTabs,
   AdminSpinner,
@@ -168,52 +169,60 @@ export default function FlaggedContentPage() {
 
             {flag.status === "pending" && (
               <div className="border-foreground/10 flex flex-wrap items-center gap-2 border-t pt-3">
-                <button
-                  type="button"
+                <Button
                   onClick={() => handleAction(flag.id, "dismiss")}
                   disabled={reviewMutation.isPending}
-                  className="border-foreground/20 text-foreground/70 hover:bg-foreground/5 flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
+                  color="white"
+                  variant="subtle"
                 >
-                  <XCircle className="h-3.5 w-3.5" />
-                  Dismiss
-                </button>
-                <button
-                  type="button"
+                  <span className="flex items-center gap-1.5">
+                    <XCircle className="h-3.5 w-3.5" />
+                    Dismiss
+                  </span>
+                </Button>
+                <Button
                   onClick={() => handleAction(flag.id, "warn")}
                   disabled={reviewMutation.isPending}
-                  className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-400 transition-colors hover:bg-amber-500/20"
+                  color="orange"
+                  variant="subtle"
                 >
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  Warn
-                </button>
-                <button
-                  type="button"
+                  <span className="flex items-center gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Warn
+                  </span>
+                </Button>
+                <Button
                   onClick={() =>
                     reviewingId === flag.id
                       ? handleAction(flag.id, "suspend")
                       : setReviewingId(flag.id)
                   }
                   disabled={reviewMutation.isPending}
-                  className="flex items-center gap-1.5 rounded-lg border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-medium text-orange-400 transition-colors hover:bg-orange-500/20"
+                  color="orange"
+                  variant="subtle"
                 >
-                  <Clock className="h-3.5 w-3.5" />
-                  Suspend
-                </button>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-3.5 w-3.5" />
+                    Suspend
+                  </span>
+                </Button>
                 {reviewingId === flag.id && (
                   <DurationPicker
                     value={suspendDays}
                     onChange={setSuspendDays}
                   />
                 )}
-                <button
-                  type="button"
+                <Button
                   onClick={() => handleAction(flag.id, "ban")}
                   disabled={reviewMutation.isPending}
-                  className="flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/20"
+                  color="red"
+                  variant="subtle"
                 >
-                  <Ban className="h-3.5 w-3.5" />
-                  Ban
-                </button>
+                  <span className="flex items-center gap-1.5">
+                    <Ban className="h-3.5 w-3.5" />
+                    Ban
+                  </span>
+                </Button>
               </div>
             )}
 

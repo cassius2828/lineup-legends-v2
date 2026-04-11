@@ -6,6 +6,7 @@ import { api } from "~/trpc/react";
 import { validatePassword } from "~/lib/password-validation";
 import PasswordInput from "~/app/_components/ui/PasswordInput";
 import PasswordRequirements from "~/app/_components/ui/PasswordRequirements";
+import { Button } from "~/app/_components/ui/Button";
 import CollapsibleSettingsCard from "./CollapsibleSettingsCard";
 
 export default function ChangePasswordSection({
@@ -108,17 +109,17 @@ export default function ChangePasswordSection({
           ) : null}
         </div>
 
-        <button
+        <Button
           type="submit"
-          disabled={!canSubmit || changePassword.isPending}
-          className="bg-gold hover:bg-gold-light rounded-lg px-6 py-2.5 text-sm font-semibold text-black transition-colors disabled:opacity-50"
+          color="gold"
+          variant="solid"
+          disabled={!canSubmit}
+          loading={changePassword.isPending}
+          loadingText="Saving..."
+          className="px-6 py-2.5 font-semibold"
         >
-          {changePassword.isPending
-            ? "Saving..."
-            : hasPassword
-              ? "Update Password"
-              : "Set Password"}
-        </button>
+          {hasPassword ? "Update Password" : "Set Password"}
+        </Button>
       </form>
     </CollapsibleSettingsCard>
   );

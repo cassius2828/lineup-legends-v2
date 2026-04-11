@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
+import { Button } from "~/app/_components/ui/Button";
 import { StatusBadge } from "../components/StatusBadge";
 
 type FeedbackStatus = "new" | "read" | "resolved";
@@ -169,33 +170,36 @@ export default function AdminFeedbackPage() {
                     {/* Status actions */}
                     <div className="flex gap-2">
                       {item.status !== "read" && (
-                        <button
+                        <Button
                           onClick={() => handleStatusChange(item.id, "read")}
                           disabled={updateStatus.isPending}
-                          className="rounded-lg bg-blue-400/10 px-3 py-1.5 text-xs font-medium text-blue-400 transition-colors hover:bg-blue-400/20 disabled:opacity-50"
+                          color="blue"
+                          variant="subtle"
                         >
                           Mark as Read
-                        </button>
+                        </Button>
                       )}
                       {item.status !== "resolved" && (
-                        <button
+                        <Button
                           onClick={() =>
                             handleStatusChange(item.id, "resolved")
                           }
                           disabled={updateStatus.isPending}
-                          className="bg-gold-300/10 text-gold-300 hover:bg-gold-300/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+                          color="gold"
+                          variant="subtle"
                         >
                           Mark as Resolved
-                        </button>
+                        </Button>
                       )}
                       {item.status !== "new" && (
-                        <button
+                        <Button
                           onClick={() => handleStatusChange(item.id, "new")}
                           disabled={updateStatus.isPending}
-                          className="bg-foreground/5 text-foreground/50 hover:bg-foreground/10 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+                          color="white"
+                          variant="subtle"
                         >
                           Reset to New
-                        </button>
+                        </Button>
                       )}
                     </div>
                   </div>

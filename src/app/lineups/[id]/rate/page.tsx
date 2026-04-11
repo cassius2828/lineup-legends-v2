@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { PlayerCard } from "~/app/_components/PlayerCard";
+import { Button } from "~/app/_components/ui/Button";
 import {
   RATING_MIN,
   RATING_MAX,
@@ -183,13 +184,16 @@ export default function RateLineupPage() {
             >
               Cancel
             </Link>
-            <button
+            <Button
               onClick={handleSubmit}
-              disabled={rateMutation.isPending}
-              className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:opacity-50"
+              color="gold"
+              variant="solid"
+              loading={rateMutation.isPending}
+              loadingText="Submitting..."
+              className="flex-1 py-3 font-semibold"
             >
-              {rateMutation.isPending ? "Submitting..." : "Submit Rating"}
-            </button>
+              Submit Rating
+            </Button>
           </div>
         ) : (
           <div className="border-foreground/10 rounded-xl border p-6 text-center">

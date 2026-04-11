@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Button } from "~/app/_components/ui/Button";
 
 interface GlobalErrorProps {
   error: Error & { digest?: string };
@@ -25,12 +26,14 @@ const GlobalError = ({ error, reset }: GlobalErrorProps) => {
             </div>
 
             <div className="flex flex-col gap-4 pt-4 sm:flex-row sm:justify-center">
-              <button
+              <Button
                 onClick={reset}
-                className="border-gold bg-gold/10 text-foreground/90 hover:bg-gold cursor-pointer rounded-lg border-2 px-6 py-3 text-sm font-medium capitalize transition-all hover:text-black"
+                color="gold"
+                variant="subtle"
+                className="px-6 py-3"
               >
                 Try Again
-              </button>
+              </Button>
               <Link
                 href="/"
                 className="border-foreground/20 text-foreground/90 hover:border-gold/50 hover:bg-gold/10 hover:text-foreground w-full rounded-lg border bg-transparent px-6 py-3 text-center text-sm font-medium capitalize transition-all sm:w-auto"

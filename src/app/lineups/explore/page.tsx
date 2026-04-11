@@ -6,6 +6,7 @@ import { useState } from "react";
 import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
 import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
+import { Button } from "~/app/_components/ui/Button";
 import {
   Tooltip,
   TooltipContent,
@@ -59,18 +60,15 @@ export default function ExploreLineupsPage() {
         {/* Sort Controls */}
         <div className="mb-6 flex gap-2">
           {SORT_OPTIONS.map((option) => (
-            <button
+            <Button
               key={option.value}
               onMouseEnter={() => handlePreFetchLineups(option.value)}
               onClick={() => setSort(option.value)}
-              className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                sort === option.value
-                  ? "bg-gold-600 text-foreground"
-                  : "bg-foreground/10 text-foreground/70 hover:bg-foreground/20"
-              }`}
+              color={sort === option.value ? "gold" : "white"}
+              variant={sort === option.value ? "solid" : "subtle"}
             >
               {option.label}
-            </button>
+            </Button>
           ))}
           <Tooltip>
             <TooltipTrigger asChild>

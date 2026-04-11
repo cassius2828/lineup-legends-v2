@@ -3,6 +3,7 @@
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "~/server/api/root";
 import FormInput from "~/app/_components/ui/FormInput";
+import { Button } from "~/app/_components/ui/Button";
 import PasswordConfirmDialog from "./PasswordConfirmDialog";
 
 type PasskeySummary =
@@ -104,14 +105,16 @@ export function PasskeyAddForm({
           className="py-2.5 text-sm"
         />
       </div>
-      <button
-        type="button"
+      <Button
         onClick={onAdd}
-        disabled={isBusy}
-        className="bg-gold hover:bg-gold-light rounded-lg px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-black transition-colors disabled:opacity-50"
+        color="gold"
+        variant="solid"
+        loading={isBusy}
+        loadingText="Adding..."
+        className="px-4 py-2.5 font-semibold whitespace-nowrap"
       >
-        {isBusy ? "Adding..." : "Add Passkey"}
-      </button>
+        Add Passkey
+      </Button>
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { api } from "~/trpc/react";
+import { Button } from "~/app/_components/ui/Button";
 import Image from "next/image";
 
 function FollowButton({
@@ -27,25 +28,18 @@ function FollowButton({
   if (!sessionUserId || sessionUserId === targetUserId) return null;
 
   return (
-    <button
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    <Button
+      onClick={() => {
         toggleFollow.mutate({ targetUserId });
       }}
-      disabled={toggleFollow.isPending}
-      className={`shrink-0 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
-        followStatus?.following
-          ? "bg-foreground/10 text-foreground hover:bg-red-500/20 hover:text-red-400"
-          : "bg-gold hover:bg-gold-light text-black"
-      }`}
+      color={followStatus?.following ? "white" : "gold"}
+      variant={followStatus?.following ? "subtle" : "solid"}
+      loading={toggleFollow.isPending}
+      loadingText="..."
+      className="shrink-0"
     >
-      {toggleFollow.isPending
-        ? "..."
-        : followStatus?.following
-          ? "Unfollow"
-          : "Follow"}
-    </button>
+      {followStatus?.following ? "Unfollow" : "Follow"}
+    </Button>
   );
 }
 

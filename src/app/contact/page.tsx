@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import { Button } from "~/app/_components/ui/Button";
 import { DuplicateHints } from "~/app/_components/PlayerRequest/DuplicateHints";
 
 const sectionVariants = {
@@ -246,13 +247,16 @@ function PlayerRequestSection() {
           </p>
         </div>
 
-        <button
+        <Button
           type="submit"
-          disabled={createRequest.isPending}
-          className="bg-gold hover:bg-gold-light w-full rounded-lg px-6 py-2.5 font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          color="gold"
+          variant="solid"
+          loading={createRequest.isPending}
+          loadingText="Submitting..."
+          className="w-full px-6 py-2.5 font-semibold"
         >
-          {createRequest.isPending ? "Submitting..." : "Submit Request"}
-        </button>
+          Submit Request
+        </Button>
       </form>
     </motion.section>
   );
@@ -403,13 +407,16 @@ function FeedbackSection() {
           </p>
         </div>
 
-        <button
+        <Button
           type="submit"
-          disabled={createFeedback.isPending}
-          className="bg-gold hover:bg-gold-light w-full rounded-lg px-6 py-2.5 font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+          color="gold"
+          variant="solid"
+          loading={createFeedback.isPending}
+          loadingText="Sending..."
+          className="w-full px-6 py-2.5 font-semibold"
         >
-          {createFeedback.isPending ? "Sending..." : "Send Feedback"}
-        </button>
+          Send Feedback
+        </Button>
       </form>
     </motion.section>
   );
