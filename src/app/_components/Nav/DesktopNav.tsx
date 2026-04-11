@@ -8,7 +8,7 @@ import { IoIosLogOut } from "react-icons/io";
 
 const DesktopNav = ({ session }: { session: Session | null }) => {
   return (
-    <div className="hidden items-center gap-6 md:flex">
+    <div className="hidden items-center gap-6 text-sm md:flex">
       <Link
         href="/players"
         className="hover:text-gold text-foreground/90 hidden capitalize transition-colors sm:block"

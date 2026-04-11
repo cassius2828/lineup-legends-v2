@@ -42,7 +42,7 @@ export function DroppablePositionSlot({
       {/* Player Slot */}
       <div
         ref={setNodeRef}
-        className={`relative flex h-16 w-16 items-center justify-center rounded-lg transition-all duration-200 ${
+        className={`relative flex h-12 w-12 items-center justify-center rounded-lg transition-all duration-200 sm:h-16 sm:w-16 ${
           isDraggedOver
             ? "border-gold bg-gold/20 scale-110 border-2 border-solid shadow-[0_0_20px_rgba(227,185,32,0.5)]"
             : isValidDropTarget

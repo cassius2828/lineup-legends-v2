@@ -7,11 +7,11 @@ const CreateLineupHeader = ({
 }) => {
   return (
     <header className="mb-4 flex flex-col items-center justify-center">
-      <h1 className="text-foreground text-2xl font-bold tracking-wide uppercase">
+      <h1 className="text-foreground font-bold tracking-wide uppercase md:text-2xl">
         Build Your Starting 5
       </h1>
       <span
-        className={`mt-1 text-3xl font-bold transition-colors duration-200 ${
+        className={`mt-1 font-bold transition-colors duration-200 md:text-3xl ${
           remainingBudget < 3
             ? "text-red-400"
             : remainingBudget < 6
