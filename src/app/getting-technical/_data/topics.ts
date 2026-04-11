@@ -548,6 +548,131 @@ _Content coming soon — add your video and detailed writeup here._
   },
 
   {
+    slug: "content-moderation",
+    title: "Content Moderation & Bans",
+    description:
+      "Profanity filtering, content flagging, user bans/suspensions, and the admin review queue.",
+    category: "security",
+    icon: "🚫",
+    videoId: "",
+    status: "coming-soon",
+    content: `
+## Overview
+
+Lineup Legends enforces community standards through a multi-layer content moderation system: **automated profanity filtering**, **admin content review**, and **user ban/suspension management**.
+
+## Profanity Filter
+
+All user-generated text passes through a censorship pipeline before being stored:
+
+- **Library** — uses the \`bad-words\` package as the base filter
+- **Censor step** — \`censorText()\` replaces profane words with asterisks and returns the cleaned text plus a list of flagged words
+- **Flag step** — if any profanity is detected, a \`ContentFlag\` document is created for admin review while the cleaned text is saved to the database
+
+### Where It Runs
+
+| Surface | Content Type |
+|---------|-------------|
+| Comments | \`comment\` |
+| Thread replies | \`thread\` |
+| Profile username | \`username\` |
+| Profile bio | \`bio\` |
+| Feedback submissions | \`feedback\` |
+| Player request notes | \`player-request\` |
+| Registration name | \`registration\` |
+
+### Implementation
+
+\`\`\`
+censorText(rawText)
+  → { cleaned, flagged, flaggedWords }
+
+flagContent({ raw, result, contentType, contentId, userId })
+  → Creates a ContentFlag if result.flagged is true
+\`\`\`
+
+Both helpers live in \`src/server/lib/censor.ts\` and are shared across all mutation points.
+
+## Content Flag Model
+
+\`\`\`
+ContentFlag {
+  contentType: "comment" | "thread" | "username" | ...
+  contentId: ObjectId | null
+  userId: ObjectId | null
+  originalText: String
+  censoredText: String
+  flaggedWords: [String]
+  status: "pending" | "reviewed" | "dismissed"
+  reviewedBy: ObjectId | null
+  reviewedAt: Date | null
+  action: "none" | "warn" | "suspend" | "ban" | null
+}
+\`\`\`
+
+Indexed by \`{ status, createdAt }\` for efficient admin queries and by \`{ userId }\` for per-user flag history.
+
+## Admin Review Queue
+
+The \`/admin/flagged\` page surfaces all pending flags:
+
+1. Admin sees the **original text**, **censored version**, and **flagged words** highlighted
+2. Each flag links to the user's profile for context (recent comments, flag history, suspension count)
+3. Admin selects an action: **Dismiss**, **Warn**, **Suspend** (with configurable duration), or **Ban**
+
+### Actions
+
+| Action | Effect |
+|--------|--------|
+| Dismiss | Flag marked as dismissed, no user impact |
+| Warn | Flag marked as reviewed (future: notification to user) |
+| Suspend | Sets \`suspendedUntil\` on the user, increments \`suspensionCount\` |
+| Ban | Sets \`banned: true\`, adds email to \`BannedEmailModel\` to prevent re-registration |
+
+## User Bans & Suspensions
+
+### Suspension
+
+- Temporary — the user cannot sign in until \`suspendedUntil\` has passed
+- Duration is configurable: 1, 3, 7, 14, 30, or 90 days
+- \`suspensionCount\` tracks how many times a user has been suspended (visible to admins)
+
+### Permanent Ban
+
+- \`banned: true\` prevents all sign-in attempts (credentials and OAuth)
+- The user's email is inserted into the \`BannedEmail\` collection, blocking future registrations and OAuth sign-ups with the same address
+- \`banReason\` stores the admin-provided explanation
+
+### Sign-In Enforcement
+
+**Credentials flow:**
+- Before calling \`signIn()\`, the client calls \`/api/auth/check-ban\` with the identifier
+- If banned or suspended, a toast notification shows the reason, timeframe, and contact email
+- The \`authorize()\` callback also checks ban/suspension status as a defense-in-depth measure
+
+**OAuth flow:**
+- The NextAuth \`signIn\` callback checks \`UserModel\` for ban/suspension status
+- For new accounts, it also checks \`BannedEmailModel\` to block re-registration
+- Rejected users are redirected to \`/sign-in?error=banned\` where the client fetches details via the check-ban API
+
+### Unban
+
+Admins can reverse a ban or suspension from the user detail page. This clears the ban fields and removes the email from \`BannedEmailModel\`.
+
+## Admin User Management
+
+The \`/admin/users\` page provides:
+
+- **Search** — find users by name, email, or username
+- **Filter tabs** — all, banned, or suspended
+- **User detail** — profile info, IPs, suspension count, flag history, recent comments
+- **Actions** — ban, suspend (with duration picker), or unban
+
+_Content coming soon — add your video and detailed writeup here._
+`,
+  },
+
+  {
     slug: "caching-layer",
     title: "Caching with Redis",
     description:

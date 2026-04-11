@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -12,6 +12,8 @@ import {
   Menu,
   X,
   ChevronLeft,
+  AlertTriangle,
+  Shield,
 } from "lucide-react";
 
 const navItems = [
@@ -37,15 +39,38 @@ const navItems = [
     icon: MessageSquare,
   },
   {
+    label: "Flagged Content",
+    href: "/admin/flagged",
+    icon: AlertTriangle,
+  },
+  {
+    label: "User Management",
+    href: "/admin/users",
+    icon: Shield,
+  },
+  {
     label: "Videos",
     href: "/getting-technical",
     icon: Video,
   },
 ];
 
+const SIDEBAR_ID = "admin-sidebar";
+
 export function AdminSidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMobile();
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [mobileOpen, closeMobile]);
 
   const isActive = (href: string, exact?: boolean) => {
     if (exact) return pathname === href;
@@ -70,14 +95,14 @@ export function AdminSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4">
+      <nav aria-label="Admin navigation" className="flex-1 space-y-1 p-4">
         {navItems.map((item) => {
           const active = isActive(item.href, item.exact);
           return (
             <Link
               key={item.href}
               href={item.href}
-              onClick={() => setMobileOpen(false)}
+              onClick={closeMobile}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                 active
                   ? "bg-gold/15 text-gold"
@@ -110,7 +135,11 @@ export function AdminSidebar() {
     <>
       {/* Mobile toggle */}
       <button
+        type="button"
         onClick={() => setMobileOpen(!mobileOpen)}
+        aria-expanded={mobileOpen}
+        aria-controls={SIDEBAR_ID}
+        aria-label={mobileOpen ? "Close admin menu" : "Open admin menu"}
         className="bg-foreground/10 fixed top-4 left-4 z-50 rounded-lg p-2 backdrop-blur-sm md:hidden"
       >
         {mobileOpen ? (
@@ -124,12 +153,15 @@ export function AdminSidebar() {
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 md:hidden"
-          onClick={() => setMobileOpen(false)}
+          onClick={closeMobile}
+          aria-hidden="true"
         />
       )}
 
       {/* Sidebar - mobile */}
       <aside
+        id={SIDEBAR_ID}
+        aria-hidden={!mobileOpen}
         className={`border-foreground/10 bg-background fixed top-0 left-0 z-40 h-full w-64 border-r transition-transform md:hidden ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}

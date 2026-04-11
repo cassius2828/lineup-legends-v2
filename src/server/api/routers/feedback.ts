@@ -8,6 +8,7 @@ import {
 } from "~/server/api/trpc";
 import { feedbackStatusSchema } from "~/server/api/schemas/feedback";
 import { FeedbackModel } from "~/server/models";
+import { censorText, flagContent } from "~/server/lib/censor";
 import { sendFeedbackEmail } from "~/server/email";
 import { logger } from "~/lib/logger";
 import { feedbackListItemOutput, populated } from "~/server/api/schemas/output";
@@ -34,19 +35,41 @@ export const feedbackRouter = createTRPCRouter({
         });
       }
 
+      const subjectCensored = censorText(input.subject.trim());
+      const messageCensored = censorText(input.message.trim());
+
       const feedback = await FeedbackModel.create({
         name: input.name.trim(),
         email,
-        subject: input.subject.trim(),
-        message: input.message.trim(),
+        subject: subjectCensored.cleaned,
+        message: messageCensored.cleaned,
       });
+
+      if (subjectCensored.flagged || messageCensored.flagged) {
+        await flagContent({
+          raw: `${input.subject.trim()}\n---\n${input.message.trim()}`,
+          result: {
+            cleaned: `${subjectCensored.cleaned}\n---\n${messageCensored.cleaned}`,
+            flagged: true,
+            flaggedWords: [
+              ...new Set([
+                ...subjectCensored.flaggedWords,
+                ...messageCensored.flaggedWords,
+              ]),
+            ],
+          },
+          contentType: "feedback",
+          contentId: feedback._id,
+          userId: ctx.session?.user?.id ?? null,
+        });
+      }
 
       try {
         await sendFeedbackEmail({
           name: input.name.trim(),
           email,
-          subject: input.subject.trim(),
-          message: input.message.trim(),
+          subject: subjectCensored.cleaned,
+          message: messageCensored.cleaned,
         });
       } catch (error) {
         log.error(

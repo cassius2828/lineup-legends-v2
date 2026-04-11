@@ -16,6 +16,7 @@ import {
 import { CommentModel, CommentVoteModel } from "~/server/models";
 import { ThreadModel } from "~/server/models/threads";
 import { ThreadVoteModel } from "~/server/models/threadVotes";
+import { censorText, flagContent } from "~/server/lib/censor";
 import {
   paginatedCommentsOutput,
   paginatedThreadsOutput,
@@ -188,12 +189,23 @@ export const commentRouter = createTRPCRouter({
     .input(commentBodySchema)
     .output(addCommentResultOutput)
     .mutation(async ({ ctx, input }) => {
+      const rawText = input.text.trim();
+      const censored = censorText(rawText);
+
       const comment = await CommentModel.create({
-        text: input.text.trim() || null,
+        text: censored.cleaned || null,
         user: ctx.session.user.id,
         lineup: input.lineupId,
         image: input.image ?? null,
         gif: input.gif ?? null,
+      });
+
+      await flagContent({
+        raw: rawText,
+        result: censored,
+        contentType: "comment",
+        contentId: comment._id,
+        userId: ctx.session.user.id,
       });
 
       return populated({
@@ -222,12 +234,23 @@ export const commentRouter = createTRPCRouter({
           message: "Comment not found.",
         });
       }
+      const rawText = input.text.trim();
+      const censored = censorText(rawText);
+
       const newThreadReply = await ThreadModel.create({
-        text: input.text.trim() || null,
+        text: censored.cleaned || null,
         user: ctx.session.user.id,
         comment: new mongoose.Types.ObjectId(input.commentId),
         image: input.image ?? null,
         gif: input.gif ?? null,
+      });
+
+      await flagContent({
+        raw: rawText,
+        result: censored,
+        contentType: "thread",
+        contentId: newThreadReply._id,
+        userId: ctx.session.user.id,
       });
 
       return populated({

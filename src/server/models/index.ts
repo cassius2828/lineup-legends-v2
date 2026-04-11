@@ -42,3 +42,11 @@ export {
   type PasskeyDoc,
   type PasskeyDeviceType,
 } from "./passkey";
+export { BannedEmailModel, type BannedEmailDoc } from "./banned-email";
+export {
+  ContentFlagModel,
+  type ContentFlagDoc,
+  type ContentFlagType,
+  type ContentFlagStatus,
+  type ContentFlagAction,
+} from "./content-flag";
