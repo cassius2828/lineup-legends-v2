@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
+import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
 import { Button } from "~/app/_components/ui/Button";
 import { getId } from "~/lib/types";
 import { SORT_OPTIONS, type SortOption } from "~/lib/constants";
@@ -10,10 +11,13 @@ import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import LineupsHeader from "../_components/Header/LineupsHeader";
 import LineupCardGrid from "../_components/common/LineupCardGrid";
+import { ViewToggle } from "../_components/common/ViewToggle";
 import { ConfirmModal } from "../_components/common/ConfirmModal";
+import { useViewModeStore } from "~/stores/viewMode";
 
 export default function MyLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
+  const { view, setView } = useViewModeStore();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const utils = api.useUtils();
 
@@ -72,7 +76,7 @@ export default function MyLineupsPage() {
         />
 
         {/* Sort Controls */}
-        <div className="mb-6 flex gap-2">
+        <div className="mb-6 flex items-center gap-2">
           {SORT_OPTIONS.map((option) => (
             <Button
               key={option.value}
@@ -83,6 +87,9 @@ export default function MyLineupsPage() {
               {option.label}
             </Button>
           ))}
+          <div className="ml-auto">
+            <ViewToggle view={view} onChange={setView} />
+          </div>
         </div>
 
         {/* Lineups Grid */}
@@ -94,18 +101,26 @@ export default function MyLineupsPage() {
             </div>
           </div>
         ) : usersLineups && usersLineups.length > 0 ? (
-          <LineupCardGrid>
-            {usersLineups.map((lineup) => (
-              <LineupCard
-                key={lineup._id?.toString() ?? ""}
-                lineup={lineup}
-                showOwner={false}
-                isOwner={true}
-                currentUserId={getId(session)}
-                onDelete={handleDelete}
-                onToggleFeatured={handleToggleFeatured}
-              />
-            ))}
+          <LineupCardGrid view={view}>
+            {usersLineups.map((lineup) =>
+              view === "grid" ? (
+                <LineupCardCompact
+                  key={lineup._id?.toString() ?? ""}
+                  lineup={lineup}
+                  featured={lineup.featured}
+                />
+              ) : (
+                <LineupCard
+                  key={lineup._id?.toString() ?? ""}
+                  lineup={lineup}
+                  showOwner={false}
+                  isOwner={true}
+                  currentUserId={getId(session)}
+                  onDelete={handleDelete}
+                  onToggleFeatured={handleToggleFeatured}
+                />
+              ),
+            )}
           </LineupCardGrid>
         ) : (
           <div className="bg-foreground/5 rounded-2xl p-12 text-center">

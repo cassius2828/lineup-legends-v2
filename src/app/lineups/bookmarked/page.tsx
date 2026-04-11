@@ -5,8 +5,11 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Bookmark } from "lucide-react";
 import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
+import { ViewToggle } from "~/app/_components/common/ViewToggle";
+import { useViewModeStore } from "~/stores/viewMode";
 import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
+import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
 import { Button } from "~/app/_components/ui/Button";
 import { getId } from "~/lib/types";
 import { SORT_OPTIONS_BASIC } from "~/lib/constants";
@@ -16,6 +19,7 @@ type SortOption = "newest" | "oldest";
 
 export default function BookmarkedLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
+  const { view, setView } = useViewModeStore();
   const { data: session } = useSession();
 
   const { data: lineups, isLoading } =
@@ -36,7 +40,7 @@ export default function BookmarkedLineupsPage() {
           createLinkText="+ Create Lineup"
         />
 
-        <div className="mb-6 flex gap-2">
+        <div className="mb-6 flex items-center gap-2">
           {SORT_OPTIONS_BASIC.map((option) => (
             <Button
               key={option.value}
@@ -47,6 +51,9 @@ export default function BookmarkedLineupsPage() {
               {option.label}
             </Button>
           ))}
+          <div className="ml-auto">
+            <ViewToggle view={view} onChange={setView} />
+          </div>
         </div>
 
         {isLoading ? (
@@ -57,16 +64,24 @@ export default function BookmarkedLineupsPage() {
             </div>
           </div>
         ) : lineups && lineups.length > 0 ? (
-          <LineupCardGrid>
-            {lineups.map((lineup) => (
-              <LineupCard
-                key={getId(lineup)}
-                lineup={lineup}
-                showOwner={true}
-                isOwner={false}
-                currentUserId={session?.user.id ?? ""}
-              />
-            ))}
+          <LineupCardGrid view={view}>
+            {lineups.map((lineup) =>
+              view === "grid" ? (
+                <LineupCardCompact
+                  key={getId(lineup)}
+                  lineup={lineup}
+                  featured={lineup.featured}
+                />
+              ) : (
+                <LineupCard
+                  key={getId(lineup)}
+                  lineup={lineup}
+                  showOwner={true}
+                  isOwner={false}
+                  currentUserId={session?.user.id ?? ""}
+                />
+              ),
+            )}
           </LineupCardGrid>
         ) : (
           <div className="bg-foreground/5 rounded-2xl p-12 text-center">
