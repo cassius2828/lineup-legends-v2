@@ -403,10 +403,10 @@ export default function ProfilePage() {
               <>
                 <Link
                   href="/lineups/bookmarked"
-                  className="bg-foreground/10 text-foreground hover:bg-foreground/20 rounded-lg px-5 py-2.5 font-medium transition-colors"
+                  className="bg-foreground/10 text-foreground hover:bg-foreground/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors sm:px-5 sm:py-2.5 sm:text-sm"
                 >
                   <svg
-                    className="-mt-0.5 mr-1.5 inline-block h-4 w-4"
+                    className="-mt-0.5 mr-1 inline-block h-3.5 w-3.5 sm:mr-1.5 sm:h-4 sm:w-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -422,16 +422,16 @@ export default function ProfilePage() {
                 </Link>
                 <Link
                   href="/profile/edit"
-                  className="bg-foreground/10 text-foreground hover:bg-foreground/20 rounded-lg px-5 py-2.5 font-medium transition-colors"
+                  className="bg-foreground/10 text-foreground hover:bg-foreground/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors sm:px-5 sm:py-2.5 sm:text-sm"
                 >
                   Edit Profile
                 </Link>
                 <Link
                   href="/profile/settings"
-                  className="bg-foreground/10 text-foreground hover:bg-foreground/20 rounded-lg px-5 py-2.5 font-medium transition-colors"
+                  className="bg-foreground/10 text-foreground hover:bg-foreground/20 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors sm:px-5 sm:py-2.5 sm:text-sm"
                 >
                   <svg
-                    className="-mt-0.5 mr-1.5 inline-block h-4 w-4"
+                    className="-mt-0.5 mr-1 inline-block h-3.5 w-3.5 sm:mr-1.5 sm:h-4 sm:w-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -521,8 +521,8 @@ export default function ProfilePage() {
               </svg>
               Featured Lineups
             </h2>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {profile.featuredLineups.map((lineup: any) => (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {profile.featuredLineups.map((lineup) => (
                 <LineupCard
                   key={getId(lineup)}
                   lineup={lineup}
@@ -554,7 +554,7 @@ export default function ProfilePage() {
           </div>
 
           {profile.lineups.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {profile.lineups.map((lineup) => (
                 <LineupCard
                   key={getId(lineup)}
