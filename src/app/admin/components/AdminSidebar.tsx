@@ -12,6 +12,8 @@ import {
   Menu,
   X,
   ChevronLeft,
+  AlertTriangle,
+  Shield,
 } from "lucide-react";
 
 const navItems = [
@@ -35,6 +37,16 @@ const navItems = [
     label: "Feedback",
     href: "/admin/feedback",
     icon: MessageSquare,
+  },
+  {
+    label: "Flagged Content",
+    href: "/admin/flagged",
+    icon: AlertTriangle,
+  },
+  {
+    label: "User Management",
+    href: "/admin/users",
+    icon: Shield,
   },
   {
     label: "Videos",

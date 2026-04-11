@@ -7,7 +7,8 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { feedbackStatusSchema } from "~/server/api/schemas/feedback";
-import { FeedbackModel } from "~/server/models";
+import { FeedbackModel, ContentFlagModel } from "~/server/models";
+import { censorText } from "~/server/lib/censor";
 import { sendFeedbackEmail } from "~/server/email";
 import { logger } from "~/lib/logger";
 import { feedbackListItemOutput, populated } from "~/server/api/schemas/output";
@@ -34,19 +35,37 @@ export const feedbackRouter = createTRPCRouter({
         });
       }
 
+      const subjectCensored = censorText(input.subject.trim());
+      const messageCensored = censorText(input.message.trim());
+
       const feedback = await FeedbackModel.create({
         name: input.name.trim(),
         email,
-        subject: input.subject.trim(),
-        message: input.message.trim(),
+        subject: subjectCensored.cleaned,
+        message: messageCensored.cleaned,
       });
+
+      if (subjectCensored.flagged || messageCensored.flagged) {
+        const allFlagged = [
+          ...subjectCensored.flaggedWords,
+          ...messageCensored.flaggedWords,
+        ];
+        await ContentFlagModel.create({
+          contentType: "feedback",
+          contentId: feedback._id,
+          userId: ctx.session?.user?.id ?? null,
+          originalText: `${input.subject.trim()}\n---\n${input.message.trim()}`,
+          censoredText: `${subjectCensored.cleaned}\n---\n${messageCensored.cleaned}`,
+          flaggedWords: [...new Set(allFlagged)],
+        });
+      }
 
       try {
         await sendFeedbackEmail({
           name: input.name.trim(),
           email,
-          subject: input.subject.trim(),
-          message: input.message.trim(),
+          subject: subjectCensored.cleaned,
+          message: messageCensored.cleaned,
         });
       } catch (error) {
         log.error(

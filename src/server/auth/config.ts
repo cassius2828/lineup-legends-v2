@@ -99,7 +99,7 @@ export const authConfig = {
         },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const identifier = validateString(
           credentials?.identifier,
           "Email or username",
@@ -111,12 +111,29 @@ export const authConfig = {
           throw new Error("Invalid credentials");
         }
 
+        if (user.banned) {
+          throw new Error("This account has been banned");
+        }
+        if (user.suspendedUntil && user.suspendedUntil > new Date()) {
+          throw new Error("This account is temporarily suspended");
+        }
+
         const isValidPassword = await verifyPassword(
           password,
           user.password ?? null,
         );
         if (!isValidPassword) {
           throw new Error("Invalid credentials");
+        }
+
+        const loginIp =
+          request?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim() ??
+          null;
+        if (loginIp) {
+          await UserModel.updateOne(
+            { _id: user._id },
+            { lastLoginIp: loginIp },
+          );
         }
 
         return {
@@ -134,6 +151,38 @@ export const authConfig = {
   ],
   adapter: MongoDBAdapter(getMongoClient()),
   callbacks: {
+    async signIn({ user }) {
+      if (!user?.email) return true;
+      await connectDB();
+      const dbUser = await UserModel.findOne({ email: user.email })
+        .select("banned banReason bannedAt suspendedUntil suspensionCount")
+        .lean();
+      if (!dbUser) return true;
+
+      if (dbUser.banned) {
+        const params = new URLSearchParams({
+          error: "banned",
+          reason: dbUser.banReason ?? "Violation of community guidelines",
+          suspensionCount: String(dbUser.suspensionCount ?? 0),
+        });
+        if (dbUser.bannedAt) {
+          params.set("bannedAt", dbUser.bannedAt.toISOString());
+        }
+        return `/sign-in?${params.toString()}`;
+      }
+
+      if (dbUser.suspendedUntil && dbUser.suspendedUntil > new Date()) {
+        const params = new URLSearchParams({
+          error: "suspended",
+          reason: dbUser.banReason ?? "Violation of community guidelines",
+          suspendedUntil: dbUser.suspendedUntil.toISOString(),
+          suspensionCount: String(dbUser.suspensionCount ?? 0),
+        });
+        return `/sign-in?${params.toString()}`;
+      }
+
+      return true;
+    },
     async jwt({ token, user, trigger }) {
       // On initial sign-in, capture MFA flags from the authorize result
       if (user) {

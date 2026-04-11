@@ -8,8 +8,9 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import { LineupModel, UserModel } from "~/server/models";
+import { LineupModel, UserModel, ContentFlagModel } from "~/server/models";
 import { redis } from "~/server/redis";
+import { censorText } from "~/server/lib/censor";
 import {
   profileOutput,
   profileMeOutput,
@@ -167,8 +168,36 @@ export const profileRouter = createTRPCRouter({
           facebook?: string | null;
         };
       } = {};
-      if (input.username !== undefined) updateData.username = input.username;
-      if (input.bio !== undefined) updateData.bio = input.bio;
+
+      if (input.username !== undefined) {
+        const usernameCensored = censorText(input.username);
+        updateData.username = usernameCensored.cleaned;
+        if (usernameCensored.flagged) {
+          await ContentFlagModel.create({
+            contentType: "username",
+            contentId: null,
+            userId: ctx.session.user.id,
+            originalText: input.username,
+            censoredText: usernameCensored.cleaned,
+            flaggedWords: usernameCensored.flaggedWords,
+          });
+        }
+      }
+
+      if (input.bio !== undefined) {
+        const bioCensored = censorText(input.bio);
+        updateData.bio = bioCensored.cleaned;
+        if (bioCensored.flagged) {
+          await ContentFlagModel.create({
+            contentType: "bio",
+            contentId: null,
+            userId: ctx.session.user.id,
+            originalText: input.bio,
+            censoredText: bioCensored.cleaned,
+            flaggedWords: bioCensored.flaggedWords,
+          });
+        }
+      }
       if (input.profileImg !== undefined)
         updateData.profileImg = input.profileImg;
       if (input.bannerImg !== undefined) updateData.bannerImg = input.bannerImg;

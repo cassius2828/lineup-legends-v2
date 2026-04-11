@@ -3,11 +3,65 @@
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { toast } from "sonner";
+import { format, formatDistanceToNow } from "date-fns";
 import CredentialsForm from "./components/CredentialsForm";
 import SignUpForm from "./components/SignUpForm";
 
 export type LoadingProvider = "credentials" | "google";
+
+const CONTACT_EMAIL = "cassius.reynolds.dev@gmail.com";
+
+interface BanCheckResponse {
+  status: string;
+  reason?: string;
+  bannedAt?: string;
+  suspendedUntil?: string;
+  suspensionCount?: number;
+}
+
+async function checkBanStatus(
+  identifier: string,
+): Promise<BanCheckResponse | null> {
+  try {
+    const res = await fetch("/api/auth/check-ban", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier }),
+    });
+    return (await res.json()) as BanCheckResponse;
+  } catch {
+    return null;
+  }
+}
+
+function showBanToast(data: BanCheckResponse) {
+  const isBanned = data.status === "banned";
+  const reason = data.reason ?? "Violation of community guidelines";
+
+  let details = "";
+  if (isBanned) {
+    const bannedDate = data.bannedAt
+      ? format(new Date(data.bannedAt), "MMM d, yyyy")
+      : "N/A";
+    details = `Banned on ${bannedDate} (permanent).`;
+  } else if (data.suspendedUntil) {
+    const until = format(new Date(data.suspendedUntil), "MMM d, yyyy");
+    const remaining = formatDistanceToNow(new Date(data.suspendedUntil));
+    details = `Suspended until ${until} (${remaining} remaining).`;
+  }
+
+  const suspensions =
+    data.suspensionCount && data.suspensionCount > 0
+      ? ` This is suspension #${data.suspensionCount}.`
+      : "";
+
+  toast.error(`Account ${isBanned ? "Banned" : "Suspended"}: ${reason}`, {
+    description: `${details}${suspensions} Contact ${CONTACT_EMAIL} to appeal.`,
+    duration: 15000,
+  });
+}
 
 const ERROR_MESSAGES: Record<string, string> = {
   OAuthSignin: "Could not start Google sign-in. Please try again.",
@@ -66,9 +120,25 @@ function SignInContent() {
   const [signUpEmail, setSignUpEmail] = useState("");
   const [signUpPassword, setSignUpPassword] = useState("");
   const [isLoading, setIsLoading] = useState<LoadingProvider | null>(null);
+
+  const isBanError = errorType === "banned" || errorType === "suspended";
   const [error, setError] = useState<string | null>(
-    errorType ? (ERROR_MESSAGES[errorType] ?? ERROR_MESSAGES.Default!) : null,
+    errorType && !isBanError
+      ? (ERROR_MESSAGES[errorType] ?? ERROR_MESSAGES.Default!)
+      : null,
   );
+
+  useEffect(() => {
+    if (!isBanError) return;
+    showBanToast({
+      status: errorType!,
+      reason: searchParams.get("reason") ?? undefined,
+      bannedAt: searchParams.get("bannedAt") ?? undefined,
+      suspendedUntil: searchParams.get("suspendedUntil") ?? undefined,
+      suspensionCount:
+        Number(searchParams.get("suspensionCount") ?? "0") || undefined,
+    });
+  }, [isBanError, errorType, searchParams]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading("google");
@@ -92,6 +162,16 @@ function SignInContent() {
     setError(null);
 
     try {
+      const banData = await checkBanStatus(identifier.trim());
+      if (
+        banData &&
+        (banData.status === "banned" || banData.status === "suspended")
+      ) {
+        showBanToast(banData);
+        setIsLoading(null);
+        return;
+      }
+
       const result = await signIn("credentials", {
         identifier: identifier.trim(),
         password,
@@ -102,7 +182,6 @@ function SignInContent() {
         setError(ERROR_MESSAGES.CredentialsSignin!);
         setIsLoading(null);
       } else {
-        // Check if MFA is required by fetching the session
         const sessionRes = await fetch("/api/auth/session");
         const sessionData = (await sessionRes.json()) as {
           user?: { mfaPending?: boolean };

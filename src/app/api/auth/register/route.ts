@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { validatePassword } from "~/lib/password-validation";
 import { connectDB } from "~/server/db";
-import { UserModel } from "~/server/models";
+import { UserModel, ContentFlagModel, BannedEmailModel } from "~/server/models";
+import { censorText } from "~/server/lib/censor";
 import { BCRYPT_ROUNDS } from "~/server/constants";
 import { rateLimit, getClientIp } from "~/server/rate-limit";
 import { logger } from "~/lib/logger";
@@ -51,9 +52,18 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    const existingUser = await UserModel.findOne({
-      email: email.toLowerCase(),
-    }).lean();
+    const [existingUser, bannedEmail] = await Promise.all([
+      UserModel.findOne({ email: email.toLowerCase() }).lean(),
+      BannedEmailModel.findOne({ email: email.toLowerCase() }).lean(),
+    ]);
+
+    if (bannedEmail) {
+      return NextResponse.json(
+        { error: "Unable to create account" },
+        { status: 403 },
+      );
+    }
+
     if (existingUser) {
       return NextResponse.json(
         { error: "An account with this email already exists" },
@@ -62,13 +72,26 @@ export async function POST(request: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
+    const nameCensored = censorText(name.trim());
 
     const user = await UserModel.create({
-      name: name.trim(),
+      name: nameCensored.cleaned,
       email: email.toLowerCase().trim(),
       password: hashedPassword,
       username: email.toLowerCase().trim().split("@")[0],
+      registrationIp: getClientIp(request),
     });
+
+    if (nameCensored.flagged) {
+      await ContentFlagModel.create({
+        contentType: "registration",
+        contentId: user._id,
+        userId: user._id,
+        originalText: name.trim(),
+        censoredText: nameCensored.cleaned,
+        flaggedWords: nameCensored.flaggedWords,
+      });
+    }
 
     return NextResponse.json(
       { id: user._id.toString(), email: user.email },

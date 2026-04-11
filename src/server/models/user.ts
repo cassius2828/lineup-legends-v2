@@ -27,6 +27,13 @@ export interface User {
   emailConfirmationToken?: string | null;
   emailConfirmationExpiresAt?: Date | null;
   admin?: boolean;
+  banned?: boolean;
+  bannedAt?: Date | null;
+  banReason?: string | null;
+  suspendedUntil?: Date | null;
+  suspensionCount?: number;
+  registrationIp?: string | null;
+  lastLoginIp?: string | null;
   mfaEnabled: boolean;
   mfaMethods: MfaMethod[];
   totpSecret?: string | null;
@@ -52,6 +59,13 @@ export interface UserDoc extends Document {
   emailConfirmationToken?: string | null;
   emailConfirmationExpiresAt?: Date | null;
   admin?: boolean;
+  banned?: boolean;
+  bannedAt?: Date | null;
+  banReason?: string | null;
+  suspendedUntil?: Date | null;
+  suspensionCount?: number;
+  registrationIp?: string | null;
+  lastLoginIp?: string | null;
   mfaEnabled: boolean;
   mfaMethods: MfaMethod[];
   totpSecret?: string | null;
@@ -85,6 +99,13 @@ const UserSchema = new Schema<UserDoc>(
     emailConfirmationToken: { type: String, default: null },
     emailConfirmationExpiresAt: { type: Date, default: null },
     admin: { type: Boolean, default: false },
+    banned: { type: Boolean, default: false },
+    bannedAt: { type: Date, default: null },
+    banReason: { type: String, default: null },
+    suspendedUntil: { type: Date, default: null },
+    suspensionCount: { type: Number, default: 0 },
+    registrationIp: { type: String, default: null },
+    lastLoginIp: { type: String, default: null },
     mfaEnabled: { type: Boolean, default: false },
     mfaMethods: {
       type: [{ type: String, enum: ["totp", "email", "passkey"] }],

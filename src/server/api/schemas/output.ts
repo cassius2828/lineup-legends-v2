@@ -310,6 +310,7 @@ export const adminStatsOutput = z.object({
   pendingFeedback: z.number(),
   totalFeedback: z.number(),
   totalRequestedPlayers: z.number(),
+  pendingFlags: z.number(),
   recentUsers: z.array(adminRecentUserOutput),
   recentFeedback: z.array(adminRecentFeedbackOutput),
 });

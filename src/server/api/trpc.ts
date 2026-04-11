@@ -115,8 +115,25 @@ const timingMiddleware = t.middleware(async ({ next, path }) => {
  */
 export const publicProcedure = t.procedure.use(timingMiddleware);
 
+const banCheckMiddleware = t.middleware(({ ctx, next }) => {
+  const banned = (ctx.session as Record<string, unknown> | null)?.user;
+  if (
+    banned &&
+    typeof banned === "object" &&
+    "banned" in (banned as Record<string, unknown>) &&
+    (banned as Record<string, unknown>).banned === true
+  ) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "This account has been banned",
+    });
+  }
+  return next();
+});
+
 export const adminProcedure = t.procedure
   .use(timingMiddleware)
+  .use(banCheckMiddleware)
   .use(({ ctx, next }) => {
     if (!ctx.session || ctx.session.user.admin !== true) {
       throw new TRPCError({ code: "FORBIDDEN" });
@@ -143,6 +160,7 @@ export const adminProcedure = t.procedure
  */
 export const protectedProcedure = t.procedure
   .use(timingMiddleware)
+  .use(banCheckMiddleware)
   .use(({ ctx, next }) => {
     if (!ctx.session?.user) {
       throw new TRPCError({ code: "UNAUTHORIZED" });
