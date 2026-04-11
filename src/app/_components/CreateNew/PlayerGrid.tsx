@@ -18,14 +18,14 @@ const PlayerGrid = ({
   return (
     <div className="flex flex-col gap-2">
       {allPlayers.map(({ label, players }) => (
-        <div key={label} className="flex items-start gap-3">
+        <div key={label} className="flex items-start gap-2 sm:gap-3">
           {/* Price Label */}
-          <h2 className="text-foreground w-8 pt-6 text-right text-xl font-bold">
+          <h2 className="text-foreground absolute left-0 w-8 pt-4 text-right text-base font-bold sm:relative sm:pt-6 sm:text-xl">
             {label}
           </h2>
 
           {/* Players Row - Fixed 5 columns */}
-          <div className="grid grid-cols-5 gap-5">
+          <div className="grid grid-cols-5 gap-2 sm:gap-5">
             {players.map((player) => (
               <DraggablePlayerCard
                 key={getId(player)}

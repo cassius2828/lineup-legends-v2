@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "~/trpc/react";
+import { Button } from "~/app/_components/ui/Button";
 import { isValidImageUrl } from "~/lib/utils";
 
 export default function EditPlayerPage() {
@@ -233,13 +234,16 @@ export default function EditPlayerPage() {
 
         {/* Submit Button */}
         <div className="flex gap-4">
-          <button
+          <Button
             type="submit"
-            disabled={updatePlayer.isPending}
-            className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+            color="gold"
+            variant="solid"
+            loading={updatePlayer.isPending}
+            loadingText="Saving..."
+            className="flex-1 py-3 font-semibold"
           >
-            {updatePlayer.isPending ? "Saving..." : "Save Changes"}
-          </button>
+            Save Changes
+          </Button>
           <Link
             href="/admin/players"
             className="bg-foreground/10 text-foreground hover:bg-foreground/20 rounded-lg px-6 py-3 font-medium transition-colors"

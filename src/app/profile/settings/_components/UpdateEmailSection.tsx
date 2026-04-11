@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import PasswordInput from "~/app/_components/ui/PasswordInput";
+import { Button } from "~/app/_components/ui/Button";
 import CollapsibleSettingsCard from "./CollapsibleSettingsCard";
 
 export default function UpdateEmailSection({
@@ -77,18 +78,17 @@ export default function UpdateEmailSection({
           />
         </div>
 
-        <button
+        <Button
           type="submit"
-          disabled={
-            !hasPassword ||
-            !newEmail.trim() ||
-            !password ||
-            updateEmail.isPending
-          }
-          className="bg-gold hover:bg-gold-light rounded-lg px-6 py-2.5 text-sm font-semibold text-black transition-colors disabled:opacity-50"
+          color="gold"
+          variant="solid"
+          disabled={!hasPassword || !newEmail.trim() || !password}
+          loading={updateEmail.isPending}
+          loadingText="Sending..."
+          className="px-6 py-2.5 font-semibold"
         >
-          {updateEmail.isPending ? "Sending..." : "Update Email"}
-        </button>
+          Update Email
+        </Button>
 
         <p className="text-foreground/40 text-xs">
           A confirmation link will be sent to your new email address.

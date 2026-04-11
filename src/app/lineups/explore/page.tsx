@@ -4,8 +4,12 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useState } from "react";
 import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
+import { ViewToggle } from "~/app/_components/common/ViewToggle";
+import { useViewModeStore } from "~/stores/viewMode";
 import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
+import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
+import { Button } from "~/app/_components/ui/Button";
 import {
   Tooltip,
   TooltipContent,
@@ -17,6 +21,7 @@ import { api } from "~/trpc/react";
 
 export default function ExploreLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
+  const { view, setView } = useViewModeStore();
   const utils = api.useUtils();
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
@@ -59,18 +64,15 @@ export default function ExploreLineupsPage() {
         {/* Sort Controls */}
         <div className="mb-6 flex gap-2">
           {SORT_OPTIONS.map((option) => (
-            <button
+            <Button
               key={option.value}
               onMouseEnter={() => handlePreFetchLineups(option.value)}
               onClick={() => setSort(option.value)}
-              className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                sort === option.value
-                  ? "bg-gold-600 text-foreground"
-                  : "bg-foreground/10 text-foreground/70 hover:bg-foreground/20"
-              }`}
+              color={sort === option.value ? "gold" : "white"}
+              variant={sort === option.value ? "solid" : "subtle"}
             >
               {option.label}
-            </button>
+            </Button>
           ))}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -90,6 +92,9 @@ export default function ExploreLineupsPage() {
             </TooltipTrigger>
             <TooltipContent>Refresh lineups</TooltipContent>
           </Tooltip>
+          <div className="ml-auto">
+            <ViewToggle view={view} onChange={setView} />
+          </div>
         </div>
 
         {/* Lineups Grid */}
@@ -101,17 +106,24 @@ export default function ExploreLineupsPage() {
             </div>
           </div>
         ) : lineups && lineups.length > 0 ? (
-          <LineupCardGrid>
-            {lineups.map((lineup) => (
-              <LineupCard
-                key={getId(lineup)}
-                // improve type safety later
-                lineup={lineup}
-                showOwner={true}
-                isOwner={false}
-                currentUserId={session?.user.id ?? ""}
-              />
-            ))}
+          <LineupCardGrid view={view}>
+            {lineups.map((lineup) =>
+              view === "grid" ? (
+                <LineupCardCompact
+                  key={getId(lineup)}
+                  lineup={lineup}
+                  featured={lineup.featured}
+                />
+              ) : (
+                <LineupCard
+                  key={getId(lineup)}
+                  lineup={lineup}
+                  showOwner={true}
+                  isOwner={false}
+                  currentUserId={session?.user.id ?? ""}
+                />
+              ),
+            )}
           </LineupCardGrid>
         ) : (
           <div className="bg-foreground/5 rounded-2xl p-12 text-center">

@@ -28,6 +28,7 @@ import {
 } from "~/lib/constants";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import { Button } from "~/app/_components/ui/Button";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 
 interface SortablePositionCardProps {
@@ -345,13 +346,16 @@ export default function EditLineupPage() {
           >
             Cancel
           </Link>
-          <button
+          <Button
             onClick={handleSubmit}
-            disabled={reorderMutation.isPending}
-            className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:opacity-50"
+            color="gold"
+            variant="solid"
+            loading={reorderMutation.isPending}
+            loadingText="Saving..."
+            className="flex-1 py-3 font-semibold"
           >
-            {reorderMutation.isPending ? "Saving..." : "Save Order"}
-          </button>
+            Save Order
+          </Button>
         </div>
       </div>
     </main>

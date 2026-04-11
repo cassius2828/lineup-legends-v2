@@ -39,7 +39,7 @@ async function verifyUserPassword(
   userId: string,
   password: string,
 ): Promise<void> {
-  const user = await UserModel.findById(userId).select("password").lean();
+  const user = await UserModel.findById(userId).select("+password").lean();
   if (!user?.password) {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -81,7 +81,7 @@ export const accountRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const user = await requireUserById(ctx.session.user.id, "password");
+      const user = await requireUserById(ctx.session.user.id, "+password");
 
       if (user.password) {
         if (!input.currentPassword) {
@@ -163,7 +163,7 @@ export const accountRouter = createTRPCRouter({
   getMfaStatus: protectedProcedure.query(async ({ ctx }) => {
     const user = await requireUserById(
       ctx.session.user.id,
-      "mfaEnabled mfaMethods email password",
+      "mfaEnabled mfaMethods email +password",
     );
 
     const passkeys = await PasskeyModel.find({ userId: user._id })

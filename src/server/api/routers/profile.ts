@@ -10,6 +10,7 @@ import {
 } from "~/server/api/trpc";
 import { LineupModel, UserModel } from "~/server/models";
 import { redis } from "~/server/redis";
+import { censorText, flagContent } from "~/server/lib/censor";
 import {
   profileOutput,
   profileMeOutput,
@@ -167,8 +168,30 @@ export const profileRouter = createTRPCRouter({
           facebook?: string | null;
         };
       } = {};
-      if (input.username !== undefined) updateData.username = input.username;
-      if (input.bio !== undefined) updateData.bio = input.bio;
+
+      if (input.username !== undefined) {
+        const usernameCensored = censorText(input.username);
+        updateData.username = usernameCensored.cleaned;
+        await flagContent({
+          raw: input.username,
+          result: usernameCensored,
+          contentType: "username",
+          contentId: null,
+          userId: ctx.session.user.id,
+        });
+      }
+
+      if (input.bio !== undefined) {
+        const bioCensored = censorText(input.bio);
+        updateData.bio = bioCensored.cleaned;
+        await flagContent({
+          raw: input.bio,
+          result: bioCensored,
+          contentType: "bio",
+          contentId: null,
+          userId: ctx.session.user.id,
+        });
+      }
       if (input.profileImg !== undefined)
         updateData.profileImg = input.profileImg;
       if (input.bannerImg !== undefined) updateData.bannerImg = input.bannerImg;

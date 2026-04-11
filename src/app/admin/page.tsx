@@ -15,17 +15,39 @@ import {
   Mail,
   ImageOff,
   Sparkles,
+  AlertTriangle,
+  Shield,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { StatusBadge } from "./components/StatusBadge";
 
 export default function AdminDashboardPage() {
-  const { data: stats, isLoading } = api.admin.getStats.useQuery();
+  const {
+    data: stats,
+    isLoading,
+    isError,
+    refetch,
+  } = api.admin.getStats.useQuery();
 
   if (isLoading || !stats) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <div className="border-t-gold border-foreground/20 h-12 w-12 animate-spin rounded-full border-4" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="border-foreground/10 bg-foreground/3 mx-auto mt-20 max-w-md rounded-xl border p-12 text-center">
+        <p className="text-foreground/50 mb-3">Failed to load dashboard</p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="text-gold hover:text-gold-light text-sm font-medium transition-colors"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -70,6 +92,14 @@ export default function AdminDashboardPage() {
       bgColor:
         stats.pendingFeedback > 0 ? "bg-amber-400/10" : "bg-foreground/5",
       highlight: stats.pendingFeedback > 0,
+    },
+    {
+      label: "Flagged Content",
+      value: stats.pendingFlags,
+      icon: AlertTriangle,
+      color: stats.pendingFlags > 0 ? "text-red-400" : "text-foreground/60",
+      bgColor: stats.pendingFlags > 0 ? "bg-red-400/10" : "bg-foreground/5",
+      highlight: stats.pendingFlags > 0,
     },
     {
       label: "Requested Players",
@@ -258,6 +288,38 @@ export default function AdminDashboardPage() {
               <p className="text-foreground text-sm font-medium">Feedback</p>
               <p className="text-foreground/40 text-xs">
                 Manage user feedback and messages
+              </p>
+            </div>
+          </Link>
+          <Link
+            href="/admin/flagged"
+            className="border-foreground/10 bg-foreground/3 hover:bg-foreground/6 flex items-center gap-3 rounded-xl border p-4 transition-colors"
+          >
+            <div className="rounded-lg bg-red-400/10 p-2">
+              <AlertTriangle className="h-5 w-5 text-red-400" />
+            </div>
+            <div>
+              <p className="text-foreground text-sm font-medium">
+                Flagged Content
+              </p>
+              <p className="text-foreground/40 text-xs">
+                Review profanity-flagged content
+              </p>
+            </div>
+          </Link>
+          <Link
+            href="/admin/users"
+            className="border-foreground/10 bg-foreground/3 hover:bg-foreground/6 flex items-center gap-3 rounded-xl border p-4 transition-colors"
+          >
+            <div className="rounded-lg bg-blue-400/10 p-2">
+              <Shield className="h-5 w-5 text-blue-400" />
+            </div>
+            <div>
+              <p className="text-foreground text-sm font-medium">
+                User Management
+              </p>
+              <p className="text-foreground/40 text-xs">
+                Manage users, bans, and suspensions
               </p>
             </div>
           </Link>

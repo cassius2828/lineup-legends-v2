@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import { Button } from "~/app/_components/ui/Button";
 
 function ImageUploadField({
   label,
@@ -305,13 +306,16 @@ export default function EditProfilePage() {
             >
               Cancel
             </Link>
-            <button
+            <Button
               type="submit"
-              disabled={updateProfile.isPending}
-              className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:opacity-50"
+              color="gold"
+              variant="solid"
+              loading={updateProfile.isPending}
+              loadingText="Saving..."
+              className="flex-1 py-3 font-semibold"
             >
-              {updateProfile.isPending ? "Saving..." : "Save Changes"}
-            </button>
+              Save Changes
+            </Button>
           </div>
         </form>
       </div>

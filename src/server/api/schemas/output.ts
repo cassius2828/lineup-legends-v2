@@ -310,9 +310,96 @@ export const adminStatsOutput = z.object({
   pendingFeedback: z.number(),
   totalFeedback: z.number(),
   totalRequestedPlayers: z.number(),
+  pendingFlags: z.number(),
   recentUsers: z.array(adminRecentUserOutput),
   recentFeedback: z.array(adminRecentFeedbackOutput),
 });
+
+const adminFlagUserOutput = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    username: z.string().nullable(),
+    email: z.string(),
+    image: z.string().nullable(),
+    profileImg: z.string().nullable(),
+  })
+  .nullable();
+
+const adminFlagItemOutput = z.object({
+  id: z.string(),
+  contentType: z.string(),
+  contentId: z.string().nullable(),
+  user: adminFlagUserOutput,
+  originalText: z.string(),
+  censoredText: z.string(),
+  flaggedWords: z.array(z.string()),
+  status: z.string(),
+  action: z.string().nullable(),
+  reviewedBy: z.string().nullable(),
+  reviewedAt: z.coerce.date().nullable(),
+  createdAt: z.coerce.date(),
+});
+
+export const adminFlaggedContentOutput = z.object({
+  items: z.array(adminFlagItemOutput),
+  nextCursor: z.string().optional(),
+});
+
+export const adminReviewFlagOutput = z.object({ success: z.boolean() });
+
+const adminUserListItemOutput = z.object({
+  id: z.string(),
+  name: z.string(),
+  username: z.string().nullable(),
+  email: z.string(),
+  image: z.string().nullable(),
+  profileImg: z.string().nullable(),
+  banned: z.boolean(),
+  bannedAt: z.coerce.date().nullable(),
+  banReason: z.string().nullable(),
+  suspendedUntil: z.coerce.date().nullable(),
+  admin: z.boolean(),
+  createdAt: z.coerce.date(),
+});
+
+export const adminUsersOutput = z.object({
+  items: z.array(adminUserListItemOutput),
+  nextCursor: z.string().optional(),
+});
+
+const adminCommentSummaryOutput = z.object({
+  id: z.string(),
+  text: z.string(),
+  createdAt: z.coerce.date().nullable().optional(),
+  lineupId: z.string(),
+});
+
+export const adminUserDetailOutput = z.object({
+  id: z.string(),
+  name: z.string(),
+  username: z.string().nullable(),
+  email: z.string(),
+  image: z.string().nullable(),
+  profileImg: z.string().nullable(),
+  bio: z.string().nullable(),
+  banned: z.boolean(),
+  bannedAt: z.coerce.date().nullable(),
+  banReason: z.string().nullable(),
+  suspendedUntil: z.coerce.date().nullable(),
+  suspensionCount: z.number(),
+  admin: z.boolean(),
+  registrationIp: z.string().nullable(),
+  lastLoginIp: z.string().nullable(),
+  followerCount: z.number(),
+  followingCount: z.number(),
+  createdAt: z.coerce.date(),
+  flagCount: z.number(),
+  recentComments: z.array(adminCommentSummaryOutput),
+});
+
+export const adminBanUserOutput = z.object({ success: z.boolean() });
+export const adminUnbanUserOutput = z.object({ success: z.boolean() });
 
 // ─── Feedback ───────────────────────────────────────────────────────────────────
 

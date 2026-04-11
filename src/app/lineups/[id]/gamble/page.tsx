@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import { Button } from "~/app/_components/ui/Button";
 import type {
   PlayerOutput,
   GambleOutcomeTier,
@@ -207,12 +208,14 @@ export default function GambleLineupPage() {
             </div>
 
             <div className="mt-6 flex gap-3">
-              <button
+              <Button
                 onClick={handleReset}
-                className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors"
+                color="gold"
+                variant="solid"
+                className="flex-1 py-3 font-semibold"
               >
                 Gamble Again
-              </button>
+              </Button>
               <Link
                 href="/lineups"
                 className="bg-foreground/10 text-foreground hover:bg-foreground/20 flex-1 rounded-lg py-3 text-center font-medium transition-colors"
@@ -291,13 +294,17 @@ export default function GambleLineupPage() {
               >
                 Cancel
               </Link>
-              <button
+              <Button
                 onClick={handleGamble}
-                disabled={!selectedPosition || gambleMutation.isPending}
-                className="bg-gold hover:bg-gold-light flex-1 rounded-lg py-3 font-semibold text-black transition-colors disabled:opacity-50"
+                disabled={!selectedPosition}
+                color="gold"
+                variant="solid"
+                loading={gambleMutation.isPending}
+                loadingText="Gambling..."
+                className="flex-1 py-3 font-semibold"
               >
-                {gambleMutation.isPending ? "Gambling..." : "🎲 Gamble!"}
-              </button>
+                🎲 Gamble!
+              </Button>
             </div>
           </>
         )}

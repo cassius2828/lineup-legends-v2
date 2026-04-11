@@ -49,13 +49,13 @@ export function DraggablePlayerCard({
       {...listeners}
       {...attributes}
       disabled={disabled && !selected}
-      className={`group relative flex w-[4.5rem] touch-none flex-col items-center ${
+      className={`group relative flex w-12 touch-none flex-col items-center sm:w-[4.5rem] ${
         isDragging ? "z-50" : ""
       }`}
     >
       {/* Player Cell - Square with off-white background and value-based glow */}
       <div
-        className={`relative h-[4.5rem] w-[4.5rem] overflow-hidden rounded-md bg-[#f2f2f2] transition-all duration-200 ${
+        className={`relative h-12 w-12 overflow-hidden rounded-md bg-[#f2f2f2] transition-all duration-200 sm:h-[4.5rem] sm:w-[4.5rem] ${
           VALUE_SHADOWS[player.value]
         } ${selected ? "ring-gold-300 ring-2" : ""} ${
           isDragging
@@ -74,7 +74,7 @@ export function DraggablePlayerCard({
         {selected && !isDragging && (
           <div className="bg-gold-600/30 absolute inset-0 flex items-center justify-center">
             <svg
-              className="text-gold-300 h-6 w-6"
+              className="text-gold-300 h-4 w-4 sm:h-6 sm:w-6"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -91,10 +91,14 @@ export function DraggablePlayerCard({
       {/* Player Name - Below the cell */}
       <div className="mt-1 h-10 text-center">
         <p className="text-foreground text-xs font-medium">
-          {player.firstName.length < 9 ? player.firstName : ""}
+          {player.firstName.length > 8
+            ? player.firstName.slice(0, 7) + "…"
+            : player.firstName}
         </p>
         <p className="text-foreground/80 text-xs">
-          {player.lastName.length < 9 ? player.lastName : ""}
+          {player.lastName.length > 8
+            ? player.lastName.slice(0, 7) + "…"
+            : player.lastName}
         </p>
       </div>
     </button>

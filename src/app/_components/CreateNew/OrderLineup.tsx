@@ -43,7 +43,7 @@ export default function OrderLineup({
   );
 
   return (
-    <div className="ml-8 flex flex-col items-center">
+    <div className="bg-surface-950/95 sticky bottom-0 z-40 ml-0 flex flex-col items-center rounded-md p-2 py-3 backdrop-blur-sm lg:static lg:ml-8 lg:bg-transparent lg:py-0 lg:backdrop-blur-none">
       <div className="mb-4 flex justify-center gap-2">
         {POSITIONS.map((position) => (
           <DroppablePositionSlot

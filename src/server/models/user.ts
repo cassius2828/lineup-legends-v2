@@ -12,7 +12,6 @@ export interface SocialMedia {
 export interface User {
   id: string;
   name: string;
-  password?: string | null;
   username?: string | null;
   email: string;
   emailVerified?: Date | null;
@@ -27,6 +26,13 @@ export interface User {
   emailConfirmationToken?: string | null;
   emailConfirmationExpiresAt?: Date | null;
   admin?: boolean;
+  banned?: boolean;
+  bannedAt?: Date | null;
+  banReason?: string | null;
+  suspendedUntil?: Date | null;
+  suspensionCount?: number;
+  registrationIp?: string | null;
+  lastLoginIp?: string | null;
   mfaEnabled: boolean;
   mfaMethods: MfaMethod[];
   totpSecret?: string | null;
@@ -52,6 +58,13 @@ export interface UserDoc extends Document {
   emailConfirmationToken?: string | null;
   emailConfirmationExpiresAt?: Date | null;
   admin?: boolean;
+  banned?: boolean;
+  bannedAt?: Date | null;
+  banReason?: string | null;
+  suspendedUntil?: Date | null;
+  suspensionCount?: number;
+  registrationIp?: string | null;
+  lastLoginIp?: string | null;
   mfaEnabled: boolean;
   mfaMethods: MfaMethod[];
   totpSecret?: string | null;
@@ -70,7 +83,7 @@ const SocialMediaSchema = new Schema<SocialMedia>(
 const UserSchema = new Schema<UserDoc>(
   {
     name: { type: String, required: true },
-    password: { type: String, required: false, default: null },
+    password: { type: String, required: false, default: null, select: false },
     username: { type: String, required: false },
     email: { type: String, required: true, unique: true },
     emailVerified: { type: Date, default: null },
@@ -85,6 +98,13 @@ const UserSchema = new Schema<UserDoc>(
     emailConfirmationToken: { type: String, default: null },
     emailConfirmationExpiresAt: { type: Date, default: null },
     admin: { type: Boolean, default: false },
+    banned: { type: Boolean, default: false },
+    bannedAt: { type: Date, default: null },
+    banReason: { type: String, default: null },
+    suspendedUntil: { type: Date, default: null },
+    suspensionCount: { type: Number, default: 0 },
+    registrationIp: { type: String, default: null },
+    lastLoginIp: { type: String, default: null },
     mfaEnabled: { type: Boolean, default: false },
     mfaMethods: {
       type: [{ type: String, enum: ["totp", "email", "passkey"] }],

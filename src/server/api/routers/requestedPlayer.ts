@@ -9,6 +9,8 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { PlayerModel, RequestedPlayerModel, UserModel } from "~/server/models";
+import { censorText, flagContent } from "~/server/lib/censor";
+import { escapeRegex } from "~/server/lib/escape-regex";
 import { getPlayersFromCacheOrDb } from "~/server/services/player-cache";
 import {
   requestedPlayerListItemOutput,
@@ -155,11 +157,14 @@ export const requestedPlayerRouter = createTRPCRouter({
         ? new mongoose.Types.ObjectId(ctx.session.user.id)
         : null;
 
-      // Upsert: find by name or create, then push description
+      const rawNote = input.note?.trim() || null;
+      const noteCensored = rawNote ? censorText(rawNote) : null;
+      const cleanedNote = noteCensored ? noteCensored.cleaned : null;
+
       const result = await RequestedPlayerModel.findOneAndUpdate(
         {
-          firstName: { $regex: new RegExp(`^${firstName}$`, "i") },
-          lastName: { $regex: new RegExp(`^${lastName}$`, "i") },
+          firstName: { $regex: new RegExp(`^${escapeRegex(firstName)}$`, "i") },
+          lastName: { $regex: new RegExp(`^${escapeRegex(lastName)}$`, "i") },
         },
         {
           $setOnInsert: { firstName, lastName },
@@ -168,13 +173,23 @@ export const requestedPlayerRouter = createTRPCRouter({
               _id: new mongoose.Types.ObjectId(),
               ...(userId ? { user: userId } : {}),
               suggestedValue: input.suggestedValue,
-              note: input.note?.trim() || null,
+              note: cleanedNote,
               createdAt: new Date(),
             },
           },
         },
         { upsert: true, new: true },
       );
+
+      if (noteCensored && rawNote) {
+        await flagContent({
+          raw: rawNote,
+          result: noteCensored,
+          contentType: "player-request",
+          contentId: result._id,
+          userId,
+        });
+      }
 
       return populated({
         ...result.toObject(),

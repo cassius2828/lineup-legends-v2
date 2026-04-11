@@ -8,7 +8,7 @@ import { ensureEnvs } from "~/lib/ensureEnvs";
 import { connectDB, getMongoClient } from "~/server/db";
 import { redis } from "~/server/redis";
 import { redisMfaVerifiedKey } from "~/server/constants";
-import { UserModel } from "../models";
+import { UserModel, BannedEmailModel } from "../models";
 
 /**
  * Module augmentation for `next-auth` types.
@@ -39,23 +39,14 @@ function validateString(value: unknown, fieldName: string): string {
 }
 
 /**
- * Checks if identifier is an email address.
- */
-function isEmail(identifier: string): boolean {
-  return identifier.includes("@");
-}
-
-/**
  * Finds a user by email or username using Mongoose.
  */
 async function findUserByIdentifier(identifier: string) {
   await connectDB();
-
-  const query = isEmail(identifier)
-    ? { email: identifier.toLowerCase() }
-    : { username: identifier.toLowerCase() };
-
-  return UserModel.findOne(query).lean();
+  const { buildUserQuery } = await import("~/server/lib/identifier");
+  return UserModel.findOne(buildUserQuery(identifier))
+    .select("+password")
+    .lean();
 }
 
 /**
@@ -99,7 +90,7 @@ export const authConfig = {
         },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         const identifier = validateString(
           credentials?.identifier,
           "Email or username",
@@ -108,7 +99,16 @@ export const authConfig = {
 
         const user = await findUserByIdentifier(identifier);
         if (!user) {
+          // Constant-time: run bcrypt against a dummy hash to prevent timing enumeration
+          await bcrypt.compare(password, "$2a$12$x".padEnd(60, "0"));
           throw new Error("Invalid credentials");
+        }
+
+        if (user.banned) {
+          throw new Error("This account has been banned");
+        }
+        if (user.suspendedUntil && user.suspendedUntil > new Date()) {
+          throw new Error("This account is temporarily suspended");
         }
 
         const isValidPassword = await verifyPassword(
@@ -117,6 +117,16 @@ export const authConfig = {
         );
         if (!isValidPassword) {
           throw new Error("Invalid credentials");
+        }
+
+        const loginIp =
+          request?.headers?.get?.("x-forwarded-for")?.split(",")[0]?.trim() ??
+          null;
+        if (loginIp) {
+          await UserModel.updateOne(
+            { _id: user._id },
+            { lastLoginIp: loginIp },
+          );
         }
 
         return {
@@ -134,6 +144,30 @@ export const authConfig = {
   ],
   adapter: MongoDBAdapter(getMongoClient()),
   callbacks: {
+    async signIn({ user }) {
+      if (!user?.email) return true;
+      await connectDB();
+      const dbUser = await UserModel.findOne({ email: user.email })
+        .select("banned banReason bannedAt suspendedUntil suspensionCount")
+        .lean();
+      if (!dbUser) {
+        const banned = await BannedEmailModel.findOne({
+          email: user.email,
+        }).lean();
+        if (banned) return `/sign-in?error=banned`;
+        return true;
+      }
+
+      if (dbUser.banned) {
+        return `/sign-in?error=banned`;
+      }
+
+      if (dbUser.suspendedUntil && dbUser.suspendedUntil > new Date()) {
+        return `/sign-in?error=suspended`;
+      }
+
+      return true;
+    },
     async jwt({ token, user, trigger }) {
       // On initial sign-in, capture MFA flags from the authorize result
       if (user) {
