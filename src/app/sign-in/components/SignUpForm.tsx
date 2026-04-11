@@ -1,6 +1,7 @@
 import { validatePassword } from "~/lib/password-validation";
 import PasswordInput from "~/app/_components/ui/PasswordInput";
 import PasswordRequirements from "~/app/_components/ui/PasswordRequirements";
+import { Button } from "~/app/_components/ui/Button";
 import type { LoadingProvider } from "../page";
 
 export default function SignUpForm({
@@ -86,20 +87,17 @@ export default function SignUpForm({
         <PasswordRequirements password={password} />
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={isLoading !== null || !passwordValid}
-        className="border-gold bg-gold/10 hover:bg-gold hover:glow-gold-sm text-foreground focus-visible:ring-gold/50 focus-visible:ring-offset-surface-950 w-full cursor-pointer rounded-lg border-2 px-4 py-3 text-sm font-semibold transition-all hover:text-black focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        color="gold"
+        variant="subtle"
+        loading={isLoading === "credentials"}
+        loadingText="Creating account…"
+        className="border-gold hover:!bg-gold hover:glow-gold-sm focus-visible:ring-gold/50 focus-visible:ring-offset-surface-950 w-full border-2 px-4 py-3 font-semibold hover:!text-black focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
       >
-        {isLoading === "credentials" ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/20 border-t-current" />
-            Creating account…
-          </span>
-        ) : (
-          "Create Account"
-        )}
-      </button>
+        Create Account
+      </Button>
     </form>
   );
 }

@@ -50,29 +50,58 @@ const baseClasses =
   "cursor-pointer rounded-lg px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm font-medium transition-colors";
 const disabledClasses = "disabled:cursor-not-allowed disabled:opacity-50";
 
+function Spinner() {
+  return (
+    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current/20 border-t-current" />
+  );
+}
+
+interface ButtonProps {
+  onClick?: () => void;
+  /** @deprecated Use onClick instead */
+  handleClick?: () => void;
+  children: React.ReactNode;
+  color?: ButtonColor;
+  variant?: ButtonVariant;
+  disabled?: boolean;
+  type?: "button" | "submit" | "reset";
+  className?: string;
+  onMouseEnter?: () => void;
+  loading?: boolean;
+  loadingText?: string;
+}
+
 export const Button = ({
+  onClick,
   handleClick,
   children,
   color = "white",
   variant = "subtle",
   disabled = false,
   type = "button",
-}: {
-  handleClick: () => void;
-  children: React.ReactNode;
-  color?: ButtonColor;
-  variant?: ButtonVariant;
-  disabled?: boolean;
-  type?: "button" | "submit" | "reset";
-}) => {
+  className,
+  onMouseEnter,
+  loading = false,
+  loadingText,
+}: ButtonProps) => {
+  const handler = onClick ?? handleClick;
+
   return (
     <button
       type={type}
-      onClick={handleClick}
-      disabled={disabled}
-      className={`${ButtonColors[color][variant]} ${baseClasses} ${disabledClasses}`}
+      onClick={handler}
+      disabled={disabled || loading}
+      onMouseEnter={onMouseEnter}
+      className={`${ButtonColors[color][variant]} ${baseClasses} ${disabledClasses} ${className ?? ""}`}
     >
-      {children}
+      {loading ? (
+        <span className="flex items-center justify-center gap-2">
+          <Spinner />
+          {loadingText ?? children}
+        </span>
+      ) : (
+        children
+      )}
     </button>
   );
 };
@@ -82,16 +111,18 @@ export const ButtonLink = ({
   children,
   color = "white",
   variant = "subtle",
+  className,
 }: {
   href: string;
   children: React.ReactNode;
   color?: ButtonColor;
   variant?: ButtonVariant;
+  className?: string;
 }) => {
   return (
     <Link
       href={href}
-      className={`${ButtonColors[color][variant]} ${baseClasses}`}
+      className={`${ButtonColors[color][variant]} ${baseClasses} ${className ?? ""}`}
     >
       {children}
     </Link>

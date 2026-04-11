@@ -8,6 +8,7 @@ import { startRegistration } from "@simplewebauthn/browser";
 import { api } from "~/trpc/react";
 import type { AppRouter } from "~/server/api/root";
 import OtpCodeInput from "~/app/_components/ui/OtpCodeInput";
+import { Button } from "~/app/_components/ui/Button";
 import PasswordConfirmDialog from "./PasswordConfirmDialog";
 import { PasskeyAddForm, PasskeyList } from "./PasskeyList";
 
@@ -45,13 +46,16 @@ function TotpSetup() {
 
   if (!setupData) {
     return (
-      <button
+      <Button
         onClick={() => setupTotp.mutate()}
-        disabled={setupTotp.isPending}
-        className="bg-gold hover:bg-gold-light rounded-lg px-4 py-2 text-sm font-semibold text-black transition-colors disabled:opacity-50"
+        color="gold"
+        variant="solid"
+        loading={setupTotp.isPending}
+        loadingText="Setting up..."
+        className="px-4 py-2 font-semibold"
       >
-        {setupTotp.isPending ? "Setting up..." : "Set Up"}
-      </button>
+        Set Up
+      </Button>
     );
   }
 
@@ -103,22 +107,28 @@ function TotpSetup() {
       </div>
 
       <div className="flex gap-2">
-        <button
+        <Button
           onClick={() => verifyTotp.mutate({ code })}
-          disabled={code.length !== 6 || verifyTotp.isPending}
-          className="bg-gold hover:bg-gold-light rounded-lg px-6 py-2.5 text-sm font-semibold text-black transition-colors disabled:opacity-50"
+          disabled={code.length !== 6}
+          color="gold"
+          variant="solid"
+          loading={verifyTotp.isPending}
+          loadingText="Verifying..."
+          className="px-6 py-2.5 font-semibold"
         >
-          {verifyTotp.isPending ? "Verifying..." : "Verify & Enable"}
-        </button>
-        <button
+          Verify & Enable
+        </Button>
+        <Button
           onClick={() => {
             setSetupData(null);
             setCode("");
           }}
-          className="text-foreground/50 hover:text-foreground/70 px-4 py-2.5 text-sm transition-colors"
+          color="white"
+          variant="subtle"
+          className="px-4 py-2.5"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -305,12 +315,14 @@ export default function MfaSection({
                   isPending={disableTotp.isPending}
                 />
               ) : (
-                <button
+                <Button
                   onClick={() => setDisablingMethod("totp")}
-                  className="rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10"
+                  color="red"
+                  variant="subtle"
+                  className="px-4 py-2"
                 >
                   Disable
-                </button>
+                </Button>
               )}
             </>
           ) : (
@@ -334,22 +346,27 @@ export default function MfaSection({
                   isPending={disableEmailMfa.isPending}
                 />
               ) : (
-                <button
+                <Button
                   onClick={() => setDisablingMethod("email")}
-                  className="rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10"
+                  color="red"
+                  variant="subtle"
+                  className="px-4 py-2"
                 >
                   Disable
-                </button>
+                </Button>
               )}
             </>
           ) : (
-            <button
+            <Button
               onClick={() => enableEmailMfa.mutate()}
-              disabled={enableEmailMfa.isPending}
-              className="bg-gold hover:bg-gold-light rounded-lg px-4 py-2 text-sm font-semibold text-black transition-colors disabled:opacity-50"
+              color="gold"
+              variant="solid"
+              loading={enableEmailMfa.isPending}
+              loadingText="Enabling..."
+              className="px-4 py-2 font-semibold"
             >
-              {enableEmailMfa.isPending ? "Enabling..." : "Enable"}
-            </button>
+              Enable
+            </Button>
           )}
         </MfaMethodCard>
 
@@ -395,12 +412,14 @@ export default function MfaSection({
                 isPending={disableAllMfa.isPending}
               />
             ) : (
-              <button
+              <Button
                 onClick={() => setDisablingMethod("all")}
-                className="mt-3 rounded-lg border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10"
+                color="red"
+                variant="subtle"
+                className="mt-3 px-4 py-2"
               >
                 Disable All
-              </button>
+              </Button>
             )}
           </div>
         )}

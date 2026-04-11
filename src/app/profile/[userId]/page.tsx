@@ -5,6 +5,7 @@ import { useRef, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
+import { Button } from "~/app/_components/ui/Button";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { getId } from "~/lib/types";
@@ -342,9 +343,8 @@ export default function ProfilePage() {
       </div>
 
       <div className="container mx-auto px-4">
-        {/* Profile Header */}
-        <div className="relative -mt-16 mb-6 flex flex-col items-center gap-4 md:flex-row md:items-end md:gap-6">
-          {/* Avatar */}
+        {/* Avatar - overlaps banner */}
+        <div className="relative -mt-16 mb-4 flex justify-center md:justify-start">
           <div className="group border-surface-950 bg-surface-800 relative h-32 w-32 overflow-hidden rounded-full border-4">
             <Image
               width={128}
@@ -361,7 +361,10 @@ export default function ProfilePage() {
               />
             )}
           </div>
+        </div>
 
+        {/* Profile Header */}
+        <div className="mb-6 flex flex-col items-center gap-4 md:flex-row md:items-start md:gap-6">
           {/* Info */}
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-foreground text-3xl font-bold">
@@ -453,21 +456,16 @@ export default function ProfilePage() {
                 </Link>
               </>
             ) : session ? (
-              <button
+              <Button
                 onClick={() => toggleFollow.mutate({ targetUserId: userId })}
-                disabled={toggleFollow.isPending}
-                className={`rounded-lg px-5 py-2.5 font-medium transition-colors disabled:opacity-50 ${
-                  followStatus?.following
-                    ? "bg-foreground/10 text-foreground hover:bg-red-500/20 hover:text-red-400"
-                    : "bg-gold hover:bg-gold-light text-black"
-                }`}
+                color={followStatus?.following ? "white" : "gold"}
+                variant={followStatus?.following ? "subtle" : "solid"}
+                loading={toggleFollow.isPending}
+                loadingText="..."
+                className="px-5 py-2.5"
               >
-                {toggleFollow.isPending
-                  ? "..."
-                  : followStatus?.following
-                    ? "Unfollow"
-                    : "Follow"}
-              </button>
+                {followStatus?.following ? "Unfollow" : "Follow"}
+              </Button>
             ) : null}
           </div>
         </div>
@@ -521,7 +519,9 @@ export default function ProfilePage() {
               </svg>
               Featured Lineups
             </h2>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div
+              className={`grid grid-cols-1 gap-6 ${profile.featuredLineups.length >= 3 ? "md:grid-cols-2 lg:grid-cols-3" : profile.featuredLineups.length === 2 ? "md:grid-cols-2" : ""}`}
+            >
               {profile.featuredLineups.map((lineup) => (
                 <LineupCard
                   key={getId(lineup)}
@@ -554,7 +554,9 @@ export default function ProfilePage() {
           </div>
 
           {profile.lineups.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div
+              className={`grid grid-cols-1 gap-6 ${profile.lineups.length >= 2 ? "md:grid-cols-2" : ""}`}
+            >
               {profile.lineups.map((lineup) => (
                 <LineupCard
                   key={getId(lineup)}

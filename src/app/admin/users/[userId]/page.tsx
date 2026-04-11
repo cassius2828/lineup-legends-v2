@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
+import { Button } from "~/app/_components/ui/Button";
 import {
   ArrowLeft,
   Ban,
@@ -182,24 +183,31 @@ export default function UserDetailPage() {
           </h2>
           <div className="flex flex-wrap gap-3">
             {(isBanned || isSuspended) && (
-              <button
-                type="button"
+              <Button
                 onClick={() => unbanMutation.mutate({ userId: params.userId })}
-                disabled={unbanMutation.isPending}
-                className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-2 text-sm font-medium text-green-400 transition-colors hover:bg-green-500/20"
+                color="green"
+                variant="subtle"
+                loading={unbanMutation.isPending}
+                loadingText="Processing..."
+                className="px-4 py-2"
               >
-                <Unlock className="h-4 w-4" />
-                Unban / Unsuspend
-              </button>
+                <span className="flex items-center gap-2">
+                  <Unlock className="h-4 w-4" />
+                  Unban / Unsuspend
+                </span>
+              </Button>
             )}
-            <button
-              type="button"
+            <Button
               onClick={() => setShowBanForm(!showBanForm)}
-              className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
+              color="red"
+              variant="subtle"
+              className="px-4 py-2"
             >
-              <Ban className="h-4 w-4" />
-              {showBanForm ? "Cancel" : "Ban / Suspend"}
-            </button>
+              <span className="flex items-center gap-2">
+                <Ban className="h-4 w-4" />
+                {showBanForm ? "Cancel" : "Ban / Suspend"}
+              </span>
+            </Button>
           </div>
 
           {showBanForm && (
@@ -247,18 +255,19 @@ export default function UserDetailPage() {
                   <option value="365">Suspend 1 year</option>
                 </select>
               </div>
-              <button
-                type="button"
+              <Button
                 onClick={handleBan}
-                disabled={banMutation.isPending || !banReason.trim()}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+                disabled={!banReason.trim()}
+                color="red"
+                variant="solid"
+                loading={banMutation.isPending}
+                loadingText="Processing..."
+                className="px-4 py-2"
               >
-                {banMutation.isPending
-                  ? "Processing..."
-                  : suspendDays
-                    ? `Suspend for ${suspendDays} days`
-                    : "Permanently Ban"}
-              </button>
+                {suspendDays
+                  ? `Suspend for ${suspendDays} days`
+                  : "Permanently Ban"}
+              </Button>
             </div>
           )}
         </div>
