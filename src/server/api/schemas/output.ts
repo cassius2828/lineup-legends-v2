@@ -512,4 +512,5 @@ export type PlayersByValueOutput = z.infer<typeof playersByValueOutput>;
 // Mongoose's `.populate().lean()` returns correct data at runtime but
 // TypeScript still types populated refs as ObjectId. This helper bypasses
 // the compile-time check — the Zod `.output()` schema validates at runtime.
-export const populated = <T>(value: T): T => value;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const populated = <T>(value: T): any => value;

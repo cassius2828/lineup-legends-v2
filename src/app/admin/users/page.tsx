@@ -10,6 +10,7 @@ import {
   AdminFilterTabs,
   AdminSpinner,
   AdminEmptyState,
+  AdminErrorState,
   UserStatusBadges,
 } from "../components/shared";
 
@@ -25,7 +26,7 @@ export default function AdminUsersPage() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const { data, isLoading } = api.admin.getUsers.useQuery({
+  const { data, isLoading, isError, refetch } = api.admin.getUsers.useQuery({
     query: debouncedQuery || undefined,
     filter,
     limit: 30,
@@ -72,7 +73,14 @@ export default function AdminUsersPage() {
 
       {isLoading && <AdminSpinner />}
 
-      {!isLoading && data?.items.length === 0 && (
+      {isError && (
+        <AdminErrorState
+          message="Failed to load users"
+          onRetry={() => void refetch()}
+        />
+      )}
+
+      {!isLoading && !isError && data?.items.length === 0 && (
         <AdminEmptyState icon={<Users />} message="No users found" />
       )}
 

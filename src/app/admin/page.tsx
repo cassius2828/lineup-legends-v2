@@ -22,12 +22,32 @@ import { formatDistanceToNow } from "date-fns";
 import { StatusBadge } from "./components/StatusBadge";
 
 export default function AdminDashboardPage() {
-  const { data: stats, isLoading } = api.admin.getStats.useQuery();
+  const {
+    data: stats,
+    isLoading,
+    isError,
+    refetch,
+  } = api.admin.getStats.useQuery();
 
   if (isLoading || !stats) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
         <div className="border-t-gold border-foreground/20 h-12 w-12 animate-spin rounded-full border-4" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="border-foreground/10 bg-foreground/3 mx-auto mt-20 max-w-md rounded-xl border p-12 text-center">
+        <p className="text-foreground/50 mb-3">Failed to load dashboard</p>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="text-gold hover:text-gold-light text-sm font-medium transition-colors"
+        >
+          Try again
+        </button>
       </div>
     );
   }

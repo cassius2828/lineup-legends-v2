@@ -32,7 +32,12 @@ export const adminRouter = createTRPCRouter({
   getStats: adminProcedure.output(adminStatsOutput).query(async () => {
     const cachedStats = await redis.get("admin:stats");
     if (cachedStats) {
-      return JSON.parse(cachedStats);
+      try {
+        const parsed = adminStatsOutput.safeParse(JSON.parse(cachedStats));
+        if (parsed.success) return parsed.data;
+      } catch {
+        // corrupted cache, fall through to DB
+      }
     }
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -77,7 +82,7 @@ export const adminRouter = createTRPCRouter({
       FeedbackModel.find().sort({ createdAt: -1 }).limit(5).lean(),
     ]);
 
-    return populated({
+    const stats = {
       totalUsers,
       newUsersWeek,
       newUsersMonth,
@@ -107,7 +112,11 @@ export const adminRouter = createTRPCRouter({
         status: f.status,
         createdAt: f.createdAt,
       })),
-    });
+    };
+
+    void redis.setex("admin:stats", 300, JSON.stringify(stats));
+
+    return populated(stats);
   }),
 
   getFlaggedContent: adminProcedure

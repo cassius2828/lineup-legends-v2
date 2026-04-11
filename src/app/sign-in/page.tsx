@@ -124,7 +124,7 @@ function SignInContent() {
   const isBanError = errorType === "banned" || errorType === "suspended";
   const [error, setError] = useState<string | null>(
     errorType && !isBanError
-      ? (ERROR_MESSAGES[errorType] ?? ERROR_MESSAGES.Default!)
+      ? (ERROR_MESSAGES[errorType] ?? "Something went wrong. Please try again.")
       : null,
   );
 
@@ -152,7 +152,7 @@ function SignInContent() {
     try {
       await signIn("google", { callbackUrl });
     } catch {
-      setError(ERROR_MESSAGES.Default!);
+      setError("Something went wrong. Please try again.");
       setIsLoading(null);
     }
   };
@@ -187,7 +187,10 @@ function SignInContent() {
       });
 
       if (result?.error) {
-        setError(ERROR_MESSAGES.CredentialsSignin!);
+        setError(
+          ERROR_MESSAGES.CredentialsSignin ??
+            "Invalid email/username or password.",
+        );
         setIsLoading(null);
       } else {
         const sessionRes = await fetch("/api/auth/session");
@@ -202,7 +205,7 @@ function SignInContent() {
         }
       }
     } catch {
-      setError(ERROR_MESSAGES.Default!);
+      setError("Something went wrong. Please try again.");
       setIsLoading(null);
     }
   };
@@ -250,7 +253,7 @@ function SignInContent() {
         window.location.href = callbackUrl;
       }
     } catch {
-      setError(ERROR_MESSAGES.Default!);
+      setError("Something went wrong. Please try again.");
       setIsLoading(null);
     }
   };

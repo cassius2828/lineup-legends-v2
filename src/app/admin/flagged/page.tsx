@@ -11,6 +11,7 @@ import {
   AdminFilterTabs,
   AdminSpinner,
   AdminEmptyState,
+  AdminErrorState,
   DurationPicker,
 } from "../components/shared";
 
@@ -21,10 +22,11 @@ export default function FlaggedContentPage() {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [suspendDays, setSuspendDays] = useState(7);
 
-  const { data, isLoading, refetch } = api.admin.getFlaggedContent.useQuery({
-    status,
-    limit: 30,
-  });
+  const { data, isLoading, isError, refetch } =
+    api.admin.getFlaggedContent.useQuery({
+      status,
+      limit: 30,
+    });
 
   const reviewMutation = api.admin.reviewFlag.useMutation({
     onSuccess: () => {
@@ -65,7 +67,14 @@ export default function FlaggedContentPage() {
 
       {isLoading && <AdminSpinner />}
 
-      {!isLoading && data?.items.length === 0 && (
+      {isError && (
+        <AdminErrorState
+          message="Failed to load flagged content"
+          onRetry={() => void refetch()}
+        />
+      )}
+
+      {!isLoading && !isError && data?.items.length === 0 && (
         <AdminEmptyState
           icon={<CheckCircle />}
           message={`No ${status} flags`}

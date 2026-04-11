@@ -16,7 +16,11 @@ import {
   Globe,
   MessageSquare,
 } from "lucide-react";
-import { AdminSpinner, UserStatusBadges } from "../../components/shared";
+import {
+  AdminSpinner,
+  AdminErrorState,
+  UserStatusBadges,
+} from "../../components/shared";
 
 export default function UserDetailPage() {
   const params = useParams<{ userId: string }>();
@@ -28,6 +32,7 @@ export default function UserDetailPage() {
   const {
     data: user,
     isLoading,
+    isError,
     refetch,
   } = api.admin.getUserDetail.useQuery({
     userId: params.userId,
@@ -66,6 +71,15 @@ export default function UserDetailPage() {
 
   if (isLoading) {
     return <AdminSpinner />;
+  }
+
+  if (isError) {
+    return (
+      <AdminErrorState
+        message="Failed to load user details"
+        onRetry={() => void refetch()}
+      />
+    );
   }
 
   if (!user) {
