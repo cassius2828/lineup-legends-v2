@@ -5,7 +5,13 @@ import { api } from "~/trpc/react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { Users, Ban, Clock, Shield } from "lucide-react";
+import { Users, Shield } from "lucide-react";
+import {
+  AdminFilterTabs,
+  AdminSpinner,
+  AdminEmptyState,
+  UserStatusBadges,
+} from "../components/shared";
 
 type FilterType = "all" | "banned" | "suspended";
 
@@ -57,35 +63,17 @@ export default function AdminUsersPage() {
             className="border-foreground/10 bg-foreground/5 text-foreground placeholder-foreground/40 focus:border-gold focus:ring-gold w-full rounded-xl border py-3 pr-4 pl-12 focus:ring-1 focus:outline-none"
           />
         </div>
-        <div className="border-foreground/10 bg-surface-800 inline-flex gap-1 rounded-lg border p-1">
-          {(["all", "banned", "suspended"] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              className={`rounded-md px-3 py-2 text-sm font-medium capitalize transition-all ${
-                filter === f
-                  ? "bg-foreground/10 text-foreground shadow-sm"
-                  : "text-foreground/50 hover:text-foreground/70"
-              }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
+        <AdminFilterTabs
+          options={["all", "banned", "suspended"] as const}
+          value={filter}
+          onChange={setFilter}
+        />
       </div>
 
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="border-foreground/20 border-t-gold h-8 w-8 animate-spin rounded-full border-2" />
-        </div>
-      )}
+      {isLoading && <AdminSpinner />}
 
       {!isLoading && data?.items.length === 0 && (
-        <div className="border-foreground/10 bg-foreground/3 rounded-xl border p-12 text-center">
-          <Users className="text-foreground/20 mx-auto mb-3 h-10 w-10" />
-          <p className="text-foreground/50">No users found</p>
-        </div>
+        <AdminEmptyState icon={<Users />} message="No users found" />
       )}
 
       <div className="space-y-2">
@@ -110,20 +98,10 @@ export default function AdminUsersPage() {
                 {user.admin && (
                   <Shield className="text-gold h-4 w-4 shrink-0" />
                 )}
-                {user.banned && (
-                  <span className="flex items-center gap-1 rounded bg-red-500/10 px-2 py-0.5 text-xs text-red-400">
-                    <Ban className="h-3 w-3" />
-                    Banned
-                  </span>
-                )}
-                {!user.banned &&
-                  user.suspendedUntil &&
-                  new Date(user.suspendedUntil) > new Date() && (
-                    <span className="flex items-center gap-1 rounded bg-orange-500/10 px-2 py-0.5 text-xs text-orange-400">
-                      <Clock className="h-3 w-3" />
-                      Suspended
-                    </span>
-                  )}
+                <UserStatusBadges
+                  banned={user.banned}
+                  suspendedUntil={user.suspendedUntil}
+                />
               </div>
               <p className="text-foreground/40 truncate text-sm">
                 {user.username ? `@${user.username} · ` : ""}

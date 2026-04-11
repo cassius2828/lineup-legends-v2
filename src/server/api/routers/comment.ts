@@ -13,14 +13,10 @@ import {
   protectedProcedure,
   publicProcedure,
 } from "~/server/api/trpc";
-import {
-  CommentModel,
-  CommentVoteModel,
-  ContentFlagModel,
-} from "~/server/models";
+import { CommentModel, CommentVoteModel } from "~/server/models";
 import { ThreadModel } from "~/server/models/threads";
 import { ThreadVoteModel } from "~/server/models/threadVotes";
-import { censorText } from "~/server/lib/censor";
+import { censorText, flagContent } from "~/server/lib/censor";
 import {
   paginatedCommentsOutput,
   paginatedThreadsOutput,
@@ -204,16 +200,13 @@ export const commentRouter = createTRPCRouter({
         gif: input.gif ?? null,
       });
 
-      if (censored.flagged) {
-        await ContentFlagModel.create({
-          contentType: "comment",
-          contentId: comment._id,
-          userId: ctx.session.user.id,
-          originalText: rawText,
-          censoredText: censored.cleaned,
-          flaggedWords: censored.flaggedWords,
-        });
-      }
+      await flagContent({
+        raw: rawText,
+        result: censored,
+        contentType: "comment",
+        contentId: comment._id,
+        userId: ctx.session.user.id,
+      });
 
       return populated({
         ...comment.toObject(),
@@ -252,16 +245,13 @@ export const commentRouter = createTRPCRouter({
         gif: input.gif ?? null,
       });
 
-      if (censored.flagged) {
-        await ContentFlagModel.create({
-          contentType: "thread",
-          contentId: newThreadReply._id,
-          userId: ctx.session.user.id,
-          originalText: rawText,
-          censoredText: censored.cleaned,
-          flaggedWords: censored.flaggedWords,
-        });
-      }
+      await flagContent({
+        raw: rawText,
+        result: censored,
+        contentType: "thread",
+        contentId: newThreadReply._id,
+        userId: ctx.session.user.id,
+      });
 
       return populated({
         ...newThreadReply.toObject(),

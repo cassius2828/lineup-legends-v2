@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
+import { AlertTriangle, CheckCircle, XCircle, Ban, Clock } from "lucide-react";
 import {
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Ban,
-  Clock,
-  ChevronDown,
-} from "lucide-react";
+  AdminFilterTabs,
+  AdminSpinner,
+  AdminEmptyState,
+  DurationPicker,
+} from "../components/shared";
 
 type FilterStatus = "pending" | "reviewed" | "dismissed";
 
@@ -56,34 +55,21 @@ export default function FlaggedContentPage() {
         </p>
       </div>
 
-      <div className="border-foreground/10 bg-surface-800 mb-6 inline-flex gap-1 rounded-lg border p-1">
-        {(["pending", "reviewed", "dismissed"] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => setStatus(s)}
-            className={`rounded-md px-4 py-2 text-sm font-medium capitalize transition-all ${
-              status === s
-                ? "bg-foreground/10 text-foreground shadow-sm"
-                : "text-foreground/50 hover:text-foreground/70"
-            }`}
-          >
-            {s}
-          </button>
-        ))}
+      <div className="mb-6">
+        <AdminFilterTabs
+          options={["pending", "reviewed", "dismissed"] as const}
+          value={status}
+          onChange={setStatus}
+        />
       </div>
 
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="border-foreground/20 border-t-gold h-8 w-8 animate-spin rounded-full border-2" />
-        </div>
-      )}
+      {isLoading && <AdminSpinner />}
 
       {!isLoading && data?.items.length === 0 && (
-        <div className="border-foreground/10 bg-foreground/3 rounded-xl border p-12 text-center">
-          <CheckCircle className="text-foreground/20 mx-auto mb-3 h-10 w-10" />
-          <p className="text-foreground/50">No {status} flags</p>
-        </div>
+        <AdminEmptyState
+          icon={<CheckCircle />}
+          message={`No ${status} flags`}
+        />
       )}
 
       <div className="space-y-4">
@@ -237,74 +223,6 @@ export default function FlaggedContentPage() {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-const DURATION_OPTIONS = [
-  { value: 1, label: "1 day" },
-  { value: 3, label: "3 days" },
-  { value: 7, label: "7 days" },
-  { value: 14, label: "14 days" },
-  { value: 30, label: "30 days" },
-  { value: 90, label: "90 days" },
-];
-
-function DurationPicker({
-  value,
-  onChange,
-}: {
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  const selected = DURATION_OPTIONS.find((o) => o.value === value);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="border-foreground/20 bg-foreground/5 text-foreground hover:bg-foreground/10 flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
-      >
-        {selected?.label ?? "7 days"}
-        <ChevronDown
-          className={`h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`}
-        />
-      </button>
-      {open && (
-        <div className="border-foreground/10 bg-surface-800 absolute bottom-full left-0 z-20 mb-1 w-28 overflow-hidden rounded-lg border shadow-xl">
-          {DURATION_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                onChange(opt.value);
-                setOpen(false);
-              }}
-              className={`w-full px-3 py-2 text-left text-xs font-medium transition-colors ${
-                opt.value === value
-                  ? "bg-gold/15 text-gold"
-                  : "text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

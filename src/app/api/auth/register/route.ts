@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { validatePassword } from "~/lib/password-validation";
 import { connectDB } from "~/server/db";
-import { UserModel, ContentFlagModel, BannedEmailModel } from "~/server/models";
-import { censorText } from "~/server/lib/censor";
+import { UserModel, BannedEmailModel } from "~/server/models";
+import { censorText, flagContent } from "~/server/lib/censor";
 import { BCRYPT_ROUNDS } from "~/server/constants";
 import { rateLimit, getClientIp } from "~/server/rate-limit";
 import { logger } from "~/lib/logger";
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
     const nameCensored = censorText(name.trim());
 
     const user = await UserModel.create({
@@ -82,22 +82,29 @@ export async function POST(request: Request) {
       registrationIp: getClientIp(request),
     });
 
-    if (nameCensored.flagged) {
-      await ContentFlagModel.create({
-        contentType: "registration",
-        contentId: user._id,
-        userId: user._id,
-        originalText: name.trim(),
-        censoredText: nameCensored.cleaned,
-        flaggedWords: nameCensored.flaggedWords,
-      });
-    }
+    await flagContent({
+      raw: name.trim(),
+      result: nameCensored,
+      contentType: "registration",
+      contentId: user._id,
+      userId: user._id,
+    });
 
     return NextResponse.json(
       { id: user._id.toString(), email: user.email },
       { status: 201 },
     );
   } catch (error) {
+    if (
+      error instanceof Error &&
+      "code" in error &&
+      (error as { code: number }).code === 11000
+    ) {
+      return NextResponse.json(
+        { error: "An account with this email already exists" },
+        { status: 409 },
+      );
+    }
     log.error({ err: error }, "Registration error");
     return NextResponse.json(
       { error: "Failed to create account" },

@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    const user = await UserModel.findOne({ email }).lean();
+    const user = await UserModel.findOne({ email }).select("+password").lean();
 
     if (!user) {
       log.info({ email }, "Password reset requested for non-existent email");

@@ -12,7 +12,6 @@ export interface SocialMedia {
 export interface User {
   id: string;
   name: string;
-  password?: string | null;
   username?: string | null;
   email: string;
   emailVerified?: Date | null;
@@ -84,7 +83,7 @@ const SocialMediaSchema = new Schema<SocialMedia>(
 const UserSchema = new Schema<UserDoc>(
   {
     name: { type: String, required: true },
-    password: { type: String, required: false, default: null },
+    password: { type: String, required: false, default: null, select: false },
     username: { type: String, required: false },
     email: { type: String, required: true, unique: true },
     emailVerified: { type: Date, default: null },

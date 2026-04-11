@@ -4,19 +4,19 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
   Ban,
-  Clock,
   Shield,
   AlertTriangle,
   Unlock,
   Globe,
   MessageSquare,
 } from "lucide-react";
+import { AdminSpinner, UserStatusBadges } from "../../components/shared";
 
 export default function UserDetailPage() {
   const params = useParams<{ userId: string }>();
@@ -65,11 +65,7 @@ export default function UserDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="border-foreground/20 border-t-gold h-8 w-8 animate-spin rounded-full border-2" />
-      </div>
-    );
+    return <AdminSpinner />;
   }
 
   if (!user) {
@@ -112,19 +108,10 @@ export default function UserDetailPage() {
                 {user.name}
               </h1>
               {user.admin && <Shield className="text-gold h-5 w-5" />}
-              {isBanned && (
-                <span className="flex items-center gap-1 rounded bg-red-500/10 px-2 py-0.5 text-xs text-red-400">
-                  <Ban className="h-3 w-3" />
-                  Banned
-                </span>
-              )}
-              {isSuspended && (
-                <span className="flex items-center gap-1 rounded bg-orange-500/10 px-2 py-0.5 text-xs text-orange-400">
-                  <Clock className="h-3 w-3" />
-                  Suspended until{" "}
-                  {format(new Date(user.suspendedUntil!), "MMM d, yyyy")}
-                </span>
-              )}
+              <UserStatusBadges
+                banned={user.banned}
+                suspendedUntil={user.suspendedUntil}
+              />
             </div>
             <p className="text-foreground/50 text-sm">
               {user.username && `@${user.username} · `}

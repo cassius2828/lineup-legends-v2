@@ -8,7 +8,7 @@ import { ensureEnvs } from "~/lib/ensureEnvs";
 import { connectDB, getMongoClient } from "~/server/db";
 import { redis } from "~/server/redis";
 import { redisMfaVerifiedKey } from "~/server/constants";
-import { UserModel } from "../models";
+import { UserModel, BannedEmailModel } from "../models";
 
 /**
  * Module augmentation for `next-auth` types.
@@ -39,23 +39,14 @@ function validateString(value: unknown, fieldName: string): string {
 }
 
 /**
- * Checks if identifier is an email address.
- */
-function isEmail(identifier: string): boolean {
-  return identifier.includes("@");
-}
-
-/**
  * Finds a user by email or username using Mongoose.
  */
 async function findUserByIdentifier(identifier: string) {
   await connectDB();
-
-  const query = isEmail(identifier)
-    ? { email: identifier.toLowerCase() }
-    : { username: identifier.toLowerCase() };
-
-  return UserModel.findOne(query).lean();
+  const { buildUserQuery } = await import("~/server/lib/identifier");
+  return UserModel.findOne(buildUserQuery(identifier))
+    .select("+password")
+    .lean();
 }
 
 /**
@@ -108,6 +99,8 @@ export const authConfig = {
 
         const user = await findUserByIdentifier(identifier);
         if (!user) {
+          // Constant-time: run bcrypt against a dummy hash to prevent timing enumeration
+          await bcrypt.compare(password, "$2a$12$x".padEnd(60, "0"));
           throw new Error("Invalid credentials");
         }
 
@@ -157,28 +150,20 @@ export const authConfig = {
       const dbUser = await UserModel.findOne({ email: user.email })
         .select("banned banReason bannedAt suspendedUntil suspensionCount")
         .lean();
-      if (!dbUser) return true;
+      if (!dbUser) {
+        const banned = await BannedEmailModel.findOne({
+          email: user.email,
+        }).lean();
+        if (banned) return `/sign-in?error=banned`;
+        return true;
+      }
 
       if (dbUser.banned) {
-        const params = new URLSearchParams({
-          error: "banned",
-          reason: dbUser.banReason ?? "Violation of community guidelines",
-          suspensionCount: String(dbUser.suspensionCount ?? 0),
-        });
-        if (dbUser.bannedAt) {
-          params.set("bannedAt", dbUser.bannedAt.toISOString());
-        }
-        return `/sign-in?${params.toString()}`;
+        return `/sign-in?error=banned`;
       }
 
       if (dbUser.suspendedUntil && dbUser.suspendedUntil > new Date()) {
-        const params = new URLSearchParams({
-          error: "suspended",
-          reason: dbUser.banReason ?? "Violation of community guidelines",
-          suspendedUntil: dbUser.suspendedUntil.toISOString(),
-          suspensionCount: String(dbUser.suspensionCount ?? 0),
-        });
-        return `/sign-in?${params.toString()}`;
+        return `/sign-in?error=suspended`;
       }
 
       return true;

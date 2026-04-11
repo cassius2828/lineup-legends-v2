@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "~/server/db";
 import { UserModel } from "~/server/models";
+import { buildUserQuery } from "~/server/lib/identifier";
 import { rateLimit, getClientIp } from "~/server/rate-limit";
 
 const schema = z.object({
@@ -21,7 +22,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const json: unknown = await request.json();
+  let json: unknown;
+  try {
+    json = await request.json();
+  } catch {
+    return NextResponse.json({ status: "ok" });
+  }
   const parsed = schema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ status: "ok" });
@@ -30,12 +36,7 @@ export async function POST(request: Request) {
   const { identifier } = parsed.data;
   await connectDB();
 
-  const isEmail = identifier.includes("@");
-  const query = isEmail
-    ? { email: identifier.toLowerCase() }
-    : { username: identifier.toLowerCase() };
-
-  const user = await UserModel.findOne(query)
+  const user = await UserModel.findOne(buildUserQuery(identifier))
     .select("banned bannedAt banReason suspendedUntil suspensionCount")
     .lean();
 

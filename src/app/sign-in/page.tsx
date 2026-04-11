@@ -130,15 +130,21 @@ function SignInContent() {
 
   useEffect(() => {
     if (!isBanError) return;
-    showBanToast({
-      status: errorType!,
-      reason: searchParams.get("reason") ?? undefined,
-      bannedAt: searchParams.get("bannedAt") ?? undefined,
-      suspendedUntil: searchParams.get("suspendedUntil") ?? undefined,
-      suspensionCount:
-        Number(searchParams.get("suspensionCount") ?? "0") || undefined,
-    });
-  }, [isBanError, errorType, searchParams]);
+
+    const storedEmail = sessionStorage.getItem("ll_signin_email");
+    if (storedEmail) {
+      sessionStorage.removeItem("ll_signin_email");
+      void checkBanStatus(storedEmail).then((data) => {
+        if (data && (data.status === "banned" || data.status === "suspended")) {
+          showBanToast(data);
+        } else {
+          showBanToast({ status: errorType ?? "banned" });
+        }
+      });
+    } else {
+      showBanToast({ status: errorType ?? "banned" });
+    }
+  }, [isBanError, errorType]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading("google");
@@ -162,7 +168,8 @@ function SignInContent() {
     setError(null);
 
     try {
-      const banData = await checkBanStatus(identifier.trim());
+      const trimmedId = identifier.trim();
+      const banData = await checkBanStatus(trimmedId);
       if (
         banData &&
         (banData.status === "banned" || banData.status === "suspended")
@@ -172,6 +179,7 @@ function SignInContent() {
         return;
       }
 
+      sessionStorage.setItem("ll_signin_email", trimmedId);
       const result = await signIn("credentials", {
         identifier: identifier.trim(),
         password,

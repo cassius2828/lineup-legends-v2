@@ -8,13 +8,9 @@ import {
   createTRPCRouter,
   publicProcedure,
 } from "~/server/api/trpc";
-import {
-  PlayerModel,
-  RequestedPlayerModel,
-  UserModel,
-  ContentFlagModel,
-} from "~/server/models";
-import { censorText } from "~/server/lib/censor";
+import { PlayerModel, RequestedPlayerModel, UserModel } from "~/server/models";
+import { censorText, flagContent } from "~/server/lib/censor";
+import { escapeRegex } from "~/server/lib/escape-regex";
 import { getPlayersFromCacheOrDb } from "~/server/services/player-cache";
 import {
   requestedPlayerListItemOutput,
@@ -167,8 +163,8 @@ export const requestedPlayerRouter = createTRPCRouter({
 
       const result = await RequestedPlayerModel.findOneAndUpdate(
         {
-          firstName: { $regex: new RegExp(`^${firstName}$`, "i") },
-          lastName: { $regex: new RegExp(`^${lastName}$`, "i") },
+          firstName: { $regex: new RegExp(`^${escapeRegex(firstName)}$`, "i") },
+          lastName: { $regex: new RegExp(`^${escapeRegex(lastName)}$`, "i") },
         },
         {
           $setOnInsert: { firstName, lastName },
@@ -185,14 +181,13 @@ export const requestedPlayerRouter = createTRPCRouter({
         { upsert: true, new: true },
       );
 
-      if (noteCensored?.flagged && rawNote) {
-        await ContentFlagModel.create({
+      if (noteCensored && rawNote) {
+        await flagContent({
+          raw: rawNote,
+          result: noteCensored,
           contentType: "player-request",
           contentId: result._id,
-          userId: userId,
-          originalText: rawNote,
-          censoredText: noteCensored.cleaned,
-          flaggedWords: noteCensored.flaggedWords,
+          userId,
         });
       }
 

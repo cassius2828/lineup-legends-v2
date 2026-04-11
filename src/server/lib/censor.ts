@@ -1,4 +1,6 @@
 import { Filter } from "bad-words";
+import type { Types } from "mongoose";
+import { ContentFlagModel, type ContentFlagType } from "../models/content-flag";
 
 const filter = new Filter();
 
@@ -31,4 +33,28 @@ export function censorText(text: string): CensorResult {
     flagged: flaggedWords.length > 0,
     flaggedWords,
   };
+}
+
+/**
+ * If `result.flagged`, creates a ContentFlag for admin review.
+ * Accepts a pre-computed CensorResult so the caller can create the parent
+ * document first and pass the contentId.
+ */
+export async function flagContent(opts: {
+  raw: string;
+  result: CensorResult;
+  contentType: ContentFlagType;
+  contentId: Types.ObjectId | null;
+  userId: Types.ObjectId | string | null;
+}): Promise<void> {
+  if (!opts.result.flagged) return;
+
+  await ContentFlagModel.create({
+    contentType: opts.contentType,
+    contentId: opts.contentId,
+    userId: opts.userId,
+    originalText: opts.raw,
+    censoredText: opts.result.cleaned,
+    flaggedWords: opts.result.flaggedWords,
+  });
 }

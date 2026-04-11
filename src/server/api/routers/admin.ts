@@ -16,7 +16,16 @@ import {
 } from "~/server/models";
 import { redis } from "~/server/redis";
 import { objectIdFromDate } from "~/server/lib/objectId";
-import { adminStatsOutput, populated } from "~/server/api/schemas/output";
+import {
+  adminStatsOutput,
+  adminFlaggedContentOutput,
+  adminReviewFlagOutput,
+  adminUsersOutput,
+  adminUserDetailOutput,
+  adminBanUserOutput,
+  adminUnbanUserOutput,
+  populated,
+} from "~/server/api/schemas/output";
 import { escapeRegex } from "~/server/lib/escape-regex";
 
 export const adminRouter = createTRPCRouter({
@@ -109,6 +118,7 @@ export const adminRouter = createTRPCRouter({
         limit: z.number().min(1).max(50).default(20),
       }),
     )
+    .output(adminFlaggedContentOutput)
     .query(async ({ input }) => {
       const query: Record<string, unknown> = { status: input.status };
       if (input.cursor) {
@@ -173,6 +183,7 @@ export const adminRouter = createTRPCRouter({
         suspendDays: z.number().min(1).max(365).optional(),
       }),
     )
+    .output(adminReviewFlagOutput)
     .mutation(async ({ ctx, input }) => {
       const flag = await ContentFlagModel.findById(input.flagId);
       if (!flag) {
@@ -235,6 +246,7 @@ export const adminRouter = createTRPCRouter({
         filter: z.enum(["all", "banned", "suspended"]).default("all"),
       }),
     )
+    .output(adminUsersOutput)
     .query(async ({ input }) => {
       const match: Record<string, unknown> = {};
 
@@ -287,6 +299,7 @@ export const adminRouter = createTRPCRouter({
 
   getUserDetail: adminProcedure
     .input(z.object({ userId: z.string() }))
+    .output(adminUserDetailOutput)
     .query(async ({ input }) => {
       const user = await UserModel.findById(input.userId)
         .select(
@@ -344,6 +357,7 @@ export const adminRouter = createTRPCRouter({
         suspendDays: z.number().min(1).max(365).optional(),
       }),
     )
+    .output(adminBanUserOutput)
     .mutation(async ({ ctx, input }) => {
       const user = await UserModel.findById(input.userId)
         .select("email admin")
@@ -395,6 +409,7 @@ export const adminRouter = createTRPCRouter({
 
   unbanUser: adminProcedure
     .input(z.object({ userId: z.string() }))
+    .output(adminUnbanUserOutput)
     .mutation(async ({ input }) => {
       const user = await UserModel.findById(input.userId)
         .select("email")
