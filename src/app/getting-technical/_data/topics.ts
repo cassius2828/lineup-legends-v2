@@ -260,6 +260,81 @@ _Content coming soon — add your video and detailed writeup here._
 `,
   },
 
+  {
+    slug: "wikipedia-player-profiles",
+    title: "Wikipedia Player Profiles",
+    description:
+      "How player bios, career stats, awards, and measurements are fetched from Wikipedia with AI fallback.",
+    category: "features",
+    icon: "📖",
+    videoId: "",
+    status: "coming-soon",
+    content: `
+## Overview
+
+Every player in Lineup Legends has a rich profile powered by Wikipedia data: a biography excerpt, career averages, season bests, awards, and physical measurements. Data is fetched on demand and cached in the Player document.
+
+## Data Pipeline
+
+\`\`\`
+1. Player page opens → useEnsureWikiData hook fires
+2. If wiki data is missing or stale (> 7 days):
+   a. ensureWikiSummary mutation (protected, rate-limited)
+   b. Fetches Wikipedia summary via MediaWiki REST API
+   c. Fetches full page HTML for extended sections
+   d. Cheerio parses: career stats table, awards section, infobox
+   e. Results saved to Player document, Redis cache invalidated
+3. If awards are still empty after Cheerio:
+   a. ensureAwardsAI mutation → GPT-4o-mini extracts awards from HTML
+\`\`\`
+
+## Cheerio HTML Parsing
+
+The career stats table parser handles complex Wikipedia table structures:
+
+- **\`leadingHeaderOffset\`** — calculates column offset for \`<td>\` elements, accounting for \`<th>\` cells and \`colspan\` attributes
+- **\`firstCellLabel\`** — normalizes the first cell of any row to detect "Career" vs regular season rows
+- **Season bests** — tracks the highest value per stat across all season rows, includes games played (GP)
+- **Mid-season trades** — handles rows without a "Year" column (player traded mid-season)
+
+## AI Fallback (OpenAI)
+
+When Cheerio parsing fails (uncommon table structures, missing sections), GPT-4o-mini is used:
+
+- **\`ai-awards.ts\`** — extracts awards as a bullet list from full page HTML
+- **\`ai-career-stats.ts\`** — extracts career averages and season bests as structured JSON
+
+Both modules share a centralized OpenAI client singleton and HTML truncation helper (\`ai-client.ts\`).
+
+## Security & Rate Limiting
+
+- Both \`ensureWikiSummary\` and \`ensureAwardsAI\` are **protected procedures** (auth required)
+- Redis-backed rate limiting: **5 requests per minute** per IP via \`rateLimitMiddleware\`
+- Regex injection prevention: player names are escaped with \`escapeRegex()\` before use in MongoDB queries
+
+## Backfill Script
+
+\`\`\`bash
+# Fetch wiki data for all players (skips existing)
+npx tsx scripts/backfill-wiki.ts
+
+# Force re-fetch all players
+npx tsx scripts/backfill-wiki.ts --refresh-stats
+\`\`\`
+
+The script processes each player sequentially, logging progress with skip/fetch/fail counts.
+
+## Components
+
+| Component | Location | Purpose |
+|-----------|----------|---------|
+| \`CareerStatsToggle\` | \`_components/common/\` | Toggle between career averages and season bests |
+| \`CareerStatValue\` | \`_components/common/\` | Individual stat cell with shimmer loading |
+| \`WikiPlayerMeasurements\` | \`_components/common/\` | Height/weight from infobox |
+| \`useEnsureWikiData\` | \`hooks/\` | Shared hook for triggering wiki fetch |
+`,
+  },
+
   // ─── BACKEND ARCHITECTURE ──────────────────────────────────────
 
   {
