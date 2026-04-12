@@ -5,7 +5,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 1,
-  workers: process.env.CI ? 4 : undefined,
+  workers: process.env.CI ? 8 : undefined,
   reporter: "html",
 
   globalSetup: "./e2e/seed-test-user.ts",
