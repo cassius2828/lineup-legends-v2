@@ -92,7 +92,7 @@ export const Button = ({
       onClick={handler}
       disabled={disabled || loading}
       onMouseEnter={onMouseEnter}
-      className={`${ButtonColors[color][variant]} ${baseClasses} ${disabledClasses} ${className ?? ""}`}
+      className={`${ButtonColors[color][variant]} ${baseClasses} ${disabledClasses} ${className ?? ""} ${disabled ? "cursor-default!" : ""}`}
     >
       {loading ? (
         <span className="flex items-center justify-center gap-2">

@@ -241,7 +241,6 @@ export const gambleOutcomeOutput = z.object({
   valueChange: z.number(),
   outcomeTier: gambleOutcomeTierSchema,
   streak: z.number(),
-  dailyGamblesRemaining: z.number(),
 });
 
 export const gambleResultOutput = z.object({

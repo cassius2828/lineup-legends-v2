@@ -72,7 +72,7 @@ export function GambleSection() {
             You could get a player one level higher or risk getting a
             lower-level player. Value 1 players can only be gambled for fellow
             value 1 players, adding an extra layer of strategy. You may only
-            gamble 3 times per lineup.
+            gamble once per lineup — choose wisely.
           </motion.p>
         </motion.div>
 

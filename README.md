@@ -22,7 +22,7 @@ Welcome to **Lineup Legends v2**, the modernized fantasy basketball lineup creat
 
 ### Gamble System
 
-- **Player Gambling**: Gamble a player in your lineup for a random replacement of similar value.
+- **Player Gambling**: Gamble a player in your lineup for a random replacement — once per lineup, choose wisely.
 - **Animated Reveals**: NBA 2K-inspired card reveal animations with tier-based effects and sounds.
 
 ### Player Profiles (Wikipedia Integration)
