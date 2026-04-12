@@ -35,13 +35,12 @@ async function main() {
   let skipped = 0;
   let failed = 0;
   let aiFallbacks = 0;
+  const forceRefreshStats = process.argv.includes("--refresh-stats");
 
   for (let i = 0; i < players.length; i++) {
     const p = players[i]!;
     const name = `${p.firstName} ${p.lastName}`;
     const tag = `[${i + 1}/${players.length}]`;
-
-    const forceRefreshStats = process.argv.includes("--refresh-stats");
 
     const hasWiki =
       !!p.wikiSummaryExtract?.trim() &&

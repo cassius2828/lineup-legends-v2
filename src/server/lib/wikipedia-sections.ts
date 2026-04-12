@@ -9,7 +9,7 @@ import { wikiFetch, wikiJsonHeaders } from "~/server/lib/wikipedia";
 
 const WIKI_API = "https://en.wikipedia.org/w/api.php";
 
-function wikiDebugEnabled(): boolean {
+export function wikiDebugEnabled(): boolean {
   return (
     process.env.NODE_ENV === "development" ||
     process.env.WIKIPEDIA_DEBUG === "1"
@@ -555,7 +555,6 @@ export interface WikiExtendedSections {
 
 export async function fetchWikiExtendedSections(
   canonicalPageTitle: string,
-  options?: { fullPageHtml?: string | null },
 ): Promise<WikiExtendedSections> {
   const [sections, fullPageHtml] = await Promise.all([
     fetchSectionIndices(canonicalPageTitle),

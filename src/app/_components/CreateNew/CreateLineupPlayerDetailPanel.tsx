@@ -1,100 +1,15 @@
 "use client";
 
 import { skipToken } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useEffect } from "react";
 import { api } from "~/trpc/react";
 import { getId } from "~/lib/types";
 import type { PlayerOutput } from "~/server/api/schemas/output";
 import { VALUE_SHADOWS } from "~/lib/constants";
-import { WIKI_CAREER_STATS_ORDER } from "~/lib/wiki-career-stats";
-import { CareerStatValue } from "../common/CareerStatValue";
+import { useEnsureWikiData } from "~/hooks/useEnsureWikiData";
+import { CareerStatsToggle } from "../common/CareerStatsToggle";
 import { WikiPlayerMeasurements } from "../common/WikiPlayerMeasurements";
 import { PlayerImage } from "../PlayerImage";
-
-type SeasonBestEntry = { value: string; season: string };
-
-function CareerStatsToggleBlock({
-  averages,
-  bests,
-  statsLoading,
-}: {
-  averages: Record<string, string> | null | undefined;
-  bests: Record<string, SeasonBestEntry> | null | undefined;
-  statsLoading?: boolean;
-}) {
-  const hasBests = !!bests && Object.keys(bests).length > 0;
-  const [mode, setMode] = useState<"averages" | "bests">("averages");
-
-  return (
-    <section aria-busy={statsLoading} aria-label="Career statistics">
-      <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-foreground/80 text-sm font-semibold tracking-wide uppercase">
-          {mode === "averages" ? "Career averages" : "Career bests"}
-        </h3>
-        {hasBests && (
-          <button
-            type="button"
-            onClick={() =>
-              setMode((m) => (m === "averages" ? "bests" : "averages"))
-            }
-            className="text-gold hover:text-gold-light border-foreground/10 hover:border-foreground/20 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors"
-          >
-            {mode === "averages" ? "Show bests" : "Show averages"}
-          </button>
-        )}
-      </div>
-
-      <ul className="border-foreground/10 divide-foreground/10 divide-y rounded-lg border">
-        {WIKI_CAREER_STATS_ORDER.map(({ key, label }, rowIndex) => {
-          if (mode === "bests") {
-            const best = bests?.[key];
-            return (
-              <li
-                key={key}
-                className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
-              >
-                <span className="flex w-full items-baseline justify-between gap-2">
-                  <span className="text-foreground/70">{label}</span>
-                  {best ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-foreground/45 text-xs">
-                        {best.season}
-                      </span>
-                      <span className="text-gold font-mono font-semibold tabular-nums">
-                        {best.value}
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-foreground/30 font-mono">—</span>
-                  )}
-                </span>
-              </li>
-            );
-          }
-          return (
-            <li
-              key={key}
-              className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
-            >
-              <span className="text-foreground/70">{label}</span>
-              <CareerStatValue
-                value={averages?.[key]}
-                loading={!!statsLoading}
-                rowIndex={rowIndex}
-              />
-            </li>
-          );
-        })}
-      </ul>
-      {statsLoading ? (
-        <span className="sr-only">
-          Loading career statistics from Wikipedia
-        </span>
-      ) : null}
-    </section>
-  );
-}
 
 interface CreateLineupPlayerDetailPanelProps {
   player: PlayerOutput | null;
@@ -108,63 +23,15 @@ export function CreateLineupPlayerDetailPanel({
   onClose,
 }: CreateLineupPlayerDetailPanelProps) {
   const playerId = player ? getId(player) : undefined;
-  const utils = api.useUtils();
-  const wikiAttempted = useRef(false);
 
   const { data: freshPlayer, isFetching } = api.player.getById.useQuery(
     open && playerId ? { id: playerId } : skipToken,
   );
 
-  const ensureWiki = api.player.ensureWikiSummary.useMutation({
-    onSuccess: async (data) => {
-      if (!playerId) return;
-      utils.player.getById.setData({ id: playerId }, data);
-      await utils.player.getById.invalidate({ id: playerId });
-    },
-    onError: (err) => {
-      wikiAttempted.current = false;
-      toast.error(err.message);
-    },
-  });
-  const { reset: resetWikiMutation, mutate: mutateWiki } = ensureWiki;
-
-  const aiAwardsAttempted = useRef(false);
-  const ensureAwardsAI = api.player.ensureAwardsAI.useMutation({
-    onSuccess: async (data) => {
-      if (!playerId) return;
-      utils.player.getById.setData({ id: playerId }, data);
-      await utils.player.getById.invalidate({ id: playerId });
-    },
-  });
-
   const displayPlayer = freshPlayer ?? player;
 
-  useEffect(() => {
-    wikiAttempted.current = false;
-    aiAwardsAttempted.current = false;
-    resetWikiMutation();
-  }, [playerId, open, resetWikiMutation]);
-
-  useEffect(() => {
-    if (!open || !playerId || !displayPlayer) return;
-    const wikiReady =
-      !!displayPlayer.wikiSummaryExtract?.trim() &&
-      displayPlayer.wikiAwardsHonorsText !== undefined;
-    if (wikiReady) return;
-    if (wikiAttempted.current) return;
-    wikiAttempted.current = true;
-    mutateWiki({ id: playerId });
-  }, [open, playerId, displayPlayer, mutateWiki]);
-
-  useEffect(() => {
-    if (!open || !playerId || !displayPlayer) return;
-    if (!displayPlayer.wikiSummaryExtract?.trim()) return;
-    if (displayPlayer.wikiAwardsHonorsText?.trim()) return;
-    if (aiAwardsAttempted.current) return;
-    if (ensureWiki.isPending) return;
-    aiAwardsAttempted.current = true;
-    ensureAwardsAI.mutate({ id: playerId });
-  }, [open, playerId, displayPlayer, ensureWiki.isPending, ensureAwardsAI]);
+  const { ensureWiki, ensureAwardsAI, wikiAttempted, mutateWiki } =
+    useEnsureWikiData({ playerId, player: displayPlayer, enabled: open });
 
   useEffect(() => {
     if (!open) return;
@@ -274,10 +141,10 @@ export function CreateLineupPlayerDetailPanel({
             />
           )}
 
-          <CareerStatsToggleBlock
+          <CareerStatsToggle
             averages={resolved.wikiCareerRegularSeason ?? undefined}
             bests={resolved.wikiCareerSeasonBests ?? undefined}
-            statsLoading={careerStatsLoading}
+            loading={careerStatsLoading}
           />
 
           <section>

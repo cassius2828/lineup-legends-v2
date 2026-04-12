@@ -3,7 +3,9 @@ import { TRPCError } from "@trpc/server";
 import {
   adminProcedure,
   createTRPCRouter,
+  protectedProcedure,
   publicProcedure,
+  rateLimitMiddleware,
 } from "~/server/api/trpc";
 import { PlayerModel } from "~/server/models";
 import { escapeRegex } from "~/server/lib/escape-regex";
@@ -22,6 +24,7 @@ import {
   fetchFullPageHtml,
   fetchListedHeightWeightForPageTitle,
   fetchWikiExtendedSections,
+  wikiDebugEnabled,
 } from "~/server/lib/wikipedia-sections";
 import { extractAwardsFromHtml } from "~/server/lib/ai-awards";
 
@@ -48,7 +51,8 @@ export const playerRouter = createTRPCRouter({
     }),
 
   /** Fetches Wikipedia lead summary (basketball-biased), persists on player, invalidates cache. */
-  ensureWikiSummary: publicProcedure
+  ensureWikiSummary: protectedProcedure
+    .use(rateLimitMiddleware(5, 60))
     .input(
       z.object({
         id: z.string(),
@@ -130,10 +134,7 @@ export const playerRouter = createTRPCRouter({
 
       const extended = await fetchWikiExtendedSections(summary.title);
 
-      if (
-        process.env.NODE_ENV === "development" ||
-        process.env.WIKIPEDIA_DEBUG === "1"
-      ) {
+      if (wikiDebugEnabled()) {
         console.log("[player.ensureWikiSummary] wiki pull result", {
           playerId: input.id,
           resolvedTitle: summary.title,
@@ -177,7 +178,8 @@ export const playerRouter = createTRPCRouter({
    * when our regex-based parser missed the section. Runs independently so it
    * never blocks ensureWikiSummary.
    */
-  ensureAwardsAI: publicProcedure
+  ensureAwardsAI: protectedProcedure
+    .use(rateLimitMiddleware(5, 60))
     .input(z.object({ id: z.string() }))
     .output(playerOutput)
     .mutation(async ({ input }) => {
@@ -212,10 +214,7 @@ export const playerRouter = createTRPCRouter({
         return playerOutput.parse({ ...raw, id: getId(raw) });
       }
 
-      if (
-        process.env.NODE_ENV === "development" ||
-        process.env.WIKIPEDIA_DEBUG === "1"
-      ) {
+      if (wikiDebugEnabled()) {
         console.log("[player.ensureAwardsAI] AI extracted awards from HTML", {
           playerId: input.id,
           length: aiAwards.length,
@@ -322,8 +321,8 @@ export const playerRouter = createTRPCRouter({
       const lastName = input.lastName.trim();
 
       const existingPlayer = await PlayerModel.findOne({
-        firstName: { $regex: new RegExp(`^${firstName}$`, "i") },
-        lastName: { $regex: new RegExp(`^${lastName}$`, "i") },
+        firstName: { $regex: new RegExp(`^${escapeRegex(firstName)}$`, "i") },
+        lastName: { $regex: new RegExp(`^${escapeRegex(lastName)}$`, "i") },
       });
 
       if (existingPlayer) {

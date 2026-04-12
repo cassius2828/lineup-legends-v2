@@ -3,27 +3,12 @@
  * via OpenAI when cheerio-based table parsing fails (e.g. unusual table markup).
  */
 
-import OpenAI from "openai";
+import { getAiClient, truncateHtml } from "./ai-client";
 import type { WikiCareerStats } from "./wikipedia-sections";
 import type {
   WikiCareerSeasonBests,
   WikiCareerSeasonBestEntry,
 } from "./wikipedia-sections";
-
-let _client: OpenAI | null = null;
-
-function getClient(): OpenAI | null {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
-  if (!_client) _client = new OpenAI({ apiKey: key });
-  return _client;
-}
-
-function truncateHtml(html: string): string {
-  const MAX = 80_000;
-  if (html.length <= MAX) return html;
-  return html.slice(0, MAX) + "\n<!-- truncated -->";
-}
 
 const CAREER_STATS_SYSTEM_PROMPT = `You are a concise NBA data extractor.
 You will receive the HTML of a basketball player's Wikipedia page (or just the career statistics section).
@@ -118,7 +103,7 @@ export async function extractCareerStatsFromHtml(
   html: string,
   playerFullName: string,
 ): Promise<AiCareerStatsResult | null> {
-  const client = getClient();
+  const client = getAiClient();
   if (!client) {
     console.warn(
       "[ai-career-stats] OPENAI_API_KEY not set — skipping AI career stats fallback",
