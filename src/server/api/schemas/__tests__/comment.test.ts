@@ -1,5 +1,8 @@
 import { commentBodySchema, threadBodySchema } from "../comment";
 
+const VALID_IMAGE = "https://d1234abcd.cloudfront.net/uploads/img.png";
+const VALID_GIF = "https://media.giphy.com/media/abc123/giphy.gif";
+
 describe("commentBodySchema", () => {
   it("accepts valid comment with text only", () => {
     const result = commentBodySchema.safeParse({
@@ -13,7 +16,7 @@ describe("commentBodySchema", () => {
     const result = commentBodySchema.safeParse({
       lineupId: "abc",
       text: "",
-      image: "https://example.com/img.png",
+      image: VALID_IMAGE,
     });
     expect(result.success).toBe(true);
   });
@@ -22,7 +25,7 @@ describe("commentBodySchema", () => {
     const result = commentBodySchema.safeParse({
       lineupId: "abc",
       text: "",
-      gif: "https://example.com/gif.gif",
+      gif: VALID_GIF,
     });
     expect(result.success).toBe(true);
   });
@@ -47,8 +50,8 @@ describe("commentBodySchema", () => {
     const result = commentBodySchema.safeParse({
       lineupId: "abc",
       text: "hi",
-      image: "https://example.com/img.png",
-      gif: "https://example.com/gif.gif",
+      image: VALID_IMAGE,
+      gif: VALID_GIF,
     });
     expect(result.success).toBe(false);
   });
@@ -72,6 +75,62 @@ describe("commentBodySchema", () => {
   it("requires lineupId", () => {
     const result = commentBodySchema.safeParse({ text: "hello" });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("commentBodySchema — URL domain validation", () => {
+  it("rejects image from untrusted domain", () => {
+    const result = commentBodySchema.safeParse({
+      lineupId: "abc",
+      text: "hi",
+      image: "https://evil.com/hack.png",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects gif from untrusted domain", () => {
+    const result = commentBodySchema.safeParse({
+      lineupId: "abc",
+      text: "hi",
+      gif: "https://evil.com/hack.gif",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-https image URL", () => {
+    const result = commentBodySchema.safeParse({
+      lineupId: "abc",
+      text: "hi",
+      image: "http://d1234abcd.cloudfront.net/img.png",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects non-https gif URL", () => {
+    const result = commentBodySchema.safeParse({
+      lineupId: "abc",
+      text: "hi",
+      gif: "http://media.giphy.com/media/abc/giphy.gif",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts gif from numbered giphy CDN subdomain", () => {
+    const result = commentBodySchema.safeParse({
+      lineupId: "abc",
+      text: "",
+      gif: "https://media4.giphy.com/media/abc123/giphy.gif",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts gif from i.giphy.com", () => {
+    const result = commentBodySchema.safeParse({
+      lineupId: "abc",
+      text: "",
+      gif: "https://i.giphy.com/media/abc123/200.gif",
+    });
+    expect(result.success).toBe(true);
   });
 });
 
@@ -100,5 +159,25 @@ describe("threadBodySchema", () => {
       text: "",
     });
     expect(result.success).toBe(false);
+  });
+
+  it("rejects thread reply with untrusted gif domain", () => {
+    const result = threadBodySchema.safeParse({
+      lineupId: "abc",
+      commentId: "def",
+      text: "hi",
+      gif: "https://evil.com/hack.gif",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts thread reply with valid gif", () => {
+    const result = threadBodySchema.safeParse({
+      lineupId: "abc",
+      commentId: "def",
+      text: "",
+      gif: VALID_GIF,
+    });
+    expect(result.success).toBe(true);
   });
 });
