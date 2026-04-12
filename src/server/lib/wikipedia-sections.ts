@@ -283,7 +283,7 @@ export function awardsSectionHtmlToPlainText(html: string): string | null {
 function normalizeRowLabelText(s: string): string {
   return s
     .replace(/\[\d+\]/g, "")
-    .replace(/â€ |â€¡|â˜…|\*/g, "")
+    .replace(/[\u2020\u2021\u2605*\u2606]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -304,7 +304,98 @@ function mapHeaderToCareerKey(
 }
 
 /**
+ * How many leading header positions are covered by <th> elements in a data row,
+ * or inferred as missing (mid-season trade rows that omit the Year cell entirely).
+ *
+ * Wikipedia tables use several patterns:
+ *  - `<th scope="row">2020–21</th><td>Team</td>…`  → offset = 1
+ *  - `<th colspan="2">Career</th><td>GP</td>…`     → offset = 2
+ *  - `<td>Team</td><td>GP</td>…` (trade row, Year omitted) → offset = 1 (inferred)
+ *  - `<td>Year</td><td>Team</td><td>GP</td>…`      → offset = 0
+ */
+function leadingHeaderOffset(
+  $: cheerio.CheerioAPI,
+  tr: AnyNode,
+  headerCount: number,
+): number {
+  const ths = $(tr).children("th").toArray();
+  if (ths.length > 0) {
+    let sum = 0;
+    for (const el of ths) {
+      sum += parseInt($(el).attr("colspan") ?? "1", 10);
+    }
+    return sum;
+  }
+
+  const tds = $(tr).children("td").toArray();
+  if (tds.length > 0 && tds.length === headerCount - 1) {
+    return 1;
+  }
+
+  return 0;
+}
+
+/**
+ * Normalised text of the first <th> or <td> in a row (document order),
+ * whichever comes first. Handles tables where Year / Career is a <th>.
+ */
+function firstCellLabel($: cheerio.CheerioAPI, tr: AnyNode): string {
+  const first = $(tr).children("th, td").first();
+  return first.length ? normalizeRowLabelText(first.text()) : "";
+}
+
+/**
+ * Build a season label from the row's leading cells.
+ * Handles both `<th>Year</th><td>Team</td>` and `<td>Year</td><td>Team</td>`.
+ */
+function seasonLabelFromRow($: cheerio.CheerioAPI, tr: AnyNode): string {
+  const cells = $(tr).children("th, td").toArray();
+  if (cells.length === 0) return "";
+  const c0 = normalizeRowLabelText($(cells[0]).text());
+  const c1 = cells.length > 1 ? normalizeRowLabelText($(cells[1]).text()) : "";
+  if (
+    /^\d{4}[\u2013-]\d{2,4}$/.test(c0) ||
+    /^\d{4}$/.test(c0) ||
+    /^\d{4}[\u2013-]\d{4}$/.test(c0)
+  ) {
+    if (c1 && c1.length <= 28 && !/^\d{4}/.test(c1) && !/^career$/i.test(c1))
+      return `${c0} \u00B7 ${c1}`.trim();
+  }
+  return c0.slice(0, 80);
+}
+
+function shouldSkipSeasonStatsRow(firstCellNorm: string): boolean {
+  if (!firstCellNorm) return true;
+  if (/^career$/i.test(firstCellNorm)) return true;
+  if (/^total$/i.test(firstCellNorm)) return true;
+  if (/^season$/i.test(firstCellNorm)) return true;
+  if (/^year$/i.test(firstCellNorm)) return true;
+  if (/all-?star/i.test(firstCellNorm)) return true;
+  return false;
+}
+
+function parseStatCellToNumber(raw: string): number | null {
+  const s = raw
+    .replace(/[\u2020\u2021\u2605\u2606*]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!s || s === "\u2014" || s === "-" || s === "\u2013") return null;
+  const m = s.match(/-?\d*\.?\d+/);
+  if (!m?.[0]) return null;
+  const n = parseFloat(m[0]);
+  return Number.isFinite(n) ? n : null;
+}
+
+function formatStatCellDisplay(raw: string): string {
+  return raw
+    .replace(/[\u2020\u2021\u2605\u2606*]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
  * First wikitable in the Regular season section; row whose first cell(s) are "Career".
+ * Handles tables where Year/Career are <th scope="row"> instead of <td>.
  */
 export function extractCareerStatsFromRegularSeasonHtml(
   html: string,
@@ -329,10 +420,7 @@ export function extractCareerStatsFromRegularSeasonHtml(
   const careerTr = table
     .find("tr")
     .filter((_, tr) => {
-      const first = $(tr).find("td").first();
-      if (!first.length) return false;
-      const raw = normalizeRowLabelText(first.text());
-      return /^career$/i.test(raw);
+      return /^career$/i.test(firstCellLabel($, tr));
     })
     .first();
 
@@ -341,22 +429,18 @@ export function extractCareerStatsFromRegularSeasonHtml(
   const tds = careerTr.find("td").toArray();
   if (tds.length < 3) return null;
 
-  let dataStart = 0;
-  const $first = $(tds[0]);
-  if (($first.attr("colspan") ?? "") === "2" && /career/i.test($first.text())) {
-    dataStart = 1;
-  }
+  const tdOffset = leadingHeaderOffset($, careerTr.get(0)!, headers.length);
 
   const out: WikiCareerStats = {};
-  for (let hi = 2; hi < headers.length; hi++) {
+  for (let hi = tdOffset; hi < headers.length; hi++) {
     const key = mapHeaderToCareerKey(headers[hi] ?? "");
     if (!key) continue;
-    const di = dataStart + (hi - 2);
+    const di = hi - tdOffset;
     if (di >= tds.length) break;
     const cell = tds[di];
     if (!cell) break;
     let val = $(cell).text().trim();
-    val = val.replace(/â€¡|â˜…|\*|â€ /g, "").trim();
+    val = val.replace(/[\u2020\u2021\u2605\u2606*]/g, "").trim();
     if (val) out[key] = val;
   }
 
@@ -366,7 +450,7 @@ export function extractCareerStatsFromRegularSeasonHtml(
 /** Single-stat high from scanning per-season rows (not the career average row). */
 export type WikiCareerSeasonBestEntry = {
   value: string;
-  /** Season / team label from the table row (e.g. 2015–16 · GSW). */
+  /** Season / team label from the table row (e.g. 2015\u201316 \u00B7 GSW). */
   season: string;
 };
 
@@ -374,56 +458,10 @@ export type WikiCareerSeasonBests = Partial<
   Record<keyof WikiCareerStats, WikiCareerSeasonBestEntry>
 >;
 
-function parseStatCellToNumber(raw: string): number | null {
-  const s = raw
-    .replace(/[â€ â€¡â˜…*]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-  if (!s || s === "â€”" || s === "-" || s === "–") return null;
-  const m = s.match(/-?\d*\.?\d+/);
-  if (!m?.[0]) return null;
-  const n = parseFloat(m[0]);
-  return Number.isFinite(n) ? n : null;
-}
-
-function formatStatCellDisplay(raw: string): string {
-  return raw
-    .replace(/[â€ â€¡â˜…*]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function seasonLabelFromRowCells(
-  $: cheerio.CheerioAPI,
-  tds: AnyNode[],
-): string {
-  if (tds.length === 0) return "";
-  const c0 = normalizeRowLabelText($(tds[0]).text());
-  const c1 = tds.length > 1 ? normalizeRowLabelText($(tds[1]).text()) : "";
-  if (
-    /^\d{4}[–-]\d{2,4}$/.test(c0) ||
-    /^\d{4}$/.test(c0) ||
-    /^\d{4}[–-]\d{4}$/.test(c0)
-  ) {
-    if (c1 && c1.length <= 28 && !/^\d{4}/.test(c1) && !/^career$/i.test(c1))
-      return `${c0} · ${c1}`.trim();
-  }
-  return c0.slice(0, 80);
-}
-
-function shouldSkipSeasonStatsRow(firstCellNorm: string): boolean {
-  if (!firstCellNorm) return true;
-  if (/^career$/i.test(firstCellNorm)) return true;
-  if (/^total$/i.test(firstCellNorm)) return true;
-  if (/^season$/i.test(firstCellNorm)) return true;
-  if (/^year$/i.test(firstCellNorm)) return true;
-  if (/all-?star/i.test(firstCellNorm)) return true;
-  return false;
-}
-
 /**
  * Same Regular season wikitable as {@link extractCareerStatsFromRegularSeasonHtml}: for each
  * mapped stat column, take the **maximum** numeric value across **season** rows (excludes Career).
+ * Handles tables where Year is a <th scope="row"> instead of <td>.
  */
 export function extractCareerSeasonBestsFromRegularSeasonHtml(
   html: string,
@@ -453,31 +491,16 @@ export function extractCareerSeasonBestsFromRegularSeasonHtml(
     const tds = $tr.find("td").toArray();
     if (tds.length < 3) return;
 
-    const firstNorm = normalizeRowLabelText($(tds[0]).text());
-    if (shouldSkipSeasonStatsRow(firstNorm)) return;
+    const label = firstCellLabel($, tr);
+    if (shouldSkipSeasonStatsRow(label)) return;
 
-    const $firstTd = $(tds[0]);
-    if (
-      ($firstTd.attr("colspan") ?? "") === "2" &&
-      /career/i.test($firstTd.text())
-    ) {
-      return;
-    }
+    const tdOffset = leadingHeaderOffset($, tr, headers.length);
+    const season = seasonLabelFromRow($, tr);
 
-    /** Season rows usually have one <td> per <th>; career totals row uses colspan (handled elsewhere). */
-    const nHdr = headers.length;
-    const oneToOne = tds.length === nHdr;
-    let dataStart = 0;
-    if (!oneToOne && ($firstTd.attr("colspan") ?? "") === "2") {
-      dataStart = 1;
-    }
-
-    const season = seasonLabelFromRowCells($, tds);
-
-    for (let hi = 2; hi < headers.length; hi++) {
+    for (let hi = tdOffset; hi < headers.length; hi++) {
       const key = mapHeaderToCareerKey(headers[hi] ?? "");
       if (!key) continue;
-      const di = oneToOne ? hi : dataStart + (hi - 2);
+      const di = hi - tdOffset;
       if (di < 0 || di >= tds.length) continue;
       const cell = tds[di];
       if (!cell) continue;
@@ -489,7 +512,7 @@ export function extractCareerSeasonBestsFromRegularSeasonHtml(
 
       const prev = bestByKey.get(key);
       if (!prev || n > prev.n) {
-        bestByKey.set(key, { n, value, season: season || "â€”" });
+        bestByKey.set(key, { n, value, season: season || "\u2014" });
       }
     }
   });
@@ -518,6 +541,7 @@ export interface WikiExtendedSections {
 
 export async function fetchWikiExtendedSections(
   canonicalPageTitle: string,
+  options?: { fullPageHtml?: string | null },
 ): Promise<WikiExtendedSections> {
   const [sections, fullPageHtml] = await Promise.all([
     fetchSectionIndices(canonicalPageTitle),
