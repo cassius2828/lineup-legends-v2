@@ -11,7 +11,7 @@ A lineup consists of:
 - **Ownership**: Each lineup belongs to a user
 - **Featured status**: Users can feature up to 3 lineups
 - **Popularity**: Expressed via **average rating** (`avgRating`) and **number of ratings** (`ratingCount`). Users rate lineups 1–10; comments and thread replies use Reddit-style upvote/downvote.
-- **Gambling**: Owners can gamble players at individual positions for random replacements
+- **Gambling**: Owners can gamble one player position per lineup for a random replacement (once per lineup)
 - **Reordering**: Owners can swap player positions within a lineup
 - **Bookmarking**: Users can bookmark lineups for later viewing
 - **Comments**: Users can comment on lineups with threaded replies, images, and GIFs
@@ -38,12 +38,12 @@ const LineupSchema = new Schema<LineupDoc>(
     avgRating: { type: Number, default: 0 },
     ratingSum: { type: Number, default: 0 },
     ratingCount: { type: Number, default: 0 },
-    timesGambled: { type: Number, default: 0 },
+    timesGambled: { type: Number, default: 0 }, // once-per-lineup guard
     lastGambleResult: { type: LastGambleResultSchema, default: undefined },
     gambleStreak: { type: Number, default: 0 },
-    lastGambleAt: { type: Date, default: undefined },
-    dailyGamblesUsed: { type: Number, default: 0 },
-    dailyGamblesResetAt: { type: Date, default: undefined },
+    lastGambleAt: { type: Date, default: undefined }, // legacy
+    dailyGamblesUsed: { type: Number, default: 0 }, // legacy
+    dailyGamblesResetAt: { type: Date, default: undefined }, // legacy
   },
   { timestamps: true },
 );
@@ -255,7 +255,7 @@ Swap a player at a given position for a random replacement based on weighted pro
 }
 ```
 
-**Validation:** Owner only, 30-second cooldown, max 5 gambles per day per lineup.
+**Validation:** Owner only, once per lineup (`timesGambled >= 1` rejects).
 
 **Returns:** Updated lineup, previous player, new player, and outcome metadata.
 

@@ -1,11 +1,9 @@
 import {
   BUDGET_LIMIT,
-  DAILY_GAMBLE_LIMIT,
   GAMBLE_ODDS,
   selectWeightedValue,
   getOutcomeTier,
   calculateStreakChange,
-  shouldResetDailyGambles,
 } from "../lineup-utils";
 
 // ============================================
@@ -14,10 +12,6 @@ import {
 describe("lineup constants", () => {
   it("should have a budget limit of 15", () => {
     expect(BUDGET_LIMIT).toBe(15);
-  });
-
-  it("should have a daily gamble limit of 3", () => {
-    expect(DAILY_GAMBLE_LIMIT).toBe(3);
   });
 });
 
@@ -219,54 +213,5 @@ describe("calculateStreakChange", () => {
     it("should remain 0 when already at 0", () => {
       expect(calculateStreakChange(0, 0)).toBe(0);
     });
-  });
-});
-
-// ============================================
-// shouldResetDailyGambles()
-// ============================================
-describe("shouldResetDailyGambles", () => {
-  it("should return true when resetAt is undefined", () => {
-    expect(shouldResetDailyGambles(undefined)).toBe(true);
-  });
-
-  it("should return false when resetAt is today (same UTC day)", () => {
-    const now = new Date();
-    expect(shouldResetDailyGambles(now)).toBe(false);
-  });
-
-  it("should return true when resetAt is yesterday", () => {
-    const yesterday = new Date();
-    yesterday.setUTCDate(yesterday.getUTCDate() - 1);
-    expect(shouldResetDailyGambles(yesterday)).toBe(true);
-  });
-
-  it("should return true when resetAt is a different month", () => {
-    const lastMonth = new Date();
-    lastMonth.setUTCMonth(lastMonth.getUTCMonth() - 1);
-    expect(shouldResetDailyGambles(lastMonth)).toBe(true);
-  });
-
-  it("should return true when resetAt is a different year", () => {
-    const lastYear = new Date();
-    lastYear.setUTCFullYear(lastYear.getUTCFullYear() - 1);
-    expect(shouldResetDailyGambles(lastYear)).toBe(true);
-  });
-
-  it("should return false for a Date created just now", () => {
-    expect(shouldResetDailyGambles(new Date())).toBe(false);
-  });
-
-  it("should handle midnight boundary correctly", () => {
-    // Create a date at 23:59:59 UTC today
-    const lateToday = new Date();
-    lateToday.setUTCHours(23, 59, 59, 999);
-
-    // If today is the same day, should return false
-    const earlyToday = new Date();
-    earlyToday.setUTCHours(0, 0, 0, 0);
-
-    // Both are the same UTC day
-    expect(shouldResetDailyGambles(earlyToday)).toBe(false);
   });
 });

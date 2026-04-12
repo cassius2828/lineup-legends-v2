@@ -25,11 +25,9 @@ import {
 } from "~/server/api/schemas/output";
 import {
   BUDGET_LIMIT,
-  DAILY_GAMBLE_LIMIT,
   selectWeightedValue,
   getOutcomeTier,
   calculateStreakChange,
-  shouldResetDailyGambles,
 } from "./lineup-utils";
 
 import { playerSchema } from "~/server/api/schemas/lineup";
@@ -456,6 +454,7 @@ export const lineupRouter = createTRPCRouter({
 
   /**
    * Gamble a player for a random player with weighted probability.
+   * Limited to one gamble per lineup lifetime.
    *
    * Probability system:
    * - Lower value players have lower chance of upgrade (high risk, high reward potential)
@@ -463,8 +462,7 @@ export const lineupRouter = createTRPCRouter({
    *
    * Features:
    * - Weighted probability matrix for fair risk/reward
-   * - Daily gamble limit (5 per day per lineup)
-   * - Cooldown between gambles (30 seconds)
+   * - Once-per-lineup limit
    * - Streak tracking for consecutive upgrades/downgrades
    * - Outcome tiers for visual feedback (jackpot, upgrade, neutral, downgrade, etc.)
    */
@@ -502,23 +500,14 @@ export const lineupRouter = createTRPCRouter({
         });
       }
 
-      const now = new Date();
-
-      // Check and reset daily gamble limit if needed
-      let dailyGamblesUsed = lineup.dailyGamblesUsed ?? 0;
-      let dailyGamblesResetAt = lineup.dailyGamblesResetAt;
-
-      if (shouldResetDailyGambles(dailyGamblesResetAt)) {
-        dailyGamblesUsed = 0;
-        dailyGamblesResetAt = now;
-      }
-
-      if (dailyGamblesUsed >= DAILY_GAMBLE_LIMIT) {
+      if ((lineup.timesGambled ?? 0) >= 1) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
-          message: `Daily gamble limit reached (${DAILY_GAMBLE_LIMIT}). Try again tomorrow!`,
+          message: "You can only gamble once per lineup.",
         });
       }
+
+      const now = new Date();
 
       // Get the current player at the position
       const positionField = input.position;
@@ -608,8 +597,6 @@ export const lineupRouter = createTRPCRouter({
           $set: {
             lastGambleResult,
             gambleStreak: newStreak,
-            dailyGamblesUsed: dailyGamblesUsed + 1,
-            dailyGamblesResetAt,
           },
         },
         { new: true },
@@ -625,7 +612,6 @@ export const lineupRouter = createTRPCRouter({
           valueChange,
           outcomeTier,
           streak: newStreak,
-          dailyGamblesRemaining: DAILY_GAMBLE_LIMIT - (dailyGamblesUsed + 1),
         },
       });
     }),
