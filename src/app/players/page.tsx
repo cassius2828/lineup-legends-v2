@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { VALUE_SHADOWS, VALUE_LABELS } from "~/lib/constants";
 import { getPaginationRange } from "~/lib/pagination";
 
-const INITIAL_COUNT = 24;
+const INITIAL_COUNT = 28;
 const PAGE_SIZE = 50;
 
 export default function PlayersPage() {

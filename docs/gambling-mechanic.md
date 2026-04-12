@@ -7,8 +7,8 @@ The gamble feature lets lineup owners swap a player at a given position for a ne
 - **Scope**: One position per gamble (PG, SG, SF, PF, or C).
 - **Input**: `lineupId`, `position`.
 - **Authorization**: Only the lineup owner can gamble.
-- **Daily limit**: 3 gambles per lineup per day (resets at UTC midnight).
-- **Result**: The lineup is updated with a new player at that position; the previous player is replaced. The API returns the updated lineup, both players, and outcome metadata (value change, outcome tier, streak, daily gambles remaining) for UI feedback.
+- **Limit**: One gamble per lineup (permanent — no daily reset).
+- **Result**: The lineup is updated with a new player at that position; the previous player is replaced. The API returns the updated lineup, both players, and outcome metadata (value change, outcome tier, streak) for UI feedback.
 
 ## Why Weighted Odds?
 
@@ -52,12 +52,6 @@ export const GAMBLE_ODDS: Record<number, number[]> = {
   4: [5, 8, 17, 45, 25], // 25% upgrade to 5, 30% downgrade
   5: [2, 5, 8, 25, 60], // 60% stay at 5, very safe
 };
-```
-
-### Constants
-
-```typescript
-export const DAILY_GAMBLE_LIMIT = 3; // Max gambles per day per lineup
 ```
 
 ### Weighted random selection
@@ -123,27 +117,10 @@ export function calculateStreakChange(
 }
 ```
 
-### Daily limit reset
-
-Daily gamble counts reset at UTC midnight:
-
-```typescript
-export function shouldResetDailyGambles(resetAt: Date | undefined): boolean {
-  if (!resetAt) return true;
-  const now = new Date();
-  const resetDate = new Date(resetAt);
-  return (
-    now.getUTCFullYear() !== resetDate.getUTCFullYear() ||
-    now.getUTCMonth() !== resetDate.getUTCMonth() ||
-    now.getUTCDate() !== resetDate.getUTCDate()
-  );
-}
-```
-
 ### Mutation flow
 
-1. **Validate ownership and limits**
-   Load lineup by `lineupId`, ensure ownership, check daily limit (3 per day, reset at UTC midnight).
+1. **Validate ownership and limit**
+   Load lineup by `lineupId`, ensure ownership, reject if `timesGambled >= 1`.
 
 2. **Resolve current player**
    Get the player at the given position and their `currentValue`.
@@ -158,7 +135,7 @@ export function shouldResetDailyGambles(resetAt: Date | undefined): boolean {
    If no player exists at `targetValue`, expand to adjacent values and pick an eligible player.
 
 6. **Update lineup**
-   Set the position to the new player's ID. Update `timesGambled`, `lastGambleResult`, `gambleStreak`, `dailyGamblesUsed`, and `dailyGamblesResetAt`.
+   Set the position to the new player's ID. Increment `timesGambled`, set `lastGambleResult` and `gambleStreak`.
 
 7. **Return**
    Return the updated lineup, previous player, new player, and outcome (value change, outcome tier) so the UI can show the result.
@@ -181,7 +158,16 @@ The gamble mutation returns:
 }
 ```
 
-## UI — GambleReveal Component
+## UI
+
+### Gamble page (`/lineups/[id]/gamble`)
+
+- Shows a position selector when the lineup has not been gambled yet.
+- If `timesGambled >= 1`, the page shows a **locked state** with an "Already Gambled" message instead of the selector.
+- An **info icon** (Lucide `Info`) next to the heading opens a modal explaining the gambling mechanics (weighted odds, outcome tiers, once-per-lineup rule, streak tracking).
+- On the lineup card, the **Gamble button** is disabled (shows "Gambled") when the lineup has already been gambled.
+
+### GambleReveal component
 
 The `GambleReveal` component (`src/app/lineups/[id]/gamble/_components/GambleReveal.tsx`) provides an animated reveal experience:
 
@@ -214,16 +200,17 @@ The `/admin/gamble-animations` page lets admins test all 7 outcome tiers with mo
 
 - **Procedure**: `lineup.gamble` (protected mutation).
 - **Input**: `{ lineupId: string, position: "pg" | "sg" | "sf" | "pf" | "c" }`.
-- **Errors**: `NOT_FOUND` (lineup or current player), `FORBIDDEN` (not owner), `TOO_MANY_REQUESTS` (daily limit), `NOT_FOUND` (no eligible replacement after fallback).
+- **Errors**: `NOT_FOUND` (lineup or current player), `FORBIDDEN` (not owner), `TOO_MANY_REQUESTS` (already gambled), `NOT_FOUND` (no eligible replacement after fallback).
 
 ## Lineup Model Gambling Fields
 
 ```typescript
 // src/server/models/lineup.ts
 {
-  timesGambled:        { type: Number, default: 0 },
+  timesGambled:        { type: Number, default: 0 },     // acts as the once-per-lineup guard
   lastGambleResult:    { type: LastGambleResultSchema, default: undefined },
   gambleStreak:        { type: Number, default: 0 },
+  // Legacy fields (kept for existing documents, no longer written to):
   dailyGamblesUsed:    { type: Number, default: 0 },
   dailyGamblesResetAt: { type: Date, default: undefined },
 }

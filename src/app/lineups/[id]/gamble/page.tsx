@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { createPortal } from "react-dom";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { Button } from "~/app/_components/ui/Button";
@@ -16,9 +18,116 @@ import {
   POSITION_LABELS,
   VALUE_SHADOWS,
 } from "~/lib/constants";
+import { Info } from "lucide-react";
 import { GambleReveal } from "./_components/GambleReveal";
 
 type PageView = "selection" | "animating" | "result";
+
+function GambleInfoModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [open, onClose]);
+
+  if (!open || !mounted) return null;
+
+  return createPortal(
+    <motion.div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+      role="presentation"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.12 }}
+    >
+      <motion.div
+        className="bg-surface-800 mx-4 w-full max-w-2xl rounded-2xl p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.15, ease: "easeOut" }}
+      >
+        <h3 className="text-foreground text-lg font-bold lg:text-2xl">
+          How Gambling Works
+        </h3>
+
+        <div className="text-foreground/70 mt-4 space-y-3 text-sm leading-relaxed lg:text-lg">
+          <div className="flex gap-2">
+            <span className="text-gold mt-0.5 shrink-0">&#x2022;</span>
+            <p>
+              You can gamble{" "}
+              <strong className="text-foreground">once per lineup</strong> —
+              choose wisely, there are no redos.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-gold mt-0.5 shrink-0">&#x2022;</span>
+            <p>
+              Select a position to trade that player for a random player. The
+              replacement is drawn from a weighted probability pool based on the
+              original player&#39;s value.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-gold mt-0.5 shrink-0">&#x2022;</span>
+            <p>
+              <strong className="text-foreground">Lower-value players</strong>{" "}
+              carry higher risk but have the potential for a big upgrade.{" "}
+              <strong className="text-foreground">Higher-value players</strong>{" "}
+              are safer bets but rarely jump up.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-gold mt-0.5 shrink-0">&#x2022;</span>
+            <div>
+              <p className="mb-1">Possible outcomes:</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm">
+                <span className="text-emerald-400">Jackpot (+3 or +4)</span>
+                <span className="text-red-400">Downgrade (-1)</span>
+                <span className="text-emerald-400">Big Win (+2)</span>
+                <span className="text-red-400">Big Loss (-2)</span>
+                <span className="text-emerald-400">Upgrade (+1)</span>
+                <span className="text-red-400">Disaster (-3 or -4)</span>
+                <span className="text-foreground/50">Neutral (0)</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <span className="text-gold mt-0.5 shrink-0">&#x2022;</span>
+            <p>
+              Your gamble streak is tracked across lineups — consecutive
+              upgrades or downgrades build your streak.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="bg-gold hover:bg-gold-light rounded-full px-5 py-1.5 text-sm font-semibold text-black transition-colors"
+          >
+            Got it
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body,
+  );
+}
 
 export default function GambleLineupPage() {
   const params = useParams();
@@ -34,12 +143,15 @@ export default function GambleLineupPage() {
     valueChange: number;
   } | null>(null);
   const [view, setView] = useState<PageView>("selection");
+  const [showInfo, setShowInfo] = useState(false);
 
   const utils = api.useUtils();
 
   const { data: lineup, isLoading } = api.lineup.getLineupById.useQuery({
     id: lineupId,
   });
+
+  const alreadyGambled = (lineup?.timesGambled ?? 0) >= 1;
 
   const gambleMutation = api.lineup.gamble.useMutation({
     onSuccess: (data) => {
@@ -66,12 +178,6 @@ export default function GambleLineupPage() {
   const handleAnimationComplete = useCallback(() => {
     setView("result");
   }, []);
-
-  const handleReset = () => {
-    setGambleResult(null);
-    setSelectedPosition(null);
-    setView("selection");
-  };
 
   if (isLoading) {
     return (
@@ -125,13 +231,26 @@ export default function GambleLineupPage() {
             </svg>
             Back to My Lineups
           </Link>
-          <h1 className="text-foreground text-3xl font-bold">
-            <span className="text-gold">Gamble</span> a Player
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-foreground text-3xl font-bold">
+              <span className="text-gold">Gamble</span> a Player
+            </h1>
+            <button
+              type="button"
+              onClick={() => setShowInfo(true)}
+              className="text-foreground/40 hover:text-gold mt-1 transition-colors"
+              aria-label="How gambling works"
+            >
+              <Info className="h-5 w-5" />
+            </button>
+          </div>
           <p className="text-foreground/60 mt-1">
-            Trade a player for a random player of similar value
+            Trade a player for a random player. You can only gamble once per
+            lineup.
           </p>
         </div>
+
+        <GambleInfoModal open={showInfo} onClose={() => setShowInfo(false)} />
 
         {/* Animation View */}
         {view === "animating" && gambleResult && (
@@ -174,7 +293,7 @@ export default function GambleLineupPage() {
               </div>
 
               {/* Arrow */}
-              <div className="text-gold text-4xl">→</div>
+              <div className="text-gold text-4xl">&rarr;</div>
 
               {/* New Player */}
               <div className="text-center">
@@ -207,18 +326,10 @@ export default function GambleLineupPage() {
               </div>
             </div>
 
-            <div className="mt-6 flex gap-3">
-              <Button
-                onClick={handleReset}
-                color="gold"
-                variant="solid"
-                className="flex-1 py-3 font-semibold"
-              >
-                Gamble Again
-              </Button>
+            <div className="mt-6">
               <Link
                 href="/lineups"
-                className="bg-foreground/10 text-foreground hover:bg-foreground/20 flex-1 rounded-lg py-3 text-center font-medium transition-colors"
+                className="bg-gold hover:bg-gold-light block rounded-lg py-3 text-center font-semibold text-black transition-colors"
               >
                 Done
               </Link>
@@ -226,8 +337,38 @@ export default function GambleLineupPage() {
           </div>
         )}
 
+        {/* Locked state — already gambled */}
+        {view === "selection" && alreadyGambled && (
+          <div className="bg-surface-800/80 mb-8 rounded-2xl p-8 text-center">
+            <div className="text-foreground/30 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/5">
+              <svg
+                className="h-8 w-8"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                viewBox="0 0 24 24"
+              >
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0110 0v4" />
+              </svg>
+            </div>
+            <h2 className="text-foreground text-lg font-semibold">
+              Already Gambled
+            </h2>
+            <p className="text-foreground/50 mt-2 text-sm">
+              You have already used your one gamble on this lineup.
+            </p>
+            <Link
+              href="/lineups"
+              className="bg-foreground/10 text-foreground hover:bg-foreground/20 mt-6 inline-block rounded-lg px-6 py-2.5 text-sm font-medium transition-colors"
+            >
+              Back to My Lineups
+            </Link>
+          </div>
+        )}
+
         {/* Selection View */}
-        {view === "selection" && (
+        {view === "selection" && !alreadyGambled && (
           <>
             {/* Select Position */}
             <div className="mb-6">

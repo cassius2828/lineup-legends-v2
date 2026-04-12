@@ -25,9 +25,6 @@ export const GAMBLE_ODDS: Record<number, number[]> = {
   5: [2, 5, 8, 25, 60], // 60% stay at 5, very safe
 };
 
-/** Maximum gambles allowed per day per lineup */
-export const DAILY_GAMBLE_LIMIT = 3;
-
 /**
  * Selects a target player value based on weighted probabilities.
  * Uses cumulative probability distribution for selection.
@@ -83,18 +80,4 @@ export function calculateStreakChange(
   }
   // Neutral: reset streak
   return 0;
-}
-
-/**
- * Checks if the daily gamble limit should reset (new day).
- */
-export function shouldResetDailyGambles(resetAt: Date | undefined): boolean {
-  if (!resetAt) return true;
-  const now = new Date();
-  const resetDate = new Date(resetAt);
-  return (
-    now.getUTCFullYear() !== resetDate.getUTCFullYear() ||
-    now.getUTCMonth() !== resetDate.getUTCMonth() ||
-    now.getUTCDate() !== resetDate.getUTCDate()
-  );
 }
