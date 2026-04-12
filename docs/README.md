@@ -50,10 +50,10 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 │  │ player   │ │ lineup   │ │ comment  │ │  Auth Middleware    │ │
 │  │ Router   │ │ Router   │ │ Router   │ │  (protectedProc,   │ │
 │  ├──────────┤ ├──────────┤ ├──────────┤ │   adminProcedure)  │ │
-│  │ profile  │ │ follow   │ │ feedback │ └────────────────────┘ │
-│  │ Router   │ │ Router   │ │ Router   │                        │
-│  ├──────────┤ ├──────────┤ ├──────────┤                        │
-│  │ admin    │ │ bookmark │ │ video    │                        │
+│  │ profile  │ │ follow   │ │ feedback │ ├────────────────────┤ │
+│  │ Router   │ │ Router   │ │ Router   │ │  Rate Limiting     │ │
+│  ├──────────┤ ├──────────┤ ├──────────┤ │  (rateLimitMW)     │ │
+│  │ admin    │ │ bookmark │ │ video    │ └────────────────────┘ │
 │  │ Router   │ │ Router   │ │ Router   │                        │
 │  ├──────────┤ └──────────┘ └──────────┘                        │
 │  │requested │                                                   │
@@ -61,18 +61,19 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 │  └──────────┘                                                   │
 └─────────────────────────────────────────────────────────────────┘
                                │
-                     ┌─────────┴─────────┐
-                     │ Mongoose ODM      │ Redis (ioredis)
-                     ▼                   ▼
+              ┌────────────────┼────────────────┐
+              │                │                │
+     Mongoose ODM     Redis (ioredis)    External APIs
+              ▼                ▼                ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                    MongoDB + Redis Cache                         │
-│  ┌────────┐ ┌────────┐ ┌────────┐ ┌──────────┐ ┌────────────┐ │
-│  │ Player │ │ Lineup │ │  User  │ │ Comment  │ │   Thread   │ │
-│  ├────────┤ ├────────┤ ├────────┤ ├──────────┤ ├────────────┤ │
-│  │ Rating │ │ Follow │ │Bookmark│ │CommentVt │ │ ThreadVote │ │
-│  ├────────┤ ├────────┤ ├────────┤ ├──────────┤ ├────────────┤ │
-│  │Feedback│ │ReqPlay │ │ Video  │ │ Account  │ │  Session   │ │
-│  └────────┘ └────────┘ └────────┘ └──────────┘ └────────────┘ │
+│  MongoDB + Redis Cache           │  Wikipedia (MediaWiki API)   │
+│  ┌────────┐ ┌────────┐ ┌─────┐  │  OpenAI (GPT-4o-mini)       │
+│  │ Player │ │ Lineup │ │User │  │                               │
+│  ├────────┤ ├────────┤ ├─────┤  │  Player wiki data is fetched │
+│  │ Rating │ │ Follow │ │Bkmk │  │  on demand and cached in the │
+│  ├────────┤ ├────────┤ ├─────┤  │  Player document.            │
+│  │Feedback│ │ReqPlay │ │Video│  │                               │
+│  └────────┘ └────────┘ └─────┘  │                               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -93,6 +94,8 @@ Welcome to the Lineup Legends v2 documentation. This directory contains detailed
 | Giphy SDK     | GIF search and selection        | [developers.giphy.com](https://developers.giphy.com/) |
 | Resend        | Transactional email             | [resend.com](https://resend.com/docs)                 |
 | Zustand       | Client-side state management    | [zustand](https://github.com/pmndrs/zustand)          |
+| Cheerio       | Wikipedia HTML parsing          | [cheerio.js.org](https://cheerio.js.org)              |
+| OpenAI        | GPT-4o-mini fallback extraction | [platform.openai.com](https://platform.openai.com)    |
 | Jest          | Unit testing                    | [jestjs.io](https://jestjs.io/docs/getting-started)   |
 | Playwright    | E2E smoke testing               | [playwright.dev](https://playwright.dev/docs/intro)   |
 

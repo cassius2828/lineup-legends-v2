@@ -25,11 +25,19 @@ Welcome to **Lineup Legends v2**, the modernized fantasy basketball lineup creat
 - **Player Gambling**: Gamble a player in your lineup for a random replacement of similar value.
 - **Animated Reveals**: NBA 2K-inspired card reveal animations with tier-based effects and sounds.
 
+### Player Profiles (Wikipedia Integration)
+
+- **Auto-fetched Biographies**: Wikipedia summaries, career stats, awards, and physical measurements for every player
+- **Career Stats Toggle**: View career averages or season bests (with games played) for each stat category
+- **AI Fallback**: When HTML parsing fails, GPT-4o-mini extracts awards and career stats from the Wikipedia page
+- **Backfill Script**: Batch-process all 300+ players with `npx tsx scripts/backfill-wiki.ts`
+
 ### Authentication
 
 - **Google OAuth**: Secure authentication via Google.
 - **Credentials Login**: Sign in with email/username and password.
 - **Protected Routes**: Create and manage your lineups with secure, authenticated endpoints.
+- **Rate Limiting**: Redis-backed per-IP rate limiting on external API mutations
 
 ## Tech Stack
 
@@ -43,8 +51,10 @@ This project is built with the [T3 Stack](https://create.t3.gg/):
 - **[React Query](https://tanstack.com/query)**: Powerful data synchronization for React
 - **[Zod](https://zod.dev)**: TypeScript-first schema validation
 - **[TypeScript](https://www.typescriptlang.org)**: Type-safe JavaScript
-- **[Redis](https://redis.io)**: Caching layer via ioredis
+- **[Redis](https://redis.io)**: Caching and rate limiting via ioredis
 - **[Framer Motion](https://www.framer.com/motion/)**: Animation library
+- **[Cheerio](https://cheerio.js.org)**: HTML parsing for Wikipedia career stats extraction
+- **[OpenAI](https://platform.openai.com)**: GPT-4o-mini fallback for awards and career stats extraction
 
 ## Project Structure
 
@@ -60,18 +70,20 @@ lineup-legends-v2/
 │   │   ├── players/        # Player catalog
 │   │   ├── profile/        # User profile pages
 │   │   └── page.tsx        # Landing page
+│   ├── hooks/              # Shared React hooks (e.g. useEnsureWikiData)
 │   ├── server/
 │   │   ├── api/            # tRPC routers and procedures
 │   │   │   ├── routers/    # Feature-specific routers
 │   │   │   ├── root.ts     # Root tRPC router
-│   │   │   └── trpc.ts     # tRPC configuration
+│   │   │   └── trpc.ts     # tRPC configuration + rate limiting
 │   │   ├── auth/           # NextAuth.js configuration
+│   │   ├── lib/            # Wikipedia parsing, AI extraction, utilities
 │   │   ├── models/         # Mongoose schemas and models
 │   │   └── db.ts           # MongoDB connection
 │   ├── lib/                # Shared utilities
 │   ├── trpc/               # tRPC client setup
 │   └── styles/             # Global CSS styles
-└── scripts/                # Migration and utility scripts
+└── scripts/                # Backfill, migration, and utility scripts
 ```
 
 ## Getting Started
@@ -126,20 +138,22 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 
 ## Available Scripts
 
-| Script                  | Description                          |
-| ----------------------- | ------------------------------------ |
-| `npm run dev`           | Start development server with Turbo  |
-| `npm run build`         | Build for production                 |
-| `npm run start`         | Start production server              |
-| `npm run db:seed`       | Seed database with player data       |
-| `npm run lint`          | Run ESLint                           |
-| `npm run lint:fix`      | Run ESLint with auto-fix             |
-| `npm run format:check`  | Check code formatting                |
-| `npm run format:write`  | Fix code formatting                  |
-| `npm run typecheck`     | Run TypeScript type checking         |
-| `npm run test`          | Run tests                            |
-| `npm run test:watch`    | Run tests in watch mode              |
-| `npm run test:coverage` | Run tests with coverage              |
+| Script                                             | Description                             |
+| -------------------------------------------------- | --------------------------------------- |
+| `npm run dev`                                      | Start development server with Turbo     |
+| `npm run build`                                    | Build for production                    |
+| `npm run start`                                    | Start production server                 |
+| `npm run db:seed`                                  | Seed database with player data          |
+| `npm run lint`                                     | Run ESLint                              |
+| `npm run lint:fix`                                 | Run ESLint with auto-fix                |
+| `npm run format:check`                             | Check code formatting                   |
+| `npm run format:write`                             | Fix code formatting                     |
+| `npm run typecheck`                                | Run TypeScript type checking            |
+| `npm run test`                                     | Run tests                               |
+| `npm run test:watch`                               | Run tests in watch mode                 |
+| `npm run test:coverage`                            | Run tests with coverage                 |
+| `npx tsx scripts/backfill-wiki.ts`                 | Backfill Wikipedia data for all players |
+| `npx tsx scripts/backfill-wiki.ts --refresh-stats` | Force re-fetch all player wiki data     |
 
 ## Learn More
 

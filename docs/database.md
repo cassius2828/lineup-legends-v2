@@ -45,7 +45,9 @@ export const env = createEnv({
   server: {
     MONGODB_URI: z.string().url(),
     REDIS_URL: z.string().url(),
-    NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+    NODE_ENV: z
+      .enum(["development", "test", "production"])
+      .default("development"),
     // ... other variables
   },
   // ...
@@ -59,6 +61,7 @@ This ensures the app fails fast if required database configuration is missing.
 All Mongoose models live in `src/server/models/` with a barrel export at `src/server/models/index.ts`.
 
 Each model file exports:
+
 - An **API type** (e.g. `Player`) — used in responses and client-side code
 - A **Doc type** (e.g. `PlayerDoc`) — used in database operations (extends Mongoose `Document`)
 - A **Model** (e.g. `PlayerModel`) — the Mongoose model instance
@@ -75,7 +78,8 @@ The Redis client is managed in `src/server/redis.ts` using the same `globalThis`
 import { Redis } from "ioredis";
 import { env } from "~/env.js";
 
-export const redis = ((globalThis as unknown as { redis: Redis }).redis ??= new Redis(env.REDIS_URL)) as Redis;
+export const redis = ((globalThis as unknown as { redis: Redis }).redis ??=
+  new Redis(env.REDIS_URL)) as Redis;
 ```
 
 ### Caching Strategies
@@ -86,9 +90,9 @@ Three caching strategies are used depending on the data characteristics:
 
 Used for shared, rarely-changing data with explicit invalidation on writes.
 
-| Cache Key  | Data              | TTL     | Invalidated By                           |
-| ---------- | ----------------- | ------- | ---------------------------------------- |
-| `players`  | All player data   | 24 hrs  | `player.create`, `player.update`, `player.delete` |
+| Cache Key | Data            | TTL    | Invalidated By                                    |
+| --------- | --------------- | ------ | ------------------------------------------------- |
+| `players` | All player data | 24 hrs | `player.create`, `player.update`, `player.delete` |
 
 - All player read endpoints (`getAll`, `getById`, `search`) pull from the same `players` cache key
 - Filtering and lookups are performed in-memory on the cached data
@@ -99,17 +103,17 @@ Used for shared, rarely-changing data with explicit invalidation on writes.
 
 Used for individual user profile data with per-user cache keys.
 
-| Cache Key      | Data               | TTL     | Invalidated By           |
-| -------------- | ------------------ | ------- | ------------------------ |
-| `user:{userId}`| User profile data  | varies  | `profile.update`         |
+| Cache Key       | Data              | TTL    | Invalidated By   |
+| --------------- | ----------------- | ------ | ---------------- |
+| `user:{userId}` | User profile data | varies | `profile.update` |
 
 #### TTL-Only (Admin Stats)
 
 Used for expensive aggregations with many write paths where explicit invalidation would be impractical.
 
-| Cache Key     | Data              | TTL     | Invalidated By |
-| ------------- | ----------------- | ------- | -------------- |
-| `admin:stats` | Dashboard counts  | 5 min   | TTL expiry only |
+| Cache Key     | Data             | TTL   | Invalidated By  |
+| ------------- | ---------------- | ----- | --------------- |
+| `admin:stats` | Dashboard counts | 5 min | TTL expiry only |
 
 - The admin dashboard runs 13 parallel queries across 8 collections
 - Rather than tracking invalidation across 10+ mutations in 6 routers, the cache simply expires
@@ -147,11 +151,12 @@ export async function connectDB(): Promise<typeof mongoose> {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, {
-      bufferCommands: false,
-      family: 4,
-      serverSelectionTimeoutMS: 10000,
-    })
+    cached.promise = mongoose
+      .connect(MONGODB_URI, {
+        bufferCommands: false,
+        family: 4,
+        serverSelectionTimeoutMS: 10000,
+      })
       .then((mongoose) => {
         log.info("Connected to MongoDB via Mongoose");
         return mongoose;
@@ -164,6 +169,7 @@ export async function connectDB(): Promise<typeof mongoose> {
 ```
 
 **Key details:**
+
 - Singleton pattern prevents multiple connections in development (stored in `globalThis`)
 - `bufferCommands: false` ensures operations fail immediately if disconnected
 - `family: 4` forces IPv4 connections
@@ -175,27 +181,52 @@ export async function connectDB(): Promise<typeof mongoose> {
 
 ### Player
 
-Basketball players with value tiers:
+Basketball players with value tiers and Wikipedia-sourced profile data:
 
 ```typescript
 // src/server/models/player.ts
-const PlayerSchema = new Schema<PlayerDoc>({
-  firstName: { type: String, required: true },
-  lastName:  { type: String, required: true },
-  imgUrl:    { type: String, required: true },
-  value:     { type: Number, required: true, min: 1, max: 5 },
-}, { timestamps: false });
+const PlayerSchema = new Schema<PlayerDoc>(
+  {
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    imgUrl: { type: String, required: true },
+    value: { type: Number, required: true, min: 1, max: 5 },
+    wikiPageTitle: { type: String, default: null },
+    wikiSummaryExtract: { type: String, default: null },
+    wikiThumbnailUrl: { type: String, default: null },
+    wikiSummaryFetchedAt: { type: Date, default: null },
+    wikiAwardsHonorsText: { type: String, default: null },
+    wikiCareerRegularSeason: { type: Schema.Types.Mixed, default: null },
+    wikiCareerSeasonBests: { type: Schema.Types.Mixed, default: null },
+    wikiListedHeight: { type: String, default: null },
+    wikiListedWeight: { type: String, default: null },
+  },
+  { timestamps: false },
+);
 
 PlayerSchema.index({ firstName: "text", lastName: "text", value: 1 });
 ```
 
-**Fields:**
-| Field       | Type   | Description                    |
+**Core Fields:**
+| Field | Type | Description |
 | ----------- | ------ | ------------------------------ |
-| `firstName` | String | Player's first name            |
-| `lastName`  | String | Player's last name             |
-| `imgUrl`    | String | URL to player headshot         |
-| `value`     | Number | Player cost tier (1-5)         |
+| `firstName` | String | Player's first name |
+| `lastName` | String | Player's last name |
+| `imgUrl` | String | URL to player headshot |
+| `value` | Number | Player cost tier (1-5) |
+
+**Wikipedia Fields:**
+| Field | Type | Description |
+| -------------------------- | ----------------------------- | ------------------------------------------------ |
+| `wikiPageTitle` | String | Canonical Wikipedia page title |
+| `wikiSummaryExtract` | String | Lead paragraph biography |
+| `wikiThumbnailUrl` | String | Wikipedia thumbnail URL |
+| `wikiSummaryFetchedAt` | Date | Last fetch time (7-day staleness window) |
+| `wikiAwardsHonorsText` | String | Plain-text awards list |
+| `wikiCareerRegularSeason` | Mixed (Record<string,string>) | Career averages (PPG, APG, RPG, FG%, etc.) |
+| `wikiCareerSeasonBests` | Mixed (Record<string,{value,season}>) | Best single-season values per stat |
+| `wikiListedHeight` | String | Listed height from Wikipedia infobox |
+| `wikiListedWeight` | String | Listed weight from Wikipedia infobox |
 
 ### Lineup
 
@@ -203,26 +234,29 @@ Fantasy lineups with 5 basketball positions, rating tracking, and gambling state
 
 ```typescript
 // src/server/models/lineup.ts
-const LineupSchema = new Schema<LineupDoc>({
-  featured:            { type: Boolean, default: false },
-  players: {
-    pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
-    c:  { type: Schema.Types.ObjectId, ref: "Player", required: true },
+const LineupSchema = new Schema<LineupDoc>(
+  {
+    featured: { type: Boolean, default: false },
+    players: {
+      pg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      sg: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      sf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      pf: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+      c: { type: Schema.Types.ObjectId, ref: "Player", required: true },
+    },
+    owner: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    avgRating: { type: Number, default: 0 },
+    ratingSum: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
+    timesGambled: { type: Number, default: 0 },
+    lastGambleResult: { type: LastGambleResultSchema, default: undefined },
+    gambleStreak: { type: Number, default: 0 },
+    lastGambleAt: { type: Date, default: undefined },
+    dailyGamblesUsed: { type: Number, default: 0 },
+    dailyGamblesResetAt: { type: Date, default: undefined },
   },
-  owner:               { type: Schema.Types.ObjectId, ref: "User", required: true },
-  avgRating:           { type: Number, default: 0 },
-  ratingSum:           { type: Number, default: 0 },
-  ratingCount:         { type: Number, default: 0 },
-  timesGambled:        { type: Number, default: 0 },
-  lastGambleResult:    { type: LastGambleResultSchema, default: undefined },
-  gambleStreak:        { type: Number, default: 0 },
-  lastGambleAt:        { type: Date, default: undefined },
-  dailyGamblesUsed:    { type: Number, default: 0 },
-  dailyGamblesResetAt: { type: Date, default: undefined },
-}, { timestamps: true });
+  { timestamps: true },
+);
 
 LineupSchema.index({ owner: 1, createdAt: -1 });
 LineupSchema.index({ owner: 1, updatedAt: -1 });
@@ -233,6 +267,7 @@ LineupSchema.index({ createdAt: -1 });
 ```
 
 **Notes:**
+
 - Players are stored as a nested `players` subdocument with ObjectId refs (populated on read)
 - `timestamps: true` auto-manages `createdAt` / `updatedAt`
 - Rating fields (`avgRating`, `ratingSum`, `ratingCount`) are updated atomically when a user rates
@@ -245,11 +280,14 @@ User ratings on lineups (1-10 scale):
 
 ```typescript
 // src/server/models/rating.ts
-const RatingSchema = new Schema<RatingDoc>({
-  value:  { type: Number, required: true, min: 1, max: 10 },
-  user:   { type: Schema.Types.ObjectId, ref: "User", required: true },
-  lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
-}, { timestamps: true });
+const RatingSchema = new Schema<RatingDoc>(
+  {
+    value: { type: Number, required: true, min: 1, max: 10 },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
+  },
+  { timestamps: true },
+);
 
 RatingSchema.index({ user: 1, lineup: 1 }, { unique: true });
 ```
@@ -260,12 +298,15 @@ User comments on lineups with vote tracking:
 
 ```typescript
 // src/server/models/comment.ts
-const CommentSchema = new Schema<CommentDoc>({
-  text:       { type: String, required: true },
-  user:       { type: Schema.Types.ObjectId, ref: "User", required: true },
-  lineup:     { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
-  totalVotes: { type: Number, default: 0 },
-}, { timestamps: true });
+const CommentSchema = new Schema<CommentDoc>(
+  {
+    text: { type: String, required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
+    totalVotes: { type: Number, default: 0 },
+  },
+  { timestamps: true },
+);
 
 CommentSchema.index({ lineup: 1, createdAt: -1 });
 CommentSchema.index({ user: 1, createdAt: -1 });
@@ -277,12 +318,15 @@ Threaded replies to comments:
 
 ```typescript
 // src/server/models/threads.ts
-const ThreadSchema = new Schema<ThreadDoc>({
-  text:       { type: String, required: true },
-  user:       { type: Schema.Types.ObjectId, ref: "User", required: true },
-  comment:    { type: Schema.Types.ObjectId, ref: "Comment", required: true },
-  totalVotes: { type: Number, default: 0 },
-}, { timestamps: true });
+const ThreadSchema = new Schema<ThreadDoc>(
+  {
+    text: { type: String, required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    comment: { type: Schema.Types.ObjectId, ref: "Comment", required: true },
+    totalVotes: { type: Number, default: 0 },
+  },
+  { timestamps: true },
+);
 
 ThreadSchema.index({ user: 1, comment: 1, createdAt: -1 });
 ```
@@ -293,12 +337,15 @@ Upvotes and downvotes on comments and threads:
 
 ```typescript
 // src/server/models/commentVote.ts
-const CommentVoteSchema = new Schema<CommentVoteDoc>({
-  type:    { type: String, enum: ["upvote", "downvote"], required: true },
-  user:    { type: Schema.Types.ObjectId, ref: "User", required: true },
-  comment: { type: Schema.Types.ObjectId, ref: "Comment", required: true },
-  createdAt: { type: Date, default: Date.now },
-}, { timestamps: false });
+const CommentVoteSchema = new Schema<CommentVoteDoc>(
+  {
+    type: { type: String, enum: ["upvote", "downvote"], required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    comment: { type: Schema.Types.ObjectId, ref: "Comment", required: true },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { timestamps: false },
+);
 
 CommentVoteSchema.index({ user: 1, comment: 1 }, { unique: true });
 ```
@@ -311,26 +358,30 @@ User accounts with profile customization (managed by NextAuth):
 
 ```typescript
 // src/server/models/user.ts
-const UserSchema = new Schema<UserDoc>({
-  name:                   { type: String, required: true },
-  password:               { type: String, required: false, default: null },
-  username:               { type: String, required: false, unique: true, sparse: true },
-  email:                  { type: String, required: true, unique: true },
-  emailVerified:          { type: Date, default: null },
-  image:                  { type: String, default: null },
-  bio:                    { type: String, default: null, maxlength: 250 },
-  profileImg:             { type: String, default: null },
-  bannerImg:              { type: String, default: null },
-  socialMedia:            { type: SocialMediaSchema, default: null },
-  followerCount:          { type: Number, default: 0 },
-  followingCount:         { type: Number, default: 0 },
-  newEmail:               { type: String, default: null },
-  emailConfirmationToken: { type: String, default: null },
-  admin:                  { type: Boolean, default: false },
-}, { timestamps: false });
+const UserSchema = new Schema<UserDoc>(
+  {
+    name: { type: String, required: true },
+    password: { type: String, required: false, default: null },
+    username: { type: String, required: false, unique: true, sparse: true },
+    email: { type: String, required: true, unique: true },
+    emailVerified: { type: Date, default: null },
+    image: { type: String, default: null },
+    bio: { type: String, default: null, maxlength: 250 },
+    profileImg: { type: String, default: null },
+    bannerImg: { type: String, default: null },
+    socialMedia: { type: SocialMediaSchema, default: null },
+    followerCount: { type: Number, default: 0 },
+    followingCount: { type: Number, default: 0 },
+    newEmail: { type: String, default: null },
+    emailConfirmationToken: { type: String, default: null },
+    admin: { type: Boolean, default: false },
+  },
+  { timestamps: false },
+);
 ```
 
 **Notes:**
+
 - `username` uses `sparse: true` so null values don't conflict with the unique constraint
 - `socialMedia` is an embedded subdocument with `twitter`, `instagram`, `facebook`
 - `followerCount` / `followingCount` are denormalized for query performance
@@ -342,10 +393,13 @@ User-to-user follow relationships:
 
 ```typescript
 // src/server/models/follow.ts
-const FollowSchema = new Schema<FollowDoc>({
-  follower:  { type: Schema.Types.ObjectId, ref: "User", required: true },
-  following: { type: Schema.Types.ObjectId, ref: "User", required: true },
-}, { timestamps: true });
+const FollowSchema = new Schema<FollowDoc>(
+  {
+    follower: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    following: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  },
+  { timestamps: true },
+);
 
 FollowSchema.index({ follower: 1, following: 1 }, { unique: true });
 FollowSchema.index({ following: 1 });
@@ -360,10 +414,13 @@ Saved lineups per user:
 
 ```typescript
 // src/server/models/bookmark.ts
-const BookmarkSchema = new Schema<BookmarkDoc>({
-  user:   { type: Schema.Types.ObjectId, ref: "User", required: true },
-  lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
-}, { timestamps: true });
+const BookmarkSchema = new Schema<BookmarkDoc>(
+  {
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    lineup: { type: Schema.Types.ObjectId, ref: "Lineup", required: true },
+  },
+  { timestamps: true },
+);
 
 BookmarkSchema.index({ user: 1, lineup: 1 }, { unique: true });
 BookmarkSchema.index({ user: 1, createdAt: -1 });
@@ -375,13 +432,16 @@ User-submitted feedback with status tracking:
 
 ```typescript
 // src/server/models/feedback.ts
-const FeedbackSchema = new Schema<FeedbackDoc>({
-  name:    { type: String, required: true, maxlength: 100 },
-  email:   { type: String, required: true, maxlength: 255 },
-  subject: { type: String, required: true, maxlength: 200 },
-  message: { type: String, required: true, maxlength: 2000 },
-  status:  { type: String, enum: ["new", "read", "resolved"], default: "new" },
-}, { timestamps: true });
+const FeedbackSchema = new Schema<FeedbackDoc>(
+  {
+    name: { type: String, required: true, maxlength: 100 },
+    email: { type: String, required: true, maxlength: 255 },
+    subject: { type: String, required: true, maxlength: 200 },
+    message: { type: String, required: true, maxlength: 2000 },
+    status: { type: String, enum: ["new", "read", "resolved"], default: "new" },
+  },
+  { timestamps: true },
+);
 ```
 
 ### RequestedPlayer
@@ -390,11 +450,14 @@ User requests for new players to be added:
 
 ```typescript
 // src/server/models/requestedPlayer.ts
-const RequestedPlayerSchema = new Schema<RequestedPlayerDoc>({
-  firstName:    { type: String, required: true },
-  lastName:     { type: String, required: true },
-  descriptions: [ValueDescriptionSchema],
-}, { timestamps: true });
+const RequestedPlayerSchema = new Schema<RequestedPlayerDoc>(
+  {
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    descriptions: [ValueDescriptionSchema],
+  },
+  { timestamps: true },
+);
 
 RequestedPlayerSchema.index(
   { firstName: 1, lastName: 1 },
@@ -408,27 +471,30 @@ YouTube videos for the Getting Technical page:
 
 ```typescript
 // src/server/models/video.ts
-const VideoSchema = new Schema<VideoDoc>({
-  youtubeId:    { type: String, required: true, unique: true },
-  title:        { type: String, required: true, maxlength: 500 },
-  description:  { type: String, default: "" },
-  thumbnailUrl: { type: String, required: true },
-  duration:     { type: String, default: "" },
-  timestamps:   { type: [VideoTimestampSchema], default: [] },
-  addedBy:      { type: Schema.Types.ObjectId, ref: "User", required: true },
-}, { timestamps: true });
+const VideoSchema = new Schema<VideoDoc>(
+  {
+    youtubeId: { type: String, required: true, unique: true },
+    title: { type: String, required: true, maxlength: 500 },
+    description: { type: String, default: "" },
+    thumbnailUrl: { type: String, required: true },
+    duration: { type: String, default: "" },
+    timestamps: { type: [VideoTimestampSchema], default: [] },
+    addedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  },
+  { timestamps: true },
+);
 ```
 
 **Fields:**
-| Field          | Type               | Description                          |
+| Field | Type | Description |
 | -------------- | ------------------ | ------------------------------------ |
-| `youtubeId`    | String (unique)    | YouTube video ID                     |
-| `title`        | String             | Video title (max 500 chars)          |
-| `description`  | String             | Video description                    |
-| `thumbnailUrl` | String             | YouTube thumbnail URL                |
-| `duration`     | String             | Video duration                       |
-| `timestamps`   | VideoTimestamp[]    | Chapter markers (time + label)       |
-| `addedBy`      | ObjectId → User    | Admin who added the video            |
+| `youtubeId` | String (unique) | YouTube video ID |
+| `title` | String | Video title (max 500 chars) |
+| `description` | String | Video description |
+| `thumbnailUrl` | String | YouTube thumbnail URL |
+| `duration` | String | Video duration |
+| `timestamps` | VideoTimestamp[] | Chapter markers (time + label) |
+| `addedBy` | ObjectId → User | Admin who added the video |
 
 ### Auth Models (Account, Session, VerificationToken)
 
@@ -528,6 +594,7 @@ The seed script is located at `src/server/seed.ts` and uses a standalone Mongoos
 `src/server/seed.ts`
 
 The seed script:
+
 1. Connects directly to MongoDB using `MONGODB_URI` from `.env`
 2. Clears all existing players
 3. Inserts ~200 basketball players across 5 value tiers

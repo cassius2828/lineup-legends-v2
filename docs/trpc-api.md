@@ -131,6 +131,29 @@ export const adminProcedure = t.procedure
   });
 ```
 
+### Rate Limit Middleware
+
+Reusable per-IP rate limiting for tRPC procedures. Uses the same Redis-backed `rateLimit` utility as auth API routes:
+
+```typescript
+export function rateLimitMiddleware(limit: number, windowSec: number) {
+  return t.middleware(async ({ ctx, path, next }) => {
+    const ip =
+      ctx.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const { ok } = await rateLimit(`rl:trpc:${path}:${ip}`, limit, windowSec);
+    if (!ok) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: "Too many requests. Please try again later.",
+      });
+    }
+    return next();
+  });
+}
+```
+
+Applied to wiki mutations: `.use(rateLimitMiddleware(5, 60))` — 5 calls per minute per IP.
+
 ### Timing Middleware
 
 Logs execution time via Pino and adds artificial delay in development:
@@ -176,7 +199,7 @@ export type AppRouter = typeof appRouter;
 
 | Router                  | Namespace             | Key Procedures                                                                                                                                                                        |
 | ----------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `playerRouter`          | `api.player`          | `getAll`, `getById`, `getRandomByValue`, `search`, `create`, `update`, `delete`                                                                                                       |
+| `playerRouter`          | `api.player`          | `getAll`, `getById`, `getRandomByValue`, `search`, `ensureWikiSummary`_, `ensureAwardsAI`_, `create`, `update`, `delete`                                                              |
 | `lineupRouter`          | `api.lineup`          | `create`, `getLineupsByCurrentUser`, `getLineupsByOtherUsers`, `getAllLineups`, `getLineupById`, `delete`, `toggleFeatured`, `rate`, `reorder`, `gamble`                              |
 | `commentRouter`         | `api.comment`         | `getComments`, `getThreads`, `getCommentCount`, `getMyCommentVotes`, `getMyThreadVotes`, `addComment`, `addThreadReply`, `deleteComment`, `deleteThread`, `voteComment`, `voteThread` |
 | `profileRouter`         | `api.profile`         | `getById`, `getMe`, `update`, `getFeaturedLineups`                                                                                                                                    |
@@ -186,6 +209,8 @@ export type AppRouter = typeof appRouter;
 | `adminRouter`           | `api.admin`           | `getStats`                                                                                                                                                                            |
 | `videoRouter`           | `api.video`           | `getAll`, `create`, `delete`                                                                                                                                                          |
 | `bookmarkRouter`        | `api.bookmark`        | `toggle`, `isBookmarked`, `getBookmarkedLineups`                                                                                                                                      |
+
+_\* `ensureWikiSummary` and `ensureAwardsAI` are protected procedures with `rateLimitMiddleware(5, 60)` applied._
 
 ## Input Validation with Zod
 
@@ -445,6 +470,7 @@ Common tRPC error codes:
 | `NOT_FOUND`             | 404         | Resource doesn't exist        |
 | `BAD_REQUEST`           | 400         | Invalid input                 |
 | `CONFLICT`              | 409         | Duplicate resource            |
+| `TOO_MANY_REQUESTS`     | 429         | Rate limit exceeded           |
 | `INTERNAL_SERVER_ERROR` | 500         | Unexpected error              |
 
 ### Client-Side Error Handling

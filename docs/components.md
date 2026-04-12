@@ -4,31 +4,35 @@ This document describes the reusable React components in Lineup Legends v2. Comp
 
 ## Overview
 
-| Component               | Purpose                                    | Type   |
-| ----------------------- | ------------------------------------------ | ------ |
-| `PlayerCard`            | Display individual player                  | Client |
-| `PlayerImage`           | Player headshot with retry/fallback        | Client |
-| `DraggablePlayerCard`   | Player card with drag support              | Client |
-| `DroppablePositionSlot` | Position slot accepting dropped players    | Client |
-| `PlayerSelector`        | Interactive player selection for lineups   | Client |
-| `PlayerGrid`            | Value-tiered grid of draggable players     | Client |
-| `OrderLineup`           | Position slots + submit for lineup creation| Client |
-| `LineupCard`            | Display complete lineup with actions       | Client |
-| `LineupCardHeader`      | Owner info, featured badge, timestamp      | Client |
-| `LineupCardStatsBar`    | Rating display, gamble count, rate link    | Client |
-| `LineupCardPlayersGrid` | 5-position player grid                     | Client |
-| `LineupCardFooter`      | Comment, view, bookmark, share             | Client |
-| `LineupCardOwnerActions`| Reorder, gamble, feature, delete           | Client |
-| `ShareMenu`             | Share via link, social, SMS, email         | Client |
-| `CommentCard`           | Comment with votes, media, reply           | Client |
-| `ThreadCard`            | Thread reply with votes and media          | Client |
-| `CommentModal`          | Modal for commenting or viewing replies    | Client |
-| `GifPicker`             | Giphy-powered GIF search and selection     | Client |
-| `ComposerToolbar`       | Image upload or GIF attachment toolbar     | Client |
-| `DuplicateHints`        | Player request duplicate match warnings    | Client |
-| `SearchInput`           | Reusable search input with styling         | Client |
-| `ConfirmModal`          | Confirmation dialog                        | Client |
-| `LineupCardGrid`        | Responsive grid layout for lineup cards    | Client |
+| Component                       | Purpose                                     | Type   |
+| ------------------------------- | ------------------------------------------- | ------ |
+| `PlayerCard`                    | Display individual player                   | Client |
+| `PlayerImage`                   | Player headshot with retry/fallback         | Client |
+| `DraggablePlayerCard`           | Player card with drag support               | Client |
+| `DroppablePositionSlot`         | Position slot accepting dropped players     | Client |
+| `PlayerSelector`                | Interactive player selection for lineups    | Client |
+| `PlayerGrid`                    | Value-tiered grid of draggable players      | Client |
+| `OrderLineup`                   | Position slots + submit for lineup creation | Client |
+| `LineupCard`                    | Display complete lineup with actions        | Client |
+| `LineupCardHeader`              | Owner info, featured badge, timestamp       | Client |
+| `LineupCardStatsBar`            | Rating display, gamble count, rate link     | Client |
+| `LineupCardPlayersGrid`         | 5-position player grid                      | Client |
+| `LineupCardFooter`              | Comment, view, bookmark, share              | Client |
+| `LineupCardOwnerActions`        | Reorder, gamble, feature, delete            | Client |
+| `ShareMenu`                     | Share via link, social, SMS, email          | Client |
+| `CommentCard`                   | Comment with votes, media, reply            | Client |
+| `ThreadCard`                    | Thread reply with votes and media           | Client |
+| `CommentModal`                  | Modal for commenting or viewing replies     | Client |
+| `GifPicker`                     | Giphy-powered GIF search and selection      | Client |
+| `ComposerToolbar`               | Image upload or GIF attachment toolbar      | Client |
+| `DuplicateHints`                | Player request duplicate match warnings     | Client |
+| `SearchInput`                   | Reusable search input with styling          | Client |
+| `ConfirmModal`                  | Confirmation dialog                         | Client |
+| `LineupCardGrid`                | Responsive grid layout for lineup cards     | Client |
+| `CareerStatsToggle`             | Career averages / season bests toggle       | Client |
+| `CareerStatValue`               | Single stat cell with shimmer loading       | Client |
+| `WikiPlayerMeasurements`        | Height/weight from Wikipedia infobox        | Client |
+| `CreateLineupPlayerDetailPanel` | Player detail panel in lineup builder       | Client |
 
 ---
 
@@ -75,11 +79,11 @@ Each value tier has a distinct shadow/accent color:
 
 ```typescript
 const valueColors = {
-  1: "bg-gray-500",    // Role players
-  2: "bg-green-500",   // Solid contributors
-  3: "bg-blue-500",    // Quality starters
-  4: "bg-purple-500",  // All-stars
-  5: "bg-amber-500",   // Superstars
+  1: "bg-gray-500", // Role players
+  2: "bg-green-500", // Solid contributors
+  3: "bg-blue-500", // Quality starters
+  4: "bg-purple-500", // All-stars
+  5: "bg-amber-500", // Superstars
 };
 ```
 
@@ -180,12 +184,12 @@ Displays a complete lineup with stats, actions, and social features.
 ```typescript
 interface LineupCardProps {
   lineup: LineupWithRelations;
-  showOwner?: boolean;         // default: true
+  showOwner?: boolean; // default: true
   onDelete?: (id: string) => void;
   onToggleFeatured?: (id: string) => void;
-  isOwner?: boolean;           // default: false
-  featured?: boolean;          // default: false
-  hideFooter?: boolean;        // default: false
+  isOwner?: boolean; // default: false
+  featured?: boolean; // default: false
+  hideFooter?: boolean; // default: false
 }
 ```
 
@@ -294,6 +298,65 @@ Toolbar for attaching media to comments/threads:
 - GIF selection via GifPicker
 - Single attachment at a time (image or GIF)
 - Preview with remove button
+
+---
+
+## Wikipedia Player Components
+
+### CareerStatsToggle
+
+`src/app/_components/common/CareerStatsToggle.tsx`
+
+Toggleable display switching between career averages and season bests. Used on both the player detail page (`/players/[id]`) and the lineup builder side panel.
+
+**Props:**
+
+```typescript
+interface CareerStatsToggleProps {
+  averages?: Record<string, string> | null;
+  bests?: Record<string, { value: string; season: string }> | null;
+  loading?: boolean;
+  hasCareerStats?: boolean;
+  headingAs?: "h2" | "h3"; // default: "h2"
+}
+```
+
+**Behavior:**
+
+- Defaults to "Career Averages" tab
+- Season bests display includes games played (GP) next to the team/year
+- Shows shimmer skeletons when `loading` is true
+- Shows a "No career stats table found" message when `hasCareerStats` is false
+
+### CareerStatValue
+
+`src/app/_components/common/CareerStatValue.tsx`
+
+Individual stat cell used inside `CareerStatsToggle` for both averages and bests:
+
+- Shimmer skeleton while loading
+- Stat label (e.g. "PPG", "RPG") with the value below
+- Em dash (—) for missing or zero values
+- Staggered entrance animation via Framer Motion
+
+### WikiPlayerMeasurements
+
+`src/app/_components/common/WikiPlayerMeasurements.tsx`
+
+Displays listed height and weight parsed from the Wikipedia infobox. Shows the raw string from Wikipedia (e.g. "6 ft 9 in (2.06 m)").
+
+### CreateLineupPlayerDetailPanel
+
+`src/app/_components/CreateNew/CreateLineupPlayerDetailPanel.tsx`
+
+Side panel that opens when a player is clicked during lineup creation:
+
+- Player image with tier glow
+- Wikipedia biography excerpt
+- `WikiPlayerMeasurements` for height/weight
+- `CareerStatsToggle` for career stats
+- Awards list
+- Uses the `useEnsureWikiData` hook to trigger fetch on panel open
 
 ---
 
