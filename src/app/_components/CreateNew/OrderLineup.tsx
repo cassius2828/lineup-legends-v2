@@ -18,6 +18,8 @@ export default function OrderLineup({
   clearSelection,
   filledSlots,
   isAuthenticated = true,
+  onOpenPlayerDetail,
+  canOpenPlayerDetail = false,
 }: {
   positionSlots: PositionSlots;
   handleRemovePlayer: (player: PlayerOutput) => void;
@@ -28,6 +30,8 @@ export default function OrderLineup({
   clearSelection: () => void;
   filledSlots: number;
   isAuthenticated?: boolean;
+  onOpenPlayerDetail?: () => void;
+  canOpenPlayerDetail?: boolean;
 }) {
   const isDisabled = !canSubmit || isSubmitting || !isAuthenticated;
 
@@ -56,7 +60,7 @@ export default function OrderLineup({
         ))}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2">
         {!isAuthenticated ? (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -80,6 +84,31 @@ export default function OrderLineup({
           Clear Selection
         </Button>
       </div>
+      {onOpenPlayerDetail ? (
+        <Button
+          handleClick={onOpenPlayerDetail}
+          disabled={!canOpenPlayerDetail}
+          color="white"
+          variant="subtle"
+          className="mt-3 inline-flex items-center gap-1.5"
+        >
+          <svg
+            className="h-4 w-4 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          Player details
+        </Button>
+      ) : null}
     </div>
   );
 }

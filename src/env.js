@@ -34,6 +34,9 @@ export const env = createEnv({
 
     YOUTUBE_API_KEY: z.string(),
 
+    // OpenAI (AI awards fallback)
+    OPENAI_API_KEY: z.string().optional(),
+
     // MFA
     MFA_ENCRYPTION_KEY: z.string().length(64),
   },
@@ -77,6 +80,9 @@ export const env = createEnv({
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     REDIS_URL: process.env.REDIS_URL,
     YOUTUBE_API_KEY: process.env.YOUTUBE_API_KEY,
+
+    // OpenAI (server-only)
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
 
     // MFA (server-only)
     MFA_ENCRYPTION_KEY: process.env.MFA_ENCRYPTION_KEY,

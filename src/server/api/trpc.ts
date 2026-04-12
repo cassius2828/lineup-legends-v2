@@ -14,6 +14,7 @@ import { ZodError } from "zod";
 import { auth } from "~/server/auth";
 import { connectDB } from "~/server/db";
 import { logger } from "~/lib/logger";
+import { rateLimit } from "~/server/rate-limit";
 
 const log = logger.child({ module: "trpc" });
 
@@ -159,3 +160,22 @@ export const protectedProcedure = t.procedure
       },
     });
   });
+
+/**
+ * Reusable per-IP rate-limiting middleware for tRPC procedures.
+ * Uses the same Redis-backed rateLimit utility as auth API routes.
+ */
+export function rateLimitMiddleware(limit: number, windowSec: number) {
+  return t.middleware(async ({ ctx, path, next }) => {
+    const ip =
+      ctx.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const { ok } = await rateLimit(`rl:trpc:${path}:${ip}`, limit, windowSec);
+    if (!ok) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: "Too many requests. Please try again later.",
+      });
+    }
+    return next();
+  });
+}

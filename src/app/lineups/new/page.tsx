@@ -9,15 +9,25 @@ import { api } from "~/trpc/react";
 import { getId } from "~/lib/types";
 import type { PlayerOutput } from "~/server/api/schemas/output";
 
+/** Keep the same random player pool while navigating away and back; cleared after a successful create. */
+const RANDOM_PLAYERS_QUERY_OPTS = {
+  staleTime: Infinity,
+  gcTime: Infinity,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+} as const;
+
 export default function CreateLineupPage() {
   const router = useRouter();
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
+  const utils = api.useUtils();
   const { data: playersByValue, isLoading } =
-    api.player.getRandomByValue.useQuery();
+    api.player.getRandomByValue.useQuery(undefined, RANDOM_PLAYERS_QUERY_OPTS);
 
   const createLineup = api.lineup.create.useMutation({
     onSuccess: () => {
+      void utils.player.getRandomByValue.invalidate();
       router.push("/lineups");
     },
     onError: (error) => {

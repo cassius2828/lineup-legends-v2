@@ -7,6 +7,23 @@ export interface Player {
   lastName: string;
   imgUrl: string;
   value: number; // 1-5 representing player cost
+  wikiPageTitle?: string | null;
+  wikiSummaryExtract?: string | null;
+  wikiThumbnailUrl?: string | null;
+  wikiSummaryFetchedAt?: Date | null;
+  /** Plain text from Wikipedia "Awards and honors" section */
+  wikiAwardsHonorsText?: string | null;
+  /** NBA regular-season career row (from Wikipedia stats table) */
+  wikiCareerRegularSeason?: Record<string, string> | null;
+  /** Highest value per stat across season rows (not career averages). */
+  wikiCareerSeasonBests?: Record<
+    string,
+    { value: string; season: string }
+  > | null;
+  /** Wikipedia infobox: listed height (e.g. 6 ft 9 in (2.06 m)) */
+  wikiListedHeight?: string | null;
+  /** Wikipedia infobox: listed weight */
+  wikiListedWeight?: string | null;
 }
 
 // DB Type - for database operations
@@ -15,6 +32,23 @@ export interface PlayerDoc extends Document {
   lastName: string;
   imgUrl: string;
   value: number; // 1-5 representing player cost
+  wikiPageTitle?: string | null;
+  wikiSummaryExtract?: string | null;
+  wikiThumbnailUrl?: string | null;
+  wikiSummaryFetchedAt?: Date | null;
+  /** Plain text from Wikipedia "Awards and honors" section */
+  wikiAwardsHonorsText?: string | null;
+  /** NBA regular-season career row (from Wikipedia stats table) */
+  wikiCareerRegularSeason?: Record<string, string> | null;
+  /** Highest value per stat across season rows (not career averages). */
+  wikiCareerSeasonBests?: Record<
+    string,
+    { value: string; season: string }
+  > | null;
+  /** Wikipedia infobox: listed height (e.g. 6 ft 9 in (2.06 m)) */
+  wikiListedHeight?: string | null;
+  /** Wikipedia infobox: listed weight */
+  wikiListedWeight?: string | null;
 }
 
 const PlayerSchema = new Schema<PlayerDoc>(
@@ -23,6 +57,15 @@ const PlayerSchema = new Schema<PlayerDoc>(
     lastName: { type: String, required: true },
     imgUrl: { type: String, required: true },
     value: { type: Number, required: true, min: 1, max: 5 },
+    wikiPageTitle: { type: String, default: null },
+    wikiSummaryExtract: { type: String, default: null },
+    wikiThumbnailUrl: { type: String, default: null },
+    wikiSummaryFetchedAt: { type: Date, default: null },
+    wikiAwardsHonorsText: { type: String, default: null },
+    wikiCareerRegularSeason: { type: Schema.Types.Mixed, default: null },
+    wikiCareerSeasonBests: { type: Schema.Types.Mixed, default: null },
+    wikiListedHeight: { type: String, default: null },
+    wikiListedWeight: { type: String, default: null },
   },
   {
     timestamps: false,
