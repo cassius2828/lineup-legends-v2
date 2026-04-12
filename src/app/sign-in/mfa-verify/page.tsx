@@ -38,7 +38,7 @@ export default function MfaVerifyPage() {
   const [cooldown, setCooldown] = useState(0);
 
   const shouldRedirectHome =
-    session?.user != null && session.user.mfaPending === false;
+    session?.user != null && session.user.mfaPending !== true;
 
   useEffect(() => {
     if (shouldRedirectHome) {

@@ -10,6 +10,7 @@ import Nav from "./_components/Nav";
 import { Footer } from "./_components/landing";
 import GlobalCommentModal from "./_components/Comment/GlobalCommentModal";
 import { SessionProvider } from "next-auth/react";
+import { MfaGuard } from "./_components/auth/MfaGuard";
 import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 import { env } from "~/env";
@@ -72,6 +73,7 @@ export default function RootLayout({
         >
           <TRPCReactProvider>
             <SessionProvider>
+              <MfaGuard />
               <TooltipProvider>
                 <div id="global-nav">
                   <Nav />

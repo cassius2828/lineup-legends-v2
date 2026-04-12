@@ -5,7 +5,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 1,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 8 : undefined,
   reporter: "html",
 
   globalSetup: "./e2e/seed-test-user.ts",
@@ -20,6 +20,25 @@ export default defineConfig({
       name: "setup",
       testMatch: /auth\.setup\.ts/,
     },
+
+    // Smoke tests — public pages, no auth needed
+    {
+      name: "chromium-smoke",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /smoke\.spec\.ts/,
+    },
+    {
+      name: "firefox-smoke",
+      use: { ...devices["Desktop Firefox"] },
+      testMatch: /smoke\.spec\.ts/,
+    },
+    {
+      name: "webkit-smoke",
+      use: { ...devices["Desktop Safari"] },
+      testMatch: /smoke\.spec\.ts/,
+    },
+
+    // Authenticated tests — depend on auth setup
     {
       name: "chromium",
       use: {
@@ -27,12 +46,30 @@ export default defineConfig({
         storageState: "e2e/.auth/user.json",
       },
       dependencies: ["setup"],
-      testIgnore: /auth\.setup\.ts/,
+      testMatch: /auth\.spec\.ts/,
+    },
+    {
+      name: "firefox",
+      use: {
+        ...devices["Desktop Firefox"],
+        storageState: "e2e/.auth/user.json",
+      },
+      dependencies: ["setup"],
+      testMatch: /auth\.spec\.ts/,
+    },
+    {
+      name: "webkit",
+      use: {
+        ...devices["Desktop Safari"],
+        storageState: "e2e/.auth/user.json",
+      },
+      dependencies: ["setup"],
+      testMatch: /auth\.spec\.ts/,
     },
   ],
 
   webServer: {
-    command: "npm run dev",
+    command: process.env.CI ? "npm run start" : "npm run dev",
     url: "http://localhost:3000",
     reuseExistingServer: true,
     timeout: 120_000,
