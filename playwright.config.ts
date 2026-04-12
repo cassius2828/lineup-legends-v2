@@ -20,6 +20,25 @@ export default defineConfig({
       name: "setup",
       testMatch: /auth\.setup\.ts/,
     },
+
+    // Smoke tests — public pages, no auth needed
+    {
+      name: "chromium-smoke",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /smoke\.spec\.ts/,
+    },
+    {
+      name: "firefox-smoke",
+      use: { ...devices["Desktop Firefox"] },
+      testMatch: /smoke\.spec\.ts/,
+    },
+    {
+      name: "webkit-smoke",
+      use: { ...devices["Desktop Safari"] },
+      testMatch: /smoke\.spec\.ts/,
+    },
+
+    // Authenticated tests — depend on auth setup
     {
       name: "chromium",
       use: {
@@ -27,7 +46,25 @@ export default defineConfig({
         storageState: "e2e/.auth/user.json",
       },
       dependencies: ["setup"],
-      testIgnore: /auth\.setup\.ts/,
+      testMatch: /auth\.spec\.ts/,
+    },
+    {
+      name: "firefox",
+      use: {
+        ...devices["Desktop Firefox"],
+        storageState: "e2e/.auth/user.json",
+      },
+      dependencies: ["setup"],
+      testMatch: /auth\.spec\.ts/,
+    },
+    {
+      name: "webkit",
+      use: {
+        ...devices["Desktop Safari"],
+        storageState: "e2e/.auth/user.json",
+      },
+      dependencies: ["setup"],
+      testMatch: /auth\.spec\.ts/,
     },
   ],
 
