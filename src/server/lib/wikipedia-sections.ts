@@ -303,6 +303,10 @@ function mapHeaderToCareerKey(
   return null;
 }
 
+function findGpHeaderIndex(headers: string[]): number {
+  return headers.findIndex((h) => /^\s*GP\s*$/i.test(h));
+}
+
 /**
  * How many leading header positions are covered by <th> elements in a data row,
  * or inferred as missing (mid-season trade rows that omit the Year cell entirely).
@@ -483,6 +487,8 @@ export function extractCareerSeasonBestsFromRegularSeasonHtml(
     .map((_, el) => $(el).text())
     .get() as string[];
 
+  const gpHi = findGpHeaderIndex(headers);
+
   type Best = { n: number; value: string; season: string };
   const bestByKey = new Map<string, Best>();
 
@@ -495,7 +501,15 @@ export function extractCareerSeasonBestsFromRegularSeasonHtml(
     if (shouldSkipSeasonStatsRow(label)) return;
 
     const tdOffset = leadingHeaderOffset($, tr, headers.length);
-    const season = seasonLabelFromRow($, tr);
+    let season = seasonLabelFromRow($, tr);
+
+    if (gpHi >= tdOffset) {
+      const gpDi = gpHi - tdOffset;
+      if (gpDi >= 0 && gpDi < tds.length) {
+        const gpRaw = formatStatCellDisplay($(tds[gpDi]).text());
+        if (gpRaw) season = season ? `${season} - ${gpRaw} GP` : `${gpRaw} GP`;
+      }
+    }
 
     for (let hi = tdOffset; hi < headers.length; hi++) {
       const key = mapHeaderToCareerKey(headers[hi] ?? "");

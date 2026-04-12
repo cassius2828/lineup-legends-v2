@@ -42,7 +42,7 @@ Return ONLY valid JSON matching this exact schema — no markdown fences, no com
     "blocks": "<BPG value or null>"
   },
   "careerSeasonBests": {
-    "points": { "value": "<best PPG>", "season": "<season label, e.g. 2013–14 · LAC>" },
+    "points": { "value": "<best PPG>", "season": "<season label, e.g. 2013–14 · LAC - 82 GP>" },
     "assists": { "value": "<best APG>", "season": "<season>" },
     "rebounds": { "value": "<best RPG>", "season": "<season>" },
     "threePointPct": { "value": "<best 3P%>", "season": "<season>" },
@@ -56,7 +56,7 @@ Return ONLY valid JSON matching this exact schema — no markdown fences, no com
 Rules:
 - Use the "Career" totals/averages row for careerRegularSeason (NOT playoff stats).
 - For careerSeasonBests, find the single best (highest) value for each stat across all REGULAR SEASON rows (exclude Career/All-Star/Playoff rows).
-- Format season labels as "YYYY–YY · TEAM" (e.g. "2018–19 · Detroit").
+- Format season labels as "YYYY–YY · TEAM - GP GP" (e.g. "2018–19 · Detroit - 75 GP").
 - Omit any stat key whose value you cannot determine (do NOT include null values).
 - If you cannot find career stats at all, return: {"careerRegularSeason": null, "careerSeasonBests": null}`;
 

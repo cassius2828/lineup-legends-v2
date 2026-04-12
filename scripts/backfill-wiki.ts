@@ -41,6 +41,8 @@ async function main() {
     const name = `${p.firstName} ${p.lastName}`;
     const tag = `[${i + 1}/${players.length}]`;
 
+    const forceRefreshStats = process.argv.includes("--refresh-stats");
+
     const hasWiki =
       !!p.wikiSummaryExtract?.trim() &&
       p.wikiAwardsHonorsText !== undefined &&
@@ -49,7 +51,7 @@ async function main() {
       p.wikiListedHeight !== undefined &&
       p.wikiListedWeight !== undefined;
 
-    if (hasWiki) {
+    if (hasWiki && !forceRefreshStats) {
       console.log(`${tag} SKIP  ${name} (already has wiki data)`);
       skipped++;
       continue;
