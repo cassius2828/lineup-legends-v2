@@ -5,9 +5,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-stencil: var(--font-stencil), stick no bills, ui-sans-serif, system-ui, sans-serif;
+  --font-stencil:
+    var(--font-stencil), stick no bills, ui-sans-serif, system-ui, sans-serif;
 
   /* Neutral surface palette (theme-aware via CSS variables) */
   --color-surface-950: var(--surface-950);
@@ -20,19 +22,19 @@
   --color-surface-300: var(--surface-300);
 
   /* Soft Gold Color Palette */
-  --color-gold: #D4AF37;
-  --color-gold-light: #E5C158;
-  --color-gold-dark: #B8962E;
-  --color-gold-50: #FDF8E7;
-  --color-gold-100: #F9EDCC;
-  --color-gold-200: #F0D999;
-  --color-gold-300: #E5C158;
-  --color-gold-400: #DCAD33;
-  --color-gold-500: #D4AF37;
-  --color-gold-600: #B8962E;
-  --color-gold-700: #9A7B24;
-  --color-gold-800: #7C611B;
-  --color-gold-900: #5E4812;
+  --color-gold: #d4af37;
+  --color-gold-light: #e5c158;
+  --color-gold-dark: #b8962e;
+  --color-gold-50: #fdf8e7;
+  --color-gold-100: #f9edcc;
+  --color-gold-200: #f0d999;
+  --color-gold-300: #e5c158;
+  --color-gold-400: #dcad33;
+  --color-gold-500: #d4af37;
+  --color-gold-600: #b8962e;
+  --color-gold-700: #9a7b24;
+  --color-gold-800: #7c611b;
+  --color-gold-900: #5e4812;
 }
 
 /* Stencil font utility class */
@@ -82,6 +84,62 @@ body:has(.sign-in-layout) #global-footer {
   display: none;
 }
 
+/* Career stat cell: gold shimmer while Wikipedia data loads */
+.career-stat-skeleton {
+  display: inline-block;
+  vertical-align: middle;
+  height: 1.125rem;
+  min-width: 3.75rem;
+  border-radius: 0.2rem;
+  background: color-mix(in oklab, var(--foreground) 9%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+
+.career-stat-skeleton::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 45%;
+  border-radius: 0.2rem;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgb(212 175 55 / 0.18) 45%,
+    rgb(255 255 255 / 0.06) 50%,
+    rgb(212 175 55 / 0.14) 55%,
+    transparent 100%
+  );
+  animation: career-stat-shimmer 1.35s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  animation-delay: var(--career-stat-stagger, 0ms);
+  will-change: transform;
+}
+
+@keyframes career-stat-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .career-stat-skeleton::after {
+    animation: none;
+    opacity: 0.35;
+    transform: none;
+    left: 10%;
+    width: 80%;
+  }
+
+  .career-stat-skeleton {
+    opacity: 0.65;
+  }
+}
+
 /* Image loading placeholder */
 img {
   background-color: var(--color-surface-700);
@@ -126,7 +184,9 @@ button {
 
 /* Gold glow effect */
 .glow-gold {
-  box-shadow: 0 0 20px rgb(212 175 55 / 0.3), 0 0 40px rgb(212 175 55 / 0.1);
+  box-shadow:
+    0 0 20px rgb(212 175 55 / 0.3),
+    0 0 40px rgb(212 175 55 / 0.1);
 }
 
 .glow-gold-sm {
@@ -135,7 +195,12 @@ button {
 
 /* Gold gradient text */
 .text-gradient-gold {
-  background: linear-gradient(135deg, var(--color-gold-light) 0%, var(--color-gold) 50%, var(--color-gold-dark) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-gold-light) 0%,
+    var(--color-gold) 50%,
+    var(--color-gold-dark) 100%
+  );
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -143,7 +208,12 @@ button {
 
 /* Gold gradient backgrounds */
 .bg-gradient-gold {
-  background: linear-gradient(135deg, var(--color-gold-dark) 0%, var(--color-gold) 50%, var(--color-gold-light) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-gold-dark) 0%,
+    var(--color-gold) 50%,
+    var(--color-gold-light) 100%
+  );
 }
 
 /* Hover gold effect */
@@ -156,7 +226,9 @@ button {
 }
 
 .hover\:glow-gold:hover {
-  box-shadow: 0 0 20px rgb(212 175 55 / 0.3), 0 0 40px rgb(212 175 55 / 0.1);
+  box-shadow:
+    0 0 20px rgb(212 175 55 / 0.3),
+    0 0 40px rgb(212 175 55 / 0.1);
 }
 
 @theme inline {
@@ -295,5 +367,19 @@ button {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 }

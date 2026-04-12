@@ -16,6 +16,12 @@ import {
   playersByValueOutput,
   populated,
 } from "~/server/api/schemas/output";
+import { getId } from "~/lib/types";
+import { fetchBasketballPlayerWikiSummary } from "~/server/lib/wikipedia";
+import {
+  fetchListedHeightWeightForPageTitle,
+  fetchWikiExtendedSections,
+} from "~/server/lib/wikipedia-sections";
 
 export const playerRouter = createTRPCRouter({
   getAll: publicProcedure
@@ -29,11 +35,139 @@ export const playerRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .output(playerOutput.optional())
     .query(async ({ input }) => {
-      const players = await getPlayersFromCacheOrDb();
-      return players.find(
-        (player: { id?: string; _id?: { toString(): string } }) =>
-          (player.id ?? player._id?.toString()) === input.id,
+      // Always read one document from Mongo — do not use the Redis "all players" blob here.
+      // JSON round-trips for cached lists can change _id shape; a list scan is also stale vs wiki writes.
+      const found = await PlayerModel.findById(input.id).lean();
+      if (!found) return undefined;
+      return playerOutput.parse({
+        ...found,
+        id: getId(found),
+      });
+    }),
+
+  /** Fetches Wikipedia lead summary (basketball-biased), persists on player, invalidates cache. */
+  ensureWikiSummary: publicProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        force: z.boolean().optional(),
+      }),
+    )
+    .output(playerOutput)
+    .mutation(async ({ input }) => {
+      const raw = await PlayerModel.findById(input.id).lean();
+      if (!raw) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found",
+        });
+      }
+
+      const STALE_MS = 7 * 24 * 60 * 60 * 1000;
+      const fetchedAt = raw.wikiSummaryFetchedAt
+        ? new Date(raw.wikiSummaryFetchedAt).getTime()
+        : 0;
+      const hasExtract = !!raw.wikiSummaryExtract?.trim();
+      /** Awards + career keys must exist (even null) so we do not skip after summary-only rows. */
+      const hasWikiExtendedStored =
+        Object.prototype.hasOwnProperty.call(raw, "wikiAwardsHonorsText") &&
+        Object.prototype.hasOwnProperty.call(raw, "wikiCareerRegularSeason") &&
+        Object.prototype.hasOwnProperty.call(raw, "wikiCareerSeasonBests");
+      const physicalEmpty =
+        !String(raw.wikiListedHeight ?? "").trim() &&
+        !String(raw.wikiListedWeight ?? "").trim();
+
+      if (
+        !input.force &&
+        hasExtract &&
+        hasWikiExtendedStored &&
+        fetchedAt > 0 &&
+        Date.now() - fetchedAt < STALE_MS
+      ) {
+        /** Stale hit: measurements are often null on older rows; patch from infobox without full wiki pull. */
+        if (physicalEmpty && raw.wikiPageTitle?.trim()) {
+          const hw = await fetchListedHeightWeightForPageTitle(
+            raw.wikiPageTitle.trim(),
+          );
+          const got = !!hw.listedHeight?.trim() || !!hw.listedWeight?.trim();
+          if (got) {
+            await PlayerModel.findByIdAndUpdate(input.id, {
+              wikiListedHeight: hw.listedHeight ?? null,
+              wikiListedWeight: hw.listedWeight ?? null,
+            });
+            await invalidatePlayersCache();
+            const patched = await PlayerModel.findById(input.id).lean();
+            if (patched) {
+              return playerOutput.parse({
+                ...patched,
+                id: getId(patched),
+              });
+            }
+          }
+        }
+
+        return playerOutput.parse({
+          ...raw,
+          id: getId(raw),
+        });
+      }
+
+      const summary = await fetchBasketballPlayerWikiSummary(
+        raw.firstName,
+        raw.lastName,
+        { preferredPageTitle: raw.wikiPageTitle },
       );
+
+      if (!summary) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message:
+            "No Wikipedia biography found for this player. Try again later or contact an admin.",
+        });
+      }
+
+      const extended = await fetchWikiExtendedSections(summary.title);
+
+      if (
+        process.env.NODE_ENV === "development" ||
+        process.env.WIKIPEDIA_DEBUG === "1"
+      ) {
+        console.log("[player.ensureWikiSummary] wiki pull result", {
+          playerId: input.id,
+          resolvedTitle: summary.title,
+          extractLength: summary.extract.length,
+          awardsLength: extended.awardsPlainText?.length ?? 0,
+          careerKeys: extended.careerRegularSeason
+            ? Object.keys(extended.careerRegularSeason)
+            : [],
+        });
+      }
+
+      await PlayerModel.findByIdAndUpdate(input.id, {
+        wikiPageTitle: summary.title,
+        wikiSummaryExtract: summary.extract,
+        wikiThumbnailUrl: summary.thumbnailUrl,
+        wikiSummaryFetchedAt: new Date(),
+        wikiAwardsHonorsText: extended.awardsPlainText ?? "",
+        wikiCareerRegularSeason: extended.careerRegularSeason ?? null,
+        wikiCareerSeasonBests: extended.careerSeasonBests ?? null,
+        wikiListedHeight: extended.listedHeight ?? null,
+        wikiListedWeight: extended.listedWeight ?? null,
+      });
+      await invalidatePlayersCache();
+
+      const updated = await PlayerModel.findById(input.id).lean();
+      if (!updated) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found",
+        });
+      }
+
+      return playerOutput.parse({
+        ...updated,
+        id: getId(updated),
+      });
     }),
 
   getRandomByValue: publicProcedure

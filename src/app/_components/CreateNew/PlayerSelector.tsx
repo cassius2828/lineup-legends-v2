@@ -23,6 +23,7 @@ import CreateLineupHeader from "../Header/CreateLineupHeader";
 import OrderLineup from "./OrderLineup";
 import PlayerGrid from "./PlayerGrid";
 import CreateLineupPlayerDragOverlay from "./CreateLineupPlayerDragOverlay";
+import { CreateLineupPlayerDetailPanel } from "./CreateLineupPlayerDetailPanel";
 
 interface PlayersByValue {
   value1Players: PlayerOutput[];
@@ -49,6 +50,9 @@ export function PlayerSelector({
     INITIAL_POSITION_SLOTS,
   );
   const [activePlayer, setActivePlayer] = useState<PlayerOutput | null>(null);
+  const [lastSelectedPlayer, setLastSelectedPlayer] =
+    useState<PlayerOutput | null>(null);
+  const [playerDetailOpen, setPlayerDetailOpen] = useState(false);
 
   // Configure sensors for better drag experience
   const sensors = useSensors(
@@ -100,19 +104,33 @@ export function PlayerSelector({
     const currentPosition = findPlayerPosition(player);
 
     if (currentPosition) {
-      // Deselect player - remove from their position
-      setPositionSlots((prev) => ({
-        ...prev,
+      const nextSlots = {
+        ...positionSlots,
         [currentPosition]: null,
-      }));
+      };
+      const remaining = POSITIONS.map((p) => nextSlots[p]).filter(
+        (p): p is PlayerOutput => p !== null,
+      );
+      setPositionSlots(nextSlots);
+      if (remaining.length === 0) {
+        setLastSelectedPlayer(null);
+        setPlayerDetailOpen(false);
+        return;
+      }
+      setLastSelectedPlayer((prev) => {
+        if (prev && remaining.some((r) => getId(r) === getId(prev))) {
+          return prev;
+        }
+        return remaining[remaining.length - 1]!;
+      });
     } else if (canAffordPlayer(player) && filledSlots < 5) {
-      // Select player - find first empty slot
       const emptySlot = findFirstEmptySlot();
       if (emptySlot) {
         setPositionSlots((prev) => ({
           ...prev,
           [emptySlot]: player,
         }));
+        setLastSelectedPlayer(player);
       }
     }
   };
@@ -120,12 +138,23 @@ export function PlayerSelector({
   // Handle removing a player from a slot
   const handleRemovePlayer = (player: PlayerOutput) => {
     const position = findPlayerPosition(player);
-    if (position) {
-      setPositionSlots((prev) => ({
-        ...prev,
-        [position]: null,
-      }));
+    if (!position) return;
+    const nextSlots = { ...positionSlots, [position]: null };
+    const remaining = POSITIONS.map((p) => nextSlots[p]).filter(
+      (p): p is PlayerOutput => p !== null,
+    );
+    setPositionSlots(nextSlots);
+    if (remaining.length === 0) {
+      setLastSelectedPlayer(null);
+      setPlayerDetailOpen(false);
+      return;
     }
+    setLastSelectedPlayer((prev) => {
+      if (prev && remaining.some((r) => getId(r) === getId(prev))) {
+        return prev;
+      }
+      return remaining[remaining.length - 1]!;
+    });
   };
 
   // Drag and drop handlers
@@ -180,6 +209,7 @@ export function PlayerSelector({
 
       return newSlots;
     });
+    setLastSelectedPlayer(player);
   };
 
   const handleSubmit = () => {
@@ -194,6 +224,8 @@ export function PlayerSelector({
 
   const clearSelection = () => {
     setPositionSlots(INITIAL_POSITION_SLOTS);
+    setLastSelectedPlayer(null);
+    setPlayerDetailOpen(false);
   };
 
   const allPlayers = [
@@ -240,8 +272,16 @@ export function PlayerSelector({
           clearSelection={clearSelection}
           filledSlots={filledSlots}
           isAuthenticated={isAuthenticated}
+          onOpenPlayerDetail={() => setPlayerDetailOpen(true)}
+          canOpenPlayerDetail={filledSlots >= 1}
         />
       </div>
+
+      <CreateLineupPlayerDetailPanel
+        player={lastSelectedPlayer}
+        open={playerDetailOpen && lastSelectedPlayer !== null}
+        onClose={() => setPlayerDetailOpen(false)}
+      />
 
       {/* Drag Overlay - Shows the player being dragged */}
       <DragOverlay dropAnimation={null}>

@@ -33,6 +33,48 @@ export const playerOutput = z.object({
   lastName: z.string(),
   imgUrl: z.string(),
   value: z.number(),
+  wikiPageTitle: z.string().nullish(),
+  wikiSummaryExtract: z.string().nullish(),
+  wikiThumbnailUrl: z.string().nullish(),
+  wikiSummaryFetchedAt: z.coerce.date().nullish(),
+  wikiAwardsHonorsText: z.string().nullish(),
+  /** Mixed in Mongo can round-trip numbers; coerce so UI always gets string values. */
+  wikiCareerRegularSeason: z.preprocess((val) => {
+    if (val == null) return null;
+    if (typeof val !== "object" || Array.isArray(val)) return null;
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+      if (v == null) continue;
+      const s = typeof v === "string" ? v : String(v);
+      if (s.trim().length > 0) out[k] = s.trim();
+    }
+    return Object.keys(out).length > 0 ? out : null;
+  }, z.record(z.string()).nullish()),
+  /** Max per stat across season rows (Regular season table). */
+  wikiCareerSeasonBests: z.preprocess(
+    (val) => {
+      if (val == null) return null;
+      if (typeof val !== "object" || Array.isArray(val)) return null;
+      const out: Record<string, { value: string; season: string }> = {};
+      for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+        if (!v || typeof v !== "object") continue;
+        const o = v as Record<string, unknown>;
+        const value =
+          typeof o.value === "string" ? o.value : String(o.value ?? "").trim();
+        const season =
+          typeof o.season === "string"
+            ? o.season
+            : String(o.season ?? "").trim();
+        if (!value.trim()) continue;
+        out[k] = { value: value.trim(), season: season || "—" };
+      }
+      return Object.keys(out).length > 0 ? out : null;
+    },
+    z.record(z.object({ value: z.string(), season: z.string() })).nullish(),
+  ),
+  /** Wikipedia infobox — listed height / weight (personal information) */
+  wikiListedHeight: z.string().nullish(),
+  wikiListedWeight: z.string().nullish(),
 });
 
 export const playersByValueOutput = z
