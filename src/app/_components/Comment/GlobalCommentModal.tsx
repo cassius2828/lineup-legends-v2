@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useCommentModalStore } from "~/stores/commentModal";
 import CommentModal from "./CommentModal";
 
@@ -13,6 +15,12 @@ export default function GlobalCommentModal() {
     currentUserId,
     close,
   } = useCommentModalStore();
+
+  const pathname = usePathname();
+  useEffect(() => {
+    if (isOpen) close();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   if (!isOpen) return null;
 

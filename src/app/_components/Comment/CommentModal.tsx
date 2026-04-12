@@ -120,6 +120,7 @@ export default function CommentModal({
     fetchNextPage: fetchMoreComments,
     hasNextPage: hasMoreComments,
     isFetchingNextPage: isFetchingMoreComments,
+    isLoading: isCommentsLoading,
   } = api.comment.getComments.useInfiniteQuery(
     { lineupId, limit: 10 },
     {
@@ -141,6 +142,7 @@ export default function CommentModal({
     fetchNextPage: fetchMoreThreads,
     hasNextPage: hasMoreThreads,
     isFetchingNextPage: isFetchingMoreThreads,
+    isLoading: isThreadsLoading,
   } = api.comment.getThreads.useInfiniteQuery(
     { commentId: effectiveParent?._id ?? "", limit: 10 },
     {
@@ -403,7 +405,11 @@ export default function CommentModal({
 
               {/* Comment feed */}
               <div className="flex-1 overflow-y-auto px-5">
-                {allComments.length === 0 ? (
+                {isCommentsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="border-foreground/20 border-t-gold h-6 w-6 animate-spin rounded-full border-2" />
+                  </div>
+                ) : allComments.length === 0 ? (
                   <div className="py-8 text-center">
                     <p className="text-foreground/30 text-sm">
                       No comments yet. Be the first!
@@ -503,18 +509,24 @@ export default function CommentModal({
                 </div>
 
                 {/* Thread replies */}
-                {allThreads.map((thread, index) => (
-                  <ThreadCard
-                    key={thread._id}
-                    thread={thread}
-                    lineupId={lineupId}
-                    commentId={effectiveParent._id}
-                    currentUserId={effectiveUserId}
-                    userVote={myThreadVotes?.[thread._id] ?? null}
-                    replyingTo={parentDisplayName}
-                    isLast={index === allThreads.length - 1}
-                  />
-                ))}
+                {isThreadsLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="border-foreground/20 border-t-gold h-6 w-6 animate-spin rounded-full border-2" />
+                  </div>
+                ) : (
+                  allThreads.map((thread, index) => (
+                    <ThreadCard
+                      key={thread._id}
+                      thread={thread}
+                      lineupId={lineupId}
+                      commentId={effectiveParent._id}
+                      currentUserId={effectiveUserId}
+                      userVote={myThreadVotes?.[thread._id] ?? null}
+                      replyingTo={parentDisplayName}
+                      isLast={index === allThreads.length - 1}
+                    />
+                  ))
+                )}
                 {hasMoreThreads && (
                   <div className="flex justify-center py-4">
                     <button
