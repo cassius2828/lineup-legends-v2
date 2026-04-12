@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { api } from "~/trpc/react";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
 import { LineupCard } from "../LineupCard/LineupCard";
+import CommentCard from "./CommentCard";
 import ThreadCard from "./ThreadCard";
 import ComposerToolbar from "./ComposerToolbar";
 import type { ComposerMedia } from "./ComposerToolbar";
@@ -62,46 +63,98 @@ export default function CommentModal({
   const [mounted, setMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const parentComment =
+  // Internal navigation within comment mode
+  const [internalView, setInternalView] = useState<"comments" | "thread">(
+    "comments",
+  );
+  const [selectedComment, setSelectedComment] = useState<ParentComment | null>(
+    null,
+  );
+
+  const propParentComment =
     mode === "reply"
       ? (rest as { parentComment: ParentComment }).parentComment
       : undefined;
 
-  const { submit, isSubmitting } = useSubmitComment({
-    lineupId,
-    mode,
-    commentId: parentComment?._id,
-    onSuccess: () => {
-      setText("");
-      setMedia({});
-      if (mode === "comment") onClose();
-    },
-  });
+  const effectiveParent =
+    mode === "reply" ? propParentComment : selectedComment;
+  const showCommentsList = mode === "comment" && internalView === "comments";
+  const showThreadView =
+    mode === "reply" || (mode === "comment" && internalView === "thread");
 
-  const { data: lineup } = api.lineup.getLineupById.useQuery(
-    { id: lineupId },
-    { enabled: !!lineupId && mode === "comment" },
-  );
+  const effectiveUserId = currentUserId ?? session?.id;
 
+  // Submit for top-level comments (stays open after posting)
+  const { submit: submitComment, isSubmitting: isCommentSubmitting } =
+    useSubmitComment({
+      lineupId,
+      mode: "comment",
+      onSuccess: () => {
+        setText("");
+        setMedia({});
+      },
+    });
+
+  // Submit for thread replies
+  const { submit: submitThread, isSubmitting: isThreadSubmitting } =
+    useSubmitComment({
+      lineupId,
+      mode: "reply",
+      commentId: effectiveParent?._id,
+      onSuccess: () => {
+        setText("");
+        setMedia({});
+      },
+    });
+
+  // Lineup card (comment mode)
+  const { data: lineup, isLoading: isLineupLoading } =
+    api.lineup.getLineupById.useQuery(
+      { id: lineupId },
+      { enabled: !!lineupId && mode === "comment" },
+    );
+
+  // Comments feed (comment mode)
   const {
-    data: threadData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = api.comment.getThreads.useInfiniteQuery(
-    { commentId: parentComment?._id ?? "", limit: 10 },
+    data: commentsData,
+    fetchNextPage: fetchMoreComments,
+    hasNextPage: hasMoreComments,
+    isFetchingNextPage: isFetchingMoreComments,
+  } = api.comment.getComments.useInfiniteQuery(
+    { lineupId, limit: 10 },
     {
       getNextPageParam: (lastPage) =>
         lastPage.hasMore ? lastPage.cursor : undefined,
-      enabled: mode === "reply" && !!parentComment?._id && open,
+      enabled: mode === "comment" && open,
+    },
+  );
+  const allComments = commentsData?.pages.flatMap((p) => p.comments) ?? [];
+
+  const { data: myCommentVotes } = api.comment.getMyCommentVotes.useQuery(
+    { lineupId },
+    { enabled: mode === "comment" && !!effectiveUserId && open },
+  );
+
+  // Threads (thread view)
+  const {
+    data: threadData,
+    fetchNextPage: fetchMoreThreads,
+    hasNextPage: hasMoreThreads,
+    isFetchingNextPage: isFetchingMoreThreads,
+  } = api.comment.getThreads.useInfiniteQuery(
+    { commentId: effectiveParent?._id ?? "", limit: 10 },
+    {
+      getNextPageParam: (lastPage) =>
+        lastPage.hasMore ? lastPage.cursor : undefined,
+      enabled: showThreadView && !!effectiveParent?._id && open,
     },
   );
 
   const { data: myThreadVotes } = api.comment.getMyThreadVotes.useQuery(
-    { commentId: parentComment?._id ?? "" },
+    { commentId: effectiveParent?._id ?? "" },
     {
       enabled:
-        mode === "reply" && !!parentComment?._id && !!currentUserId && open,
+        showThreadView && !!effectiveParent?._id && !!effectiveUserId && open,
     },
   );
 
@@ -109,10 +162,17 @@ export default function CommentModal({
 
   useEffect(() => setMounted(true), []);
 
+  // Reset internal view when modal closes
+  useEffect(() => {
+    if (!open) {
+      setInternalView("comments");
+      setSelectedComment(null);
+    }
+  }, [open]);
+
   useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden";
-      setTimeout(() => textareaRef.current?.focus(), 50);
     } else {
       document.body.style.overflow = "";
       setText("");
@@ -123,29 +183,82 @@ export default function CommentModal({
     };
   }, [open]);
 
+  // Focus textarea on open or view change
+  useEffect(() => {
+    if (open) {
+      setTimeout(() => textareaRef.current?.focus(), 50);
+    }
+  }, [open, internalView]);
+
   useEffect(() => {
     if (!open) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (mode === "comment" && internalView === "thread") {
+          handleBackToComments();
+        } else {
+          onClose();
+        }
+      }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [open, onClose]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, onClose, mode, internalView]);
 
   if (!open || !mounted) return null;
 
   const hasContent = text.trim().length > 0 || !!media.image || !!media.gif;
+  const activeSubmit = showThreadView ? submitThread : submitComment;
+  const activeIsSubmitting = showThreadView
+    ? isThreadSubmitting
+    : isCommentSubmitting;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
-      submit(text, media);
+      activeSubmit(text, media);
     }
   };
 
   const userImage = session?.image ?? session?.profileImg;
   const parentDisplayName =
-    parentComment?.user.name ?? parentComment?.user.username ?? "Anonymous";
+    effectiveParent?.user.name ?? effectiveParent?.user.username ?? "Anonymous";
+
+  const handleReplyClick = (comment: {
+    _id: string;
+    text?: string | null;
+    image?: string | null;
+    gif?: string | null;
+    user: ParentComment["user"];
+    createdAt: string | Date;
+  }) => {
+    setSelectedComment({
+      _id: comment._id,
+      text: comment.text ?? "",
+      image: comment.image,
+      gif: comment.gif,
+      user: comment.user,
+      createdAt: comment.createdAt,
+    });
+    setInternalView("thread");
+    setText("");
+    setMedia({});
+  };
+
+  const handleBackToComments = () => {
+    setInternalView("comments");
+    setSelectedComment(null);
+    setText("");
+    setMedia({});
+  };
+
+  const showBackButton = mode === "comment" && internalView === "thread";
+  const headerTitle = showCommentsList
+    ? "Comment"
+    : mode === "reply"
+      ? "Reply"
+      : "Thread";
 
   return createPortal(
     <motion.div
@@ -168,28 +281,76 @@ export default function CommentModal({
           <div className="border-foreground/10 flex items-center justify-between border-b px-4 py-3">
             <button
               type="button"
-              onClick={onClose}
+              onClick={showBackButton ? handleBackToComments : onClose}
               className="text-foreground/50 hover:bg-foreground/10 hover:text-foreground rounded-full p-1 transition-colors"
             >
-              <X className="h-5 w-5" />
+              {showBackButton ? (
+                <ArrowLeft className="h-5 w-5" />
+              ) : (
+                <X className="h-5 w-5" />
+              )}
             </button>
             <span className="text-foreground/40 text-sm font-medium">
-              {mode === "comment" ? "Comment" : "Reply"}
+              {headerTitle}
             </span>
-            <div className="w-6" />
+            {showBackButton ? (
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-foreground/50 hover:bg-foreground/10 hover:text-foreground rounded-full p-1 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            ) : (
+              <div className="w-6" />
+            )}
           </div>
 
-          {/* Comment mode: lineup card + composer */}
-          {mode === "comment" && (
-            <>
-              <div className="border-foreground/10 border-b px-5 py-4">
-                {lineup && (
+          {/* ── Comments list view ── */}
+          {showCommentsList && (
+            <div className="flex max-h-[80vh] flex-col">
+              {/* Lineup card */}
+              <div className="border-foreground/10 shrink-0 border-b px-5 py-4">
+                {lineup ? (
                   <LineupCard lineup={lineup as LineupOutput} hideFooter />
-                )}
+                ) : isLineupLoading ? (
+                  <div className="from-surface-800/90 to-surface-950/90 animate-pulse rounded-2xl bg-gradient-to-br p-6">
+                    {/* Header skeleton: avatar + name + time + value badge */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-foreground/10 h-10 w-10 rounded-full" />
+                        <div className="space-y-1.5">
+                          <div className="bg-foreground/10 h-3.5 w-28 rounded" />
+                          <div className="bg-foreground/10 h-3 w-20 rounded" />
+                        </div>
+                      </div>
+                      <div className="bg-foreground/10 h-6 w-16 rounded-full" />
+                    </div>
+                    {/* Stats bar skeleton */}
+                    <div className="mt-3 flex items-center gap-4">
+                      <div className="bg-foreground/10 h-4 w-24 rounded" />
+                      <div className="bg-foreground/10 h-4 w-20 rounded" />
+                    </div>
+                    {/* Players grid skeleton: 5 circles with labels */}
+                    <div className="mt-4 flex justify-between px-2">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="flex flex-col items-center gap-1.5"
+                        >
+                          <div className="bg-foreground/10 h-3 w-5 rounded" />
+                          <div className="bg-foreground/10 h-16 w-16 rounded-full" />
+                          <div className="bg-foreground/10 h-3 w-14 rounded" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
+              {/* Composer */}
               {session ? (
-                <div className="px-5 py-4">
+                <div className="border-foreground/10 shrink-0 border-b px-5 py-4">
                   <div className="flex gap-3">
                     <Image
                       src={userImage ?? "/default-user.jpg"}
@@ -218,16 +379,16 @@ export default function CommentModal({
                     </span>
                     <button
                       type="button"
-                      onClick={() => submit(text, media)}
-                      disabled={!hasContent || isSubmitting}
+                      onClick={() => submitComment(text, media)}
+                      disabled={!hasContent || isCommentSubmitting}
                       className="bg-gold hover:bg-gold-light rounded-full px-5 py-1.5 text-sm font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                     >
-                      {isSubmitting ? "Posting..." : "Reply"}
+                      {isCommentSubmitting ? "Posting..." : "Reply"}
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="px-5 py-6 text-center">
+                <div className="border-foreground/10 shrink-0 border-b px-5 py-6 text-center">
                   <p className="text-foreground/50 text-sm">
                     <a
                       href="/api/auth/signin"
@@ -239,11 +400,49 @@ export default function CommentModal({
                   </p>
                 </div>
               )}
-            </>
+
+              {/* Comment feed */}
+              <div className="flex-1 overflow-y-auto px-5">
+                {allComments.length === 0 ? (
+                  <div className="py-8 text-center">
+                    <p className="text-foreground/30 text-sm">
+                      No comments yet. Be the first!
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {allComments.map((comment) => (
+                      <CommentCard
+                        key={comment._id}
+                        comment={comment}
+                        lineupId={lineupId}
+                        currentUserId={effectiveUserId}
+                        userVote={myCommentVotes?.[comment._id] ?? null}
+                        onReplyClick={() => handleReplyClick(comment)}
+                      />
+                    ))}
+                    {hasMoreComments && (
+                      <div className="flex justify-center py-4">
+                        <button
+                          className="text-foreground/40 hover:text-foreground/70 text-sm transition-colors"
+                          type="button"
+                          disabled={isFetchingMoreComments}
+                          onClick={() => fetchMoreComments()}
+                        >
+                          {isFetchingMoreComments
+                            ? "Loading..."
+                            : "Show more comments"}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           )}
 
-          {/* Reply mode: threaded layout with composer at bottom */}
-          {mode === "reply" && parentComment && (
+          {/* ── Thread view (reply mode or drilled-in from comment list) ── */}
+          {showThreadView && effectiveParent && (
             <div className="flex max-h-[70vh] flex-col">
               {/* Scrollable thread area */}
               <div className="flex-1 overflow-y-auto px-5 py-4">
@@ -252,8 +451,8 @@ export default function CommentModal({
                   <div className="flex w-9 shrink-0 flex-col items-center">
                     <Image
                       src={
-                        parentComment.user.image ??
-                        parentComment.user.profileImg ??
+                        effectiveParent.user.image ??
+                        effectiveParent.user.profileImg ??
                         "/default-user.jpg"
                       }
                       alt={parentDisplayName}
@@ -273,19 +472,19 @@ export default function CommentModal({
                       <span className="text-foreground/30">&middot;</span>
                       <span className="text-foreground/40 text-xs">
                         {formatDistanceToNow(
-                          new Date(parentComment.createdAt),
+                          new Date(effectiveParent.createdAt),
                           { addSuffix: true },
                         )}
                       </span>
                     </div>
-                    {parentComment.text && (
+                    {effectiveParent.text && (
                       <p className="text-foreground/60 mt-1 text-sm leading-relaxed">
-                        {parentComment.text}
+                        {effectiveParent.text}
                       </p>
                     )}
-                    {parentComment.image && (
+                    {effectiveParent.image && (
                       <Image
-                        src={parentComment.image}
+                        src={effectiveParent.image}
                         alt="Attachment"
                         width={200}
                         height={150}
@@ -293,9 +492,9 @@ export default function CommentModal({
                         unoptimized
                       />
                     )}
-                    {parentComment.gif && (
+                    {effectiveParent.gif && (
                       <img
-                        src={parentComment.gif}
+                        src={effectiveParent.gif}
                         alt="GIF"
                         className="mt-2 max-h-[150px] w-auto rounded-lg object-cover"
                       />
@@ -309,22 +508,24 @@ export default function CommentModal({
                     key={thread._id}
                     thread={thread}
                     lineupId={lineupId}
-                    commentId={parentComment._id}
-                    currentUserId={currentUserId}
+                    commentId={effectiveParent._id}
+                    currentUserId={effectiveUserId}
                     userVote={myThreadVotes?.[thread._id] ?? null}
                     replyingTo={parentDisplayName}
                     isLast={index === allThreads.length - 1}
                   />
                 ))}
-                {hasNextPage && (
+                {hasMoreThreads && (
                   <div className="flex justify-center py-4">
                     <button
                       className="text-foreground/40 hover:text-foreground/70 text-sm transition-colors"
                       type="button"
-                      disabled={isFetchingNextPage}
-                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingMoreThreads}
+                      onClick={() => fetchMoreThreads()}
                     >
-                      {isFetchingNextPage ? "Loading..." : "Show more replies"}
+                      {isFetchingMoreThreads
+                        ? "Loading..."
+                        : "Show more replies"}
                     </button>
                   </div>
                 )}
@@ -365,11 +566,11 @@ export default function CommentModal({
                         </span>
                         <button
                           type="button"
-                          onClick={() => submit(text, media)}
-                          disabled={!hasContent || isSubmitting}
+                          onClick={() => submitThread(text, media)}
+                          disabled={!hasContent || isThreadSubmitting}
                           className="bg-gold hover:bg-gold-light rounded-full px-5 py-1.5 text-sm font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                         >
-                          {isSubmitting ? "Posting..." : "Reply"}
+                          {isThreadSubmitting ? "Posting..." : "Reply"}
                         </button>
                       </div>
                     </div>
