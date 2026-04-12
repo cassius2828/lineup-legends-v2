@@ -19,9 +19,11 @@ import {
 import { getId } from "~/lib/types";
 import { fetchBasketballPlayerWikiSummary } from "~/server/lib/wikipedia";
 import {
+  fetchFullPageHtml,
   fetchListedHeightWeightForPageTitle,
   fetchWikiExtendedSections,
 } from "~/server/lib/wikipedia-sections";
+import { extractAwardsFromHtml } from "~/server/lib/ai-awards";
 
 export const playerRouter = createTRPCRouter({
   getAll: publicProcedure
@@ -168,6 +170,72 @@ export const playerRouter = createTRPCRouter({
         ...updated,
         id: getId(updated),
       });
+    }),
+
+  /**
+   * AI-powered fallback: extracts awards from the Wikipedia page HTML via LLM
+   * when our regex-based parser missed the section. Runs independently so it
+   * never blocks ensureWikiSummary.
+   */
+  ensureAwardsAI: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .output(playerOutput)
+    .mutation(async ({ input }) => {
+      const raw = await PlayerModel.findById(input.id).lean();
+      if (!raw) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found",
+        });
+      }
+
+      if (raw.wikiAwardsHonorsText?.trim()) {
+        return playerOutput.parse({ ...raw, id: getId(raw) });
+      }
+
+      const pageTitle = raw.wikiPageTitle?.trim();
+      if (!pageTitle) {
+        return playerOutput.parse({ ...raw, id: getId(raw) });
+      }
+
+      const html = await fetchFullPageHtml(pageTitle);
+      if (!html) {
+        return playerOutput.parse({ ...raw, id: getId(raw) });
+      }
+
+      const aiAwards = await extractAwardsFromHtml(
+        html,
+        `${raw.firstName} ${raw.lastName}`,
+      );
+
+      if (!aiAwards) {
+        return playerOutput.parse({ ...raw, id: getId(raw) });
+      }
+
+      if (
+        process.env.NODE_ENV === "development" ||
+        process.env.WIKIPEDIA_DEBUG === "1"
+      ) {
+        console.log("[player.ensureAwardsAI] AI extracted awards from HTML", {
+          playerId: input.id,
+          length: aiAwards.length,
+          preview: aiAwards.slice(0, 200),
+        });
+      }
+
+      await PlayerModel.findByIdAndUpdate(input.id, {
+        wikiAwardsHonorsText: aiAwards,
+      });
+      await invalidatePlayersCache();
+
+      const updated = await PlayerModel.findById(input.id).lean();
+      if (!updated) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found",
+        });
+      }
+      return playerOutput.parse({ ...updated, id: getId(updated) });
     }),
 
   getRandomByValue: publicProcedure

@@ -88,16 +88,18 @@ function PlayerCareerStatsToggle({
                     key={key}
                     className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
                   >
-                    <span className="text-foreground/70">{label}</span>
+                    <span className="flex items-baseline gap-2">
+                      <span className="text-foreground/70">{label}</span>
+                    </span>
                     {best ? (
-                      <span className="flex items-baseline gap-2">
-                        <span className="text-gold font-mono font-semibold tabular-nums">
-                          {best.value}
-                        </span>
+                      <div className="flex items-center gap-2">
                         <span className="text-foreground/45 text-xs">
                           {best.season}
                         </span>
-                      </span>
+                        <span className="text-gold font-mono font-semibold tabular-nums">
+                          {best.value}
+                        </span>
+                      </div>
                     ) : (
                       <span className="text-foreground/30 font-mono">—</span>
                     )}
@@ -150,7 +152,6 @@ export default function PlayerPage() {
   const ensureWiki = api.player.ensureWikiSummary.useMutation({
     onSuccess: async (data) => {
       utils.player.getById.setData({ id: playerId }, data);
-      // setData alone can fail to stick (batched links / query keys); refetch from DB after cache invalidation on server
       await utils.player.getById.invalidate({ id: playerId });
     },
     onError: (err) => {
@@ -160,8 +161,17 @@ export default function PlayerPage() {
   });
   const { reset: resetWikiMutation, mutate: mutateWiki } = ensureWiki;
 
+  const aiAwardsAttempted = useRef(false);
+  const ensureAwardsAI = api.player.ensureAwardsAI.useMutation({
+    onSuccess: async (data) => {
+      utils.player.getById.setData({ id: playerId }, data);
+      await utils.player.getById.invalidate({ id: playerId });
+    },
+  });
+
   useEffect(() => {
     wikiAttempted.current = false;
+    aiAwardsAttempted.current = false;
     resetWikiMutation();
   }, [playerId, resetWikiMutation]);
 
@@ -175,6 +185,16 @@ export default function PlayerPage() {
     wikiAttempted.current = true;
     mutateWiki({ id: playerId });
   }, [playerId, player, mutateWiki]);
+
+  useEffect(() => {
+    if (!playerId || !player) return;
+    if (!player.wikiSummaryExtract?.trim()) return;
+    if (player.wikiAwardsHonorsText?.trim()) return;
+    if (aiAwardsAttempted.current) return;
+    if (ensureWiki.isPending) return;
+    aiAwardsAttempted.current = true;
+    ensureAwardsAI.mutate({ id: playerId });
+  }, [playerId, player, ensureWiki.isPending, ensureAwardsAI]);
 
   if (isLoading) {
     return (
@@ -335,9 +355,17 @@ export default function PlayerPage() {
                   <p className="text-foreground/90 max-h-96 overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap">
                     {player.wikiAwardsHonorsText}
                   </p>
+                ) : ensureAwardsAI.isPending ? (
+                  <div className="border-foreground/10 bg-foreground/5 space-y-2 rounded-lg border p-3">
+                    <div className="bg-foreground/10 h-3 w-full animate-pulse rounded" />
+                    <div className="bg-foreground/10 h-3 w-[88%] animate-pulse rounded" />
+                    <p className="text-foreground/40 pt-1 text-xs">
+                      Searching for awards via AI…
+                    </p>
+                  </div>
                 ) : (
                   <p className="text-foreground/50 text-sm">
-                    No awards section found on Wikipedia for this player.
+                    No awards found for this player.
                   </p>
                 )}
               </section>

@@ -54,19 +54,21 @@ function CareerStatsToggleBlock({
                 key={key}
                 className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
               >
-                <span className="text-foreground/70">{label}</span>
-                {best ? (
-                  <span className="flex items-baseline gap-2">
-                    <span className="text-gold font-mono font-semibold tabular-nums">
-                      {best.value}
-                    </span>
-                    <span className="text-foreground/45 text-xs">
-                      {best.season}
-                    </span>
-                  </span>
-                ) : (
-                  <span className="text-foreground/30 font-mono">—</span>
-                )}
+                <span className="flex w-full items-baseline justify-between gap-2">
+                  <span className="text-foreground/70">{label}</span>
+                  {best ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-foreground/45 text-xs">
+                        {best.season}
+                      </span>
+                      <span className="text-gold font-mono font-semibold tabular-nums">
+                        {best.value}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-foreground/30 font-mono">—</span>
+                  )}
+                </span>
               </li>
             );
           }
@@ -126,10 +128,20 @@ export function CreateLineupPlayerDetailPanel({
   });
   const { reset: resetWikiMutation, mutate: mutateWiki } = ensureWiki;
 
+  const aiAwardsAttempted = useRef(false);
+  const ensureAwardsAI = api.player.ensureAwardsAI.useMutation({
+    onSuccess: async (data) => {
+      if (!playerId) return;
+      utils.player.getById.setData({ id: playerId }, data);
+      await utils.player.getById.invalidate({ id: playerId });
+    },
+  });
+
   const displayPlayer = freshPlayer ?? player;
 
   useEffect(() => {
     wikiAttempted.current = false;
+    aiAwardsAttempted.current = false;
     resetWikiMutation();
   }, [playerId, open, resetWikiMutation]);
 
@@ -143,6 +155,16 @@ export function CreateLineupPlayerDetailPanel({
     wikiAttempted.current = true;
     mutateWiki({ id: playerId });
   }, [open, playerId, displayPlayer, mutateWiki]);
+
+  useEffect(() => {
+    if (!open || !playerId || !displayPlayer) return;
+    if (!displayPlayer.wikiSummaryExtract?.trim()) return;
+    if (displayPlayer.wikiAwardsHonorsText?.trim()) return;
+    if (aiAwardsAttempted.current) return;
+    if (ensureWiki.isPending) return;
+    aiAwardsAttempted.current = true;
+    ensureAwardsAI.mutate({ id: playerId });
+  }, [open, playerId, displayPlayer, ensureWiki.isPending, ensureAwardsAI]);
 
   useEffect(() => {
     if (!open) return;
@@ -334,13 +356,17 @@ export function CreateLineupPlayerDetailPanel({
               <p className="text-foreground/85 max-h-64 overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap">
                 {resolved.wikiAwardsHonorsText}
               </p>
-            ) : hasWiki && !resolved.wikiAwardsHonorsText?.trim() ? (
-              <p className="text-foreground/50 text-sm">
-                No awards list found on Wikipedia for this player.
-              </p>
+            ) : ensureAwardsAI.isPending ? (
+              <div className="border-foreground/10 bg-foreground/5 space-y-2 rounded-lg border p-3">
+                <div className="bg-foreground/10 h-3 w-full animate-pulse rounded" />
+                <div className="bg-foreground/10 h-3 w-[88%] animate-pulse rounded" />
+                <p className="text-foreground/40 pt-1 text-xs">
+                  Searching for awards via AI…
+                </p>
+              </div>
             ) : (
               <p className="text-foreground/50 text-sm">
-                Accolades load with the biography.
+                No awards found for this player.
               </p>
             )}
           </section>

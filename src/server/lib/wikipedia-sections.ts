@@ -85,7 +85,9 @@ async function fetchSectionHtml(
 }
 
 /** Full article HTML (used for infobox: listed height / weight). */
-async function fetchFullPageHtml(pageTitle: string): Promise<string | null> {
+export async function fetchFullPageHtml(
+  pageTitle: string,
+): Promise<string | null> {
   const data = (await mediaWikiParse({
     action: "parse",
     page: pageTitle,
