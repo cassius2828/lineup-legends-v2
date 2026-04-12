@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, X } from "lucide-react";
+import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { api } from "~/trpc/react";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
+import { Spinner } from "../ui/Spinner";
 import { LineupCard } from "../LineupCard/LineupCard";
 import CommentCard from "./CommentCard";
 import ThreadCard from "./ThreadCard";
@@ -35,6 +37,24 @@ interface LineupContext {
   ownerName: string;
   ownerImage?: string | null;
   totalValue: number;
+}
+
+function SignInCta({ action, border }: { action: string; border: string }) {
+  return (
+    <div
+      className={`border-foreground/10 px-5 py-4 text-center ${border === "border-b" ? "shrink-0 border-b py-6" : "border-t"}`}
+    >
+      <p className="text-foreground/50 text-sm">
+        <Link
+          href="/sign-in"
+          className="text-gold hover:text-gold-light font-medium"
+        >
+          Sign in
+        </Link>{" "}
+        to {action}
+      </p>
+    </div>
+  );
 }
 
 type CommentModalProps = {
@@ -84,15 +104,17 @@ export default function CommentModal({
 
   const effectiveUserId = currentUserId ?? session?.id;
 
+  const resetComposer = useCallback(() => {
+    setText("");
+    setMedia({});
+  }, []);
+
   // Submit for top-level comments (stays open after posting)
   const { submit: submitComment, isSubmitting: isCommentSubmitting } =
     useSubmitComment({
       lineupId,
       mode: "comment",
-      onSuccess: () => {
-        setText("");
-        setMedia({});
-      },
+      onSuccess: resetComposer,
     });
 
   // Submit for thread replies
@@ -101,10 +123,7 @@ export default function CommentModal({
       lineupId,
       mode: "reply",
       commentId: effectiveParent?._id,
-      onSuccess: () => {
-        setText("");
-        setMedia({});
-      },
+      onSuccess: resetComposer,
     });
 
   // Lineup card (comment mode)
@@ -212,9 +231,6 @@ export default function CommentModal({
 
   const hasContent = text.trim().length > 0 || !!media.image || !!media.gif;
   const activeSubmit = showThreadView ? submitThread : submitComment;
-  const activeIsSubmitting = showThreadView
-    ? isThreadSubmitting
-    : isCommentSubmitting;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -244,15 +260,13 @@ export default function CommentModal({
       createdAt: comment.createdAt,
     });
     setInternalView("thread");
-    setText("");
-    setMedia({});
+    resetComposer();
   };
 
   const handleBackToComments = () => {
     setInternalView("comments");
     setSelectedComment(null);
-    setText("");
-    setMedia({});
+    resetComposer();
   };
 
   const showBackButton = mode === "comment" && internalView === "thread";
@@ -390,24 +404,14 @@ export default function CommentModal({
                   </div>
                 </div>
               ) : (
-                <div className="border-foreground/10 shrink-0 border-b px-5 py-6 text-center">
-                  <p className="text-foreground/50 text-sm">
-                    <a
-                      href="/api/auth/signin"
-                      className="text-gold hover:text-gold-light font-medium"
-                    >
-                      Sign in
-                    </a>{" "}
-                    to comment
-                  </p>
-                </div>
+                <SignInCta action="comment" border="border-b" />
               )}
 
               {/* Comment feed */}
               <div className="flex-1 overflow-y-auto px-5">
                 {isCommentsLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <div className="border-foreground/20 border-t-gold h-6 w-6 animate-spin rounded-full border-2" />
+                    <Spinner />
                   </div>
                 ) : allComments.length === 0 ? (
                   <div className="py-8 text-center">
@@ -511,7 +515,7 @@ export default function CommentModal({
                 {/* Thread replies */}
                 {isThreadsLoading ? (
                   <div className="flex items-center justify-center py-6">
-                    <div className="border-foreground/20 border-t-gold h-6 w-6 animate-spin rounded-full border-2" />
+                    <Spinner />
                   </div>
                 ) : (
                   allThreads.map((thread, index) => (
@@ -589,17 +593,7 @@ export default function CommentModal({
                   </div>
                 </div>
               ) : (
-                <div className="border-foreground/10 border-t px-5 py-4 text-center">
-                  <p className="text-foreground/50 text-sm">
-                    <a
-                      href="/api/auth/signin"
-                      className="text-gold hover:text-gold-light font-medium"
-                    >
-                      Sign in
-                    </a>{" "}
-                    to reply
-                  </p>
-                </div>
+                <SignInCta action="reply" border="border-t" />
               )}
             </div>
           )}
