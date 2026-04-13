@@ -21,6 +21,13 @@ export interface LineupFilterState {
   userName?: string;
 }
 
+export interface FilterParams {
+  dateFrom?: Date;
+  dateTo?: Date;
+  minRating?: number;
+  filterUserId?: string;
+}
+
 const DATE_RANGE_START: Record<DateRangePreset, () => Date> = {
   today: () => startOfDay(new Date()),
   week: () => startOfWeek(new Date(), { weekStartsOn: 1 }),
@@ -45,6 +52,31 @@ export function useLineupFilters() {
     return count;
   }, [hasDateFilter, filters.minRating, filters.userId]);
 
+  const filterParams = useMemo<FilterParams>(() => {
+    const params: FilterParams = {};
+
+    if (filters.dateRange) {
+      params.dateFrom = DATE_RANGE_START[filters.dateRange]();
+    } else {
+      if (filters.customDateFrom) params.dateFrom = filters.customDateFrom;
+      if (filters.customDateTo) params.dateTo = filters.customDateTo;
+    }
+
+    if (filters.minRating != null) {
+      params.minRating = filters.minRating;
+    }
+
+    if (filters.userId) {
+      params.filterUserId = filters.userId;
+    }
+
+    return params;
+  }, [filters]);
+
+  /**
+   * Client-side filter for small embedded datasets (e.g., profile page with 6 items).
+   * For paginated endpoints, use `filterParams` with server-side filtering instead.
+   */
   const filterLineups = useCallback(
     (lineups: LineupOutput[]) => {
       if (activeFilterCount === 0) return lineups;
@@ -83,6 +115,7 @@ export function useLineupFilters() {
   return {
     filters,
     setFilters,
+    filterParams,
     filterLineups,
     clearFilters,
     activeFilterCount,

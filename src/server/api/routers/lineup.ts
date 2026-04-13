@@ -2,7 +2,12 @@ import { TRPCError } from "@trpc/server";
 import mongoose from "mongoose";
 import { z } from "zod";
 import { lineupPopulateFields } from "~/server/lib/lineup-queries";
-import { buildLineupSort } from "~/server/services/lineup";
+import {
+  buildLineupSort,
+  buildLineupFilter,
+  applyCursor,
+} from "~/server/services/lineup";
+import { lineupFilterInput } from "~/server/api/schemas/lineup-filter";
 import { logger } from "~/lib/logger";
 
 import {
@@ -20,6 +25,7 @@ import {
 } from "~/server/models";
 import {
   lineupOutput,
+  paginatedLineupsOutput,
   gambleResultOutput,
   populated,
 } from "~/server/api/schemas/output";
@@ -98,72 +104,90 @@ export const lineupRouter = createTRPCRouter({
       );
     }),
 
-  // Get current user's lineups (protected)
   getLineupsByCurrentUser: protectedProcedure
-    .output(z.array(lineupOutput))
-    .input(
-      z
-        .object({
-          sort: z
-            .enum(["newest", "oldest", "highest-rated", "most-rated"])
-            .optional()
-            .default("newest"),
-        })
-        .optional(),
-    )
+    .output(paginatedLineupsOutput)
+    .input(lineupFilterInput)
     .query(async ({ ctx, input }) => {
-      const data = await LineupModel.find({ owner: ctx.session.user.id })
-        .sort(buildLineupSort(input?.sort))
+      const base = { owner: ctx.session.user.id };
+      const filter = applyCursor(
+        buildLineupFilter(input, base),
+        input.cursor,
+        input.sort,
+      );
+      const limit = input.limit;
+      const data = await LineupModel.find(filter)
+        .sort(buildLineupSort(input.sort))
+        .limit(limit + 1)
         .populate(lineupPopulateFields)
         .lean();
-      return populated(data);
+
+      const hasMore = data.length > limit;
+      const lineups = hasMore ? data.slice(0, limit) : data;
+
+      return populated({
+        lineups,
+        hasMore,
+        cursor: lineups[lineups.length - 1]?._id?.toString(),
+      });
     }),
 
-  // Get a specific user's lineups (public)
-  // look into adding pagination similar to players router
   getLineupsByOtherUsers: publicProcedure
-    .output(z.array(lineupOutput))
+    .output(paginatedLineupsOutput)
     .input(
-      z.object({
-        userId: z.string().optional(),
-        sort: z
-          .enum(["newest", "oldest", "highest-rated", "most-rated"])
-          .optional()
-          .default("newest"),
+      lineupFilterInput.extend({
+        excludeUserId: z.string().optional(),
       }),
     )
     .query(async ({ input }) => {
-      const filter = input.userId
-        ? { owner: { $ne: new mongoose.Types.ObjectId(input.userId) } }
+      const base = input.excludeUserId
+        ? { owner: { $ne: new mongoose.Types.ObjectId(input.excludeUserId) } }
         : {};
-
-      return populated(
-        await LineupModel.find(filter)
-          .sort(buildLineupSort(input?.sort))
-          .populate(lineupPopulateFields)
-          .lean(),
+      const filter = applyCursor(
+        buildLineupFilter(input, base),
+        input.cursor,
+        input.sort,
       );
+      const limit = input.limit;
+      const data = await LineupModel.find(filter)
+        .sort(buildLineupSort(input.sort))
+        .limit(limit + 1)
+        .populate(lineupPopulateFields)
+        .lean();
+
+      const hasMore = data.length > limit;
+      const lineups = hasMore ? data.slice(0, limit) : data;
+
+      return populated({
+        lineups,
+        hasMore,
+        cursor: lineups[lineups.length - 1]?._id?.toString(),
+      });
     }),
 
   getAllLineups: publicProcedure
-    .output(z.array(lineupOutput))
-    .input(
-      z
-        .object({
-          sort: z
-            .enum(["newest", "oldest", "highest-rated"])
-            .optional()
-            .default("newest"),
-        })
-        .optional(),
-    )
+    .output(paginatedLineupsOutput)
+    .input(lineupFilterInput)
     .query(async ({ input }) => {
-      return populated(
-        await LineupModel.find()
-          .sort(buildLineupSort(input?.sort))
-          .populate(lineupPopulateFields)
-          .lean(),
+      const filter = applyCursor(
+        buildLineupFilter(input),
+        input.cursor,
+        input.sort,
       );
+      const limit = input.limit;
+      const data = await LineupModel.find(filter)
+        .sort(buildLineupSort(input.sort))
+        .limit(limit + 1)
+        .populate(lineupPopulateFields)
+        .lean();
+
+      const hasMore = data.length > limit;
+      const lineups = hasMore ? data.slice(0, limit) : data;
+
+      return populated({
+        lineups,
+        hasMore,
+        cursor: lineups[lineups.length - 1]?._id?.toString(),
+      });
     }),
 
   getLineupById: publicProcedure

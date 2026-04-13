@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
 import { Button } from "~/app/_components/ui/Button";
@@ -13,6 +13,7 @@ import { useLineupFilters } from "~/hooks/useLineupFilters";
 import LineupFilters from "../_components/common/LineupFilters";
 import LineupsHeader from "../_components/Header/LineupsHeader";
 import LineupCardGrid from "../_components/common/LineupCardGrid";
+import { LoadMoreTrigger } from "../_components/common/LoadMoreTrigger";
 import { ViewToggle } from "../_components/common/ViewToggle";
 import { ConfirmModal } from "../_components/common/ConfirmModal";
 import { useViewModeStore } from "~/stores/viewMode";
@@ -20,15 +21,22 @@ import { useViewModeStore } from "~/stores/viewMode";
 export default function MyLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const { view, setView } = useViewModeStore();
-  const { filters, setFilters, filterLineups, activeFilterCount } =
+  const { filters, setFilters, filterParams, activeFilterCount } =
     useLineupFilters();
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const utils = api.useUtils();
 
-  const { data: usersLineups, isLoading } =
-    api.lineup.getLineupsByCurrentUser.useQuery({
-      sort,
-    });
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    api.lineup.getLineupsByCurrentUser.useInfiniteQuery(
+      { sort, ...filterParams },
+      {
+        getNextPageParam: (lastPage) =>
+          lastPage.hasMore ? lastPage.cursor : undefined,
+      },
+    );
+
+  const lineups = data?.pages.flatMap((p) => p.lineups) ?? [];
+
   const { data: session } = api.profile.getMe.useQuery(undefined, {
     retry: false,
   });
@@ -65,10 +73,14 @@ export default function MyLineupsPage() {
   const handleToggleFeatured = (id: string) => {
     toggleFeatured.mutate({ id });
   };
+
+  const handleFetchNextPage = useCallback(() => {
+    void fetchNextPage();
+  }, [fetchNextPage]);
+
   return (
     <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <LineupsHeader
           title="My Lineups"
           description="Manage your fantasy basketball lineups"
@@ -113,39 +125,35 @@ export default function MyLineupsPage() {
               <p className="text-foreground/60">Loading lineups...</p>
             </div>
           </div>
-        ) : usersLineups && usersLineups.length > 0 ? (
-          (() => {
-            const filtered = filterLineups(usersLineups);
-            return filtered.length > 0 ? (
-              <LineupCardGrid view={view}>
-                {filtered.map((lineup) =>
-                  view === "grid" ? (
-                    <LineupCardCompact
-                      key={lineup._id?.toString() ?? ""}
-                      lineup={lineup}
-                      featured={lineup.featured}
-                    />
-                  ) : (
-                    <LineupCard
-                      key={lineup._id?.toString() ?? ""}
-                      lineup={lineup}
-                      showOwner={false}
-                      isOwner={true}
-                      currentUserId={getId(session)}
-                      onDelete={handleDelete}
-                      onToggleFeatured={handleToggleFeatured}
-                    />
-                  ),
-                )}
-              </LineupCardGrid>
-            ) : (
-              <div className="bg-foreground/5 rounded-2xl p-12 text-center">
-                <p className="text-foreground/60">
-                  No lineups match the current filters.
-                </p>
-              </div>
-            );
-          })()
+        ) : lineups.length > 0 ? (
+          <>
+            <LineupCardGrid view={view}>
+              {lineups.map((lineup) =>
+                view === "grid" ? (
+                  <LineupCardCompact
+                    key={lineup._id?.toString() ?? ""}
+                    lineup={lineup}
+                    featured={lineup.featured}
+                  />
+                ) : (
+                  <LineupCard
+                    key={lineup._id?.toString() ?? ""}
+                    lineup={lineup}
+                    showOwner={false}
+                    isOwner={true}
+                    currentUserId={getId(session)}
+                    onDelete={handleDelete}
+                    onToggleFeatured={handleToggleFeatured}
+                  />
+                ),
+              )}
+            </LineupCardGrid>
+            <LoadMoreTrigger
+              onLoadMore={handleFetchNextPage}
+              loading={isFetchingNextPage}
+              hasMore={hasNextPage ?? false}
+            />
+          </>
         ) : (
           <div className="bg-foreground/5 rounded-2xl p-12 text-center">
             <div className="bg-foreground/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">

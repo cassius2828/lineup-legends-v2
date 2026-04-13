@@ -2,9 +2,10 @@
 
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
 import { ViewToggle } from "~/app/_components/common/ViewToggle";
+import { LoadMoreTrigger } from "~/app/_components/common/LoadMoreTrigger";
 import { useViewModeStore } from "~/stores/viewMode";
 import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
@@ -24,33 +25,38 @@ import LineupFilters from "~/app/_components/common/LineupFilters";
 export default function ExploreLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const { view, setView } = useViewModeStore();
-  const { filters, setFilters, filterLineups, activeFilterCount } =
+  const { filters, setFilters, filterParams, activeFilterCount } =
     useLineupFilters();
   const utils = api.useUtils();
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
-  const { data: lineups, isLoading } =
-    api.lineup.getLineupsByOtherUsers.useQuery({
-      sort,
-      userId: session?.user?.id,
-    });
-  const handlePreFetchLineups = (sort: SortOption) => {
-    void utils.lineup.getLineupsByOtherUsers.ensureData(
-      { sort, userId: session?.user?.id },
+
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    api.lineup.getLineupsByOtherUsers.useInfiniteQuery(
       {
-        staleTime: 1000 * 60 * 5, // 5 minutes
+        sort,
+        excludeUserId: session?.user?.id,
+        ...filterParams,
+      },
+      {
+        getNextPageParam: (lastPage) =>
+          lastPage.hasMore ? lastPage.cursor : undefined,
       },
     );
-  };
+
+  const lineups = data?.pages.flatMap((p) => p.lineups) ?? [];
 
   const handleRefreshAllLineups = () => {
     void utils.lineup.getLineupsByOtherUsers.invalidate();
   };
 
+  const handleFetchNextPage = useCallback(() => {
+    void fetchNextPage();
+  }, [fetchNextPage]);
+
   return (
     <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <LineupsHeader
           title="Explore Lineups"
           description="Discover lineups from the community"
@@ -71,7 +77,6 @@ export default function ExploreLineupsPage() {
             {SORT_OPTIONS.map((option) => (
               <Button
                 key={option.value}
-                onMouseEnter={() => handlePreFetchLineups(option.value)}
                 onClick={() => setSort(option.value)}
                 color={sort === option.value ? "gold" : "white"}
                 variant={sort === option.value ? "solid" : "subtle"}
@@ -120,37 +125,33 @@ export default function ExploreLineupsPage() {
               <p className="text-foreground/60">Loading lineups...</p>
             </div>
           </div>
-        ) : lineups && lineups.length > 0 ? (
-          (() => {
-            const filtered = filterLineups(lineups);
-            return filtered.length > 0 ? (
-              <LineupCardGrid view={view}>
-                {filtered.map((lineup) =>
-                  view === "grid" ? (
-                    <LineupCardCompact
-                      key={getId(lineup)}
-                      lineup={lineup}
-                      featured={lineup.featured}
-                    />
-                  ) : (
-                    <LineupCard
-                      key={getId(lineup)}
-                      lineup={lineup}
-                      showOwner={true}
-                      isOwner={false}
-                      currentUserId={session?.user.id ?? ""}
-                    />
-                  ),
-                )}
-              </LineupCardGrid>
-            ) : (
-              <div className="bg-foreground/5 rounded-2xl p-12 text-center">
-                <p className="text-foreground/60">
-                  No lineups match the current filters.
-                </p>
-              </div>
-            );
-          })()
+        ) : lineups.length > 0 ? (
+          <>
+            <LineupCardGrid view={view}>
+              {lineups.map((lineup) =>
+                view === "grid" ? (
+                  <LineupCardCompact
+                    key={getId(lineup)}
+                    lineup={lineup}
+                    featured={lineup.featured}
+                  />
+                ) : (
+                  <LineupCard
+                    key={getId(lineup)}
+                    lineup={lineup}
+                    showOwner={true}
+                    isOwner={false}
+                    currentUserId={session?.user.id ?? ""}
+                  />
+                ),
+              )}
+            </LineupCardGrid>
+            <LoadMoreTrigger
+              onLoadMore={handleFetchNextPage}
+              loading={isFetchingNextPage}
+              hasMore={hasNextPage ?? false}
+            />
+          </>
         ) : (
           <div className="bg-foreground/5 rounded-2xl p-12 text-center">
             <div className="bg-foreground/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">
