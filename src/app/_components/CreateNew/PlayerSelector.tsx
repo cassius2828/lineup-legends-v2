@@ -121,7 +121,7 @@ export function PlayerSelector({
         if (prev && remaining.some((r) => getId(r) === getId(prev))) {
           return prev;
         }
-        return remaining[remaining.length - 1]!;
+        return remaining[0]!;
       });
     } else if (canAffordPlayer(player) && filledSlots < 5) {
       const emptySlot = findFirstEmptySlot();
@@ -153,7 +153,7 @@ export function PlayerSelector({
       if (prev && remaining.some((r) => getId(r) === getId(prev))) {
         return prev;
       }
-      return remaining[remaining.length - 1]!;
+      return remaining[0]!;
     });
   };
 
@@ -274,6 +274,8 @@ export function PlayerSelector({
           isAuthenticated={isAuthenticated}
           onOpenPlayerDetail={() => setPlayerDetailOpen(true)}
           canOpenPlayerDetail={filledSlots >= 1}
+          detailPlayer={lastSelectedPlayer}
+          onSelectForDetail={setLastSelectedPlayer}
         />
       </div>
 
