@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Button } from "~/app/_components/common/ui/Button";
-import { DuplicateHints } from "~/app/_components/PlayerRequest/DuplicateHints";
+import { PlayerRequestFormFields } from "~/app/_components/PlayerRequest/PlayerRequestFormFields";
 import { sectionVariants } from "../_lib/motionVariants";
 import { usePlayerRequestSection } from "../_hooks/usePlayerRequestSection";
 
@@ -54,90 +54,18 @@ export function PlayerRequestSection() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label
-              htmlFor="reqFirstName"
-              className="text-foreground/80 mb-2 block text-sm font-medium"
-            >
-              First Name
-            </label>
-            <input
-              type="text"
-              id="reqFirstName"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
-              placeholder="e.g. LeBron"
-              className="border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="reqLastName"
-              className="text-foreground/80 mb-2 block text-sm font-medium"
-            >
-              Last Name
-            </label>
-            <input
-              type="text"
-              id="reqLastName"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
-              placeholder="e.g. James"
-              className="border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
-            />
-          </div>
-        </div>
-
-        {duplicates && duplicates.length > 0 && (
-          <DuplicateHints duplicates={duplicates} />
-        )}
-
-        <div>
-          <label className="text-foreground/80 mb-2 block text-sm font-medium">
-            Suggested Value ($1-$5)
-          </label>
-          <div className="flex gap-2">
-            {[1, 2, 3, 4, 5].map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setSuggestedValue(v)}
-                className={`flex-1 rounded-lg py-2 text-sm font-medium transition-colors ${
-                  suggestedValue === v
-                    ? "bg-gold text-black"
-                    : "bg-foreground/10 text-foreground hover:bg-foreground/20"
-                }`}
-              >
-                ${v}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label
-            htmlFor="reqNote"
-            className="text-foreground/80 mb-2 block text-sm font-medium"
-          >
-            Note{" "}
-            <span className="text-foreground/40 font-normal">(optional)</span>
-          </label>
-          <textarea
-            id="reqNote"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            maxLength={500}
-            rows={3}
-            placeholder="Why do you want this player?"
-            className="border-foreground/20 bg-foreground/10 text-foreground placeholder-foreground/50 focus:border-gold focus:ring-gold w-full resize-none rounded-lg border px-4 py-2 focus:ring-1 focus:outline-none"
-          />
-          <p className="text-foreground/40 mt-1 text-right text-xs">
-            {note.length}/500
-          </p>
-        </div>
+        <PlayerRequestFormFields
+          firstName={firstName}
+          setFirstName={setFirstName}
+          lastName={lastName}
+          setLastName={setLastName}
+          suggestedValue={suggestedValue}
+          setSuggestedValue={setSuggestedValue}
+          note={note}
+          setNote={setNote}
+          duplicates={duplicates}
+          idPrefix="req"
+        />
 
         <Button
           type="submit"

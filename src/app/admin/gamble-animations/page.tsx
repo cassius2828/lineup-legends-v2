@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { AdminBackLink } from "../_components/AdminBackLink";
+import { AdminPageHeader } from "../_components/AdminPageHeader";
 import type {
   GambleOutcomeTier,
   PlayerOutput,
@@ -106,22 +106,15 @@ export default function GambleAnimationsTestPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <Link
-          href="/admin"
-          className="text-foreground/50 hover:text-foreground/80 mb-2 inline-flex items-center gap-1 text-sm"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Admin
-        </Link>
-        <h1 className="text-foreground text-3xl font-bold">
-          Gamble Animation <span className="text-green-400">Tester</span>
-        </h1>
-        <p className="text-foreground/50 mt-1">
-          Preview all 7 outcome tier animations. Pick a tier to demo it.
-        </p>
-      </div>
+      <AdminBackLink href="/admin">Back to Admin</AdminBackLink>
+      <AdminPageHeader
+        title={
+          <>
+            Gamble Animation <span className="text-green-400">Tester</span>
+          </>
+        }
+        description="Preview all 7 outcome tier animations. Pick a tier to demo it."
+      />
 
       {/* Tier selector grid */}
       <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">

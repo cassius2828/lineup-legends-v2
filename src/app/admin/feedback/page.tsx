@@ -13,6 +13,8 @@ import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
 import { Button } from "~/app/_components/common/ui/Button";
 import { StatusBadge } from "../components/StatusBadge";
+import { AdminSpinner } from "../components/shared";
+import { AdminPageHeader } from "../_components/AdminPageHeader";
 
 type FeedbackStatus = "new" | "read" | "resolved";
 
@@ -65,13 +67,10 @@ export default function AdminFeedbackPage() {
 
   return (
     <div>
-      {/* Page header */}
-      <div className="mb-8">
-        <h1 className="text-foreground text-3xl font-bold">Feedback</h1>
-        <p className="text-foreground/50 mt-1">
-          View and manage feedback submitted by users
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Feedback"
+        description="View and manage feedback submitted by users"
+      />
 
       {/* Filter tabs */}
       <div className="mb-6 flex gap-2">
@@ -108,9 +107,7 @@ export default function AdminFeedbackPage() {
 
       {/* Feedback list */}
       {isLoading ? (
-        <div className="flex h-40 items-center justify-center">
-          <div className="border-t-gold border-foreground/20 h-10 w-10 animate-spin rounded-full border-4" />
-        </div>
+        <AdminSpinner />
       ) : feedback && feedback.length > 0 ? (
         <div className="space-y-3">
           {feedback.map((item) => {

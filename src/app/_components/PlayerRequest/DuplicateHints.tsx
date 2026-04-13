@@ -1,6 +1,6 @@
 "use client";
 
-interface DuplicateMatch {
+export interface DuplicateMatch {
   firstName: string;
   lastName: string;
   value?: number;

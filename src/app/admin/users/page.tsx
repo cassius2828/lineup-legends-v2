@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Users, Shield } from "lucide-react";
+import { AdminPageHeader } from "../_components/AdminPageHeader";
 import {
   AdminFilterTabs,
   AdminSpinner,
@@ -34,12 +35,10 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-foreground text-3xl font-bold">User Management</h1>
-        <p className="text-foreground/50 mt-1">
-          Search, review, and manage user accounts
-        </p>
-      </div>
+      <AdminPageHeader
+        title="User Management"
+        description="Search, review, and manage user accounts"
+      />
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
