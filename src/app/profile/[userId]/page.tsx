@@ -9,9 +9,14 @@ import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompac
 import LineupCardGrid from "~/app/_components/common/lineups/LineupCardGrid";
 import { ViewToggle } from "~/app/_components/common/lineups/ViewToggle";
 import { Button } from "~/app/_components/common/ui/Button";
+import {
+  LineupListLoader,
+  LoadMoreTrigger,
+} from "~/app/_components/common/loaders";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { getId } from "~/lib/types";
+import { SORT_OPTIONS, type SortOption } from "~/lib/constants";
 import { useViewModeStore } from "~/stores/viewMode";
 import { useLineupFilters } from "~/hooks/useLineupFilters";
 import LineupFilters from "~/app/_components/common/lineups/LineupFilters";
@@ -254,9 +259,31 @@ export default function ProfilePage() {
   });
 
   const isOwnProfile = session?.id === userId;
+  const [sort, setSort] = useState<SortOption>("newest");
   const { view, setView } = useViewModeStore();
-  const { filters, setFilters, filterLineups, activeFilterCount } =
+  const { filters, setFilters, filterParams, activeFilterCount } =
     useLineupFilters();
+
+  const {
+    data: lineupsData,
+    isLoading: lineupsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = api.lineup.getLineupsByUser.useInfiniteQuery(
+    { userId, sort, ...filterParams },
+    {
+      getNextPageParam: (lastPage) =>
+        lastPage.hasMore ? lastPage.cursor : undefined,
+    },
+  );
+
+  const lineups = lineupsData?.pages.flatMap((p) => p.lineups) ?? [];
+
+  const handleFetchNextPage = useCallback(() => {
+    void fetchNextPage();
+  }, [fetchNextPage]);
+
   const [followListType, setFollowListType] = useState<
     "followers" | "following" | null
   >(null);
@@ -335,7 +362,7 @@ export default function ProfilePage() {
     <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
       {/* Banner */}
       <div
-        className="group relative h-48 bg-cover bg-center md:h-64"
+        className="group relative h-48 bg-cover bg-center md:h-100"
         style={{
           backgroundImage: profile.bannerImg
             ? `url(${profile.bannerImg})`
@@ -492,6 +519,11 @@ export default function ProfilePage() {
                 ? profile.stats.avgRating.toFixed(1)
                 : "N/A"
             }
+            subValue={
+              profile.stats?.ratedLineupsCount
+                ? `${profile.stats.ratedLineupsCount} lineup${profile.stats.ratedLineupsCount === 1 ? "" : "s"} rated`
+                : undefined
+            }
           />
           <StatCard
             label="Highest Rated"
@@ -502,7 +534,7 @@ export default function ProfilePage() {
             }
             subValue={
               highestRated
-                ? `${highestRated.ratingCount ?? 0} ratings`
+                ? `${highestRated.ratingCount ?? 0} rating${highestRated.ratingCount === 1 ? "" : "s"}`
                 : undefined
             }
             href={
@@ -548,19 +580,21 @@ export default function ProfilePage() {
           <hr className="border-gold/40 mb-8 border-t" />
         )}
 
-        {/* Recent Lineups Section */}
+        {/* Lineups Section */}
         <div className="pb-16">
           <div className="mb-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <h2 className="text-foreground text-xl font-semibold">
-                Recent Lineups
-              </h2>
-              {profile.lineups.length > 0 && (
-                <span className="text-foreground/50 text-sm">
-                  Showing {profile.lineups.length} of{" "}
-                  {profile.stats?.totalLineups ?? profile._count.lineups}
-                </span>
-              )}
+            <h2 className="text-foreground text-xl font-semibold">Lineups</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              {SORT_OPTIONS.map((option) => (
+                <Button
+                  key={option.value}
+                  onClick={() => setSort(option.value)}
+                  color={sort === option.value ? "gold" : "white"}
+                  variant={sort === option.value ? "solid" : "subtle"}
+                >
+                  {option.label}
+                </Button>
+              ))}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <LineupFilters
@@ -574,32 +608,30 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {profile.lineups.length > 0 ? (
-            (() => {
-              const filtered = filterLineups(profile.lineups);
-              return filtered.length > 0 ? (
-                <LineupCardGrid view={view}>
-                  {filtered.map((lineup) =>
-                    view === "grid" ? (
-                      <LineupCardCompact key={getId(lineup)} lineup={lineup} />
-                    ) : (
-                      <LineupCard
-                        key={getId(lineup)}
-                        lineup={lineup}
-                        showOwner={false}
-                        isOwner={false}
-                      />
-                    ),
-                  )}
-                </LineupCardGrid>
-              ) : (
-                <div className="bg-foreground/5 rounded-2xl p-12 text-center">
-                  <p className="text-foreground/60">
-                    No lineups match the current filters.
-                  </p>
-                </div>
-              );
-            })()
+          {lineupsLoading ? (
+            <LineupListLoader />
+          ) : lineups.length > 0 ? (
+            <>
+              <LineupCardGrid view={view}>
+                {lineups.map((lineup) =>
+                  view === "grid" ? (
+                    <LineupCardCompact key={getId(lineup)} lineup={lineup} />
+                  ) : (
+                    <LineupCard
+                      key={getId(lineup)}
+                      lineup={lineup}
+                      showOwner={false}
+                      isOwner={false}
+                    />
+                  ),
+                )}
+              </LineupCardGrid>
+              <LoadMoreTrigger
+                onLoadMore={handleFetchNextPage}
+                loading={isFetchingNextPage}
+                hasMore={hasNextPage ?? false}
+              />
+            </>
           ) : (
             <div className="bg-foreground/5 rounded-2xl p-12 text-center">
               <p className="text-foreground/60">No lineups yet</p>

@@ -39,37 +39,34 @@ export const profileRouter = createTRPCRouter({
 
       const ownerId = new mongoose.Types.ObjectId(input.userId);
 
-      // Run lineup queries and stats aggregation in parallel
-      const [lineups, totalLineups, statsAgg, featuredLineups] =
-        await Promise.all([
-          LineupModel.find({ owner: ownerId })
-            .sort({ createdAt: -1 })
-            .limit(6)
-            .populate(lineupPopulateFields)
-            .lean(),
+      const [totalLineups, statsAgg, featuredLineups] = await Promise.all([
+        LineupModel.countDocuments({ owner: ownerId }),
 
-          LineupModel.countDocuments({ owner: ownerId }),
-
-          LineupModel.aggregate([
-            { $match: { owner: ownerId, ratingCount: { $gt: 0 } } },
-            {
-              $group: {
-                _id: null,
-                avgRating: { $avg: "$avgRating" },
-                highestRating: { $max: "$avgRating" },
-              },
+        LineupModel.aggregate([
+          { $match: { owner: ownerId, ratingCount: { $gt: 0 } } },
+          {
+            $group: {
+              _id: null,
+              avgRating: { $avg: "$avgRating" },
+              highestRating: { $max: "$avgRating" },
+              ratedLineupsCount: { $sum: 1 },
             },
-          ]),
+          },
+        ]),
 
-          LineupModel.find({ owner: ownerId, featured: true })
-            .limit(3)
-            .populate(lineupPopulateFields)
-            .lean(),
-        ]);
+        LineupModel.find({ owner: ownerId, featured: true })
+          .limit(3)
+          .populate(lineupPopulateFields)
+          .lean(),
+      ]);
 
       // Get the highest rated lineup separately (need full doc)
       const aggResult = statsAgg[0] as
-        | { avgRating: number; highestRating: number }
+        | {
+            avgRating: number;
+            highestRating: number;
+            ratedLineupsCount: number;
+          }
         | undefined;
 
       let highestRatedLineup = null;
@@ -85,16 +82,13 @@ export const profileRouter = createTRPCRouter({
       return populated({
         ...user,
         id: user._id?.toString(),
-        lineups,
         featuredLineups,
         stats: {
           totalLineups,
           avgRating: Math.round((aggResult?.avgRating ?? 0) * 100) / 100,
+          ratedLineupsCount: aggResult?.ratedLineupsCount ?? 0,
           highestRatedLineup,
           featuredCount: featuredLineups.length,
-        },
-        _count: {
-          lineups: totalLineups,
         },
       });
     }),

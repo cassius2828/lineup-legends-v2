@@ -287,6 +287,7 @@ export const searchUserOutput = z.object({
 export const profileStatsOutput = z.object({
   totalLineups: z.number(),
   avgRating: z.number(),
+  ratedLineupsCount: z.number(),
   highestRatedLineup: lineupOutput.nullable(),
   featuredCount: z.number(),
 });
@@ -303,10 +304,8 @@ export const profileOutput = z.object({
   socialMedia: socialMediaOutput.nullable().optional(),
   followerCount: z.number().default(0),
   followingCount: z.number().default(0),
-  lineups: z.array(lineupOutput),
   featuredLineups: z.array(lineupOutput),
   stats: profileStatsOutput,
-  _count: z.object({ lineups: z.number() }),
 });
 
 export const profileMeOutput = z.object({
