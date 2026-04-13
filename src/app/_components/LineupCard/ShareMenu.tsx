@@ -1,9 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
 import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  type LucideIcon,
   Share2,
   Copy,
   ExternalLink,
