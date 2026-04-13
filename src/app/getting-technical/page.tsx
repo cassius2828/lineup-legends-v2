@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { api } from "~/trpc/react";
 import { toast } from "sonner";
+import { Plus, Play, ChevronRight } from "lucide-react";
 import { getTopicsByCategory, CATEGORIES } from "./_data/topics";
 
 export default function GettingTechnicalPage() {
@@ -59,19 +60,7 @@ export default function GettingTechnicalPage() {
               className="border-gold/30 bg-gold/10 text-gold hover:bg-gold/20 mt-6 inline-flex items-center gap-2 rounded-lg border px-5 py-2.5 text-sm font-medium transition-colors"
               whileTap={{ scale: 0.97 }}
             >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+              <Plus className="h-4 w-4" />
               Add Standalone Video
             </motion.button>
           )}
@@ -159,13 +148,7 @@ export default function GettingTechnicalPage() {
                       )}
                       {topic.videoId && (
                         <span className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-red-600/20 px-2 py-0.5 text-[10px] font-medium text-red-400">
-                          <svg
-                            className="h-2.5 w-2.5"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M8 5v14l11-7z" />
-                          </svg>
+                          <Play className="h-2.5 w-2.5" fill="currentColor" />
                           Video
                         </span>
                       )}
@@ -186,19 +169,7 @@ export default function GettingTechnicalPage() {
                       {/* Arrow hint */}
                       <div className="text-foreground/30 group-hover:text-gold/60 mt-3 flex items-center gap-1 text-xs transition-colors">
                         <span>View details</span>
-                        <svg
-                          className="h-3 w-3 transition-transform group-hover:translate-x-0.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
+                        <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                       </div>
                     </motion.div>
                   </Link>

@@ -1,3 +1,4 @@
+import { Info } from "lucide-react";
 import type { PlayerOutput } from "~/server/api/schemas/output";
 import { POSITIONS, type PositionSlots } from "~/lib/constants";
 import {
@@ -92,20 +93,7 @@ export default function OrderLineup({
           variant="subtle"
           className="mt-3 inline-flex items-center gap-1.5"
         >
-          <svg
-            className="h-4 w-4 shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+          <Info className="h-4 w-4 shrink-0" />
           Player details
         </Button>
       ) : null}

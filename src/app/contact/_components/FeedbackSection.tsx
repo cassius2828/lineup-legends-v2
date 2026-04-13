@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { MessageSquare } from "lucide-react";
 import { Button } from "~/app/_components/common/ui/Button";
 import { sectionVariants } from "../_lib/motionVariants";
 import { useFeedbackSection } from "../_hooks/useFeedbackSection";
@@ -28,19 +29,7 @@ export function FeedbackSection() {
       <div className="mb-6">
         <div className="mb-2 flex items-center gap-3">
           <div className="bg-gold/20 flex h-10 w-10 items-center justify-center rounded-lg">
-            <svg
-              className="text-gold h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-              />
-            </svg>
+            <MessageSquare className="text-gold h-5 w-5" />
           </div>
           <h2 className="text-foreground text-xl font-semibold">
             App Feedback

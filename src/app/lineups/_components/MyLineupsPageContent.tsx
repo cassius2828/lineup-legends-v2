@@ -1,5 +1,6 @@
 "use client";
 
+import { Package } from "lucide-react";
 import { getId } from "~/lib/types";
 import { SORT_OPTIONS } from "~/lib/constants";
 import LineupsHeader from "~/app/_components/Header/LineupsHeader";
@@ -75,21 +76,7 @@ export function MyLineupsPageContent() {
           onToggleFeatured={handleToggleFeatured}
           emptyState={
             <LineupsEmptyState
-              icon={
-                <svg
-                  className="text-foreground/40 h-8 w-8"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  />
-                </svg>
-              }
+              icon={<Package className="text-foreground/40 h-8 w-8" />}
               title="No lineups yet"
               message="Create your first lineup to get started!"
               ctaHref="/lineups/new"

@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowUpDown, Plus } from "lucide-react";
 import { useDroppable } from "@dnd-kit/core";
 import type { PlayerOutput } from "~/server/api/schemas/output";
 import type { Position } from "~/lib/constants";
@@ -74,19 +75,7 @@ export function DroppablePositionSlot({
             {showSwapIndicator && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="rounded-full bg-amber-500 p-1">
-                  <svg
-                    className="text-foreground h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                    />
-                  </svg>
+                  <ArrowUpDown className="text-foreground h-4 w-4" />
                 </div>
               </div>
             )}
@@ -99,33 +88,9 @@ export function DroppablePositionSlot({
             }`}
           >
             {isDraggedOver ? (
-              <svg
-                className="text-gold h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+              <Plus className="text-gold h-6 w-6" />
             ) : (
-              <svg
-                className="text-foreground/30 h-6 w-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+              <Plus className="text-foreground/30 h-6 w-6" />
             )}
           </div>
         )}

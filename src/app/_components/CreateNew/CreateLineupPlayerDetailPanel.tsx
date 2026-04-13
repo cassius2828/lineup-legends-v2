@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { skipToken } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { api } from "~/trpc/react";
@@ -102,19 +103,7 @@ export function CreateLineupPlayerDetailPanel({
             className="text-foreground/60 hover:text-foreground hover:bg-foreground/10 shrink-0 rounded-lg p-2 transition-colors"
             aria-label="Close"
           >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <X className="h-5 w-5" />
           </button>
         </div>
 

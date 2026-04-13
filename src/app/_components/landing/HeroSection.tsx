@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowDown } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cdnUrl } from "~/lib/cdn";
@@ -183,19 +184,7 @@ export function HeroSection({ isAuthenticated }: HeroSectionProps) {
           className="relative"
         >
           <div className="bg-gold/20 absolute inset-0 animate-pulse rounded-full blur-xl" />
-          <svg
-            className="text-gold relative h-8 w-8"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 14l-7 7m0 0l-7-7m7 7V3"
-            />
-          </svg>
+          <ArrowDown className="text-gold relative h-8 w-8" />
         </motion.div>
       </motion.div>
 

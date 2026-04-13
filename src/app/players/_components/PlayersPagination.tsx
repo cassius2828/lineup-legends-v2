@@ -1,3 +1,5 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 import { getPaginationRange } from "~/lib/pagination";
 
 type PlayersPaginationProps = {
@@ -19,19 +21,7 @@ export function PlayersPagination({
         disabled={currentPage === 1}
         className="text-foreground hover:bg-foreground/10 rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-30"
       >
-        <svg
-          className="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 19l-7-7 7-7"
-          />
-        </svg>
+        <ChevronLeft className="h-5 w-5" />
       </button>
 
       {getPaginationRange(currentPage, totalPages).map((page, i) =>
@@ -64,19 +54,7 @@ export function PlayersPagination({
         disabled={currentPage === totalPages}
         className="text-foreground hover:bg-foreground/10 rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-30"
       >
-        <svg
-          className="h-5 w-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 5l7 7-7 7"
-          />
-        </svg>
+        <ChevronRight className="h-5 w-5" />
       </button>
     </div>
   );

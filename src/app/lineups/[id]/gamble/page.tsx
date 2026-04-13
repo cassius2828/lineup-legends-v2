@@ -18,7 +18,7 @@ import {
   POSITION_LABELS,
   VALUE_SHADOWS,
 } from "~/lib/constants";
-import { Info, Lock } from "lucide-react";
+import { ChevronLeft, Info, Lock } from "lucide-react";
 import { GambleReveal } from "./_components/GambleReveal";
 
 type PageView = "selection" | "animating" | "result";
@@ -186,19 +186,7 @@ export default function GambleLineupPage() {
             href="/lineups"
             className="text-foreground/60 hover:text-foreground/80 mb-2 inline-flex items-center gap-1 text-sm"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
+            <ChevronLeft className="h-4 w-4" />
             Back to My Lineups
           </Link>
           <div className="flex items-center gap-2">
