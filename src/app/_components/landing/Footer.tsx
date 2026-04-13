@@ -7,7 +7,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "~/components/ui/tooltip";
+} from "~/app/_components/common/ui/tooltip";
 
 const containerVariants = {
   hidden: {},

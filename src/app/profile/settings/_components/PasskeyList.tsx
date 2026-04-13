@@ -2,8 +2,8 @@
 
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "~/server/api/root";
-import FormInput from "~/app/_components/ui/FormInput";
-import { Button } from "~/app/_components/ui/Button";
+import FormInput from "~/app/_components/common/ui/FormInput";
+import { Button } from "~/app/_components/common/ui/Button";
 import PasswordConfirmDialog from "./PasswordConfirmDialog";
 
 type PasskeySummary =

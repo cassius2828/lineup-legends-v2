@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { formatRelativeTime, getDisplayName } from "~/lib/format";
 import { useVote } from "~/hooks/useVote";
-import ConfirmModal from "~/app/_components/ui/ConfirmModal";
+import ConfirmModal from "~/app/_components/common/ui/ConfirmModal";
 import type { CommentOutput } from "~/server/api/schemas/output";
 
 interface CommentCardProps {

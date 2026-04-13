@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
 import { StatusBadge } from "../components/StatusBadge";
 
 type FeedbackStatus = "new" | "read" | "resolved";

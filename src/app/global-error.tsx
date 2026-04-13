@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
 
 interface GlobalErrorProps {
   error: Error & { digest?: string };

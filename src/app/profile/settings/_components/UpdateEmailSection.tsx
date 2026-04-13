@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import PasswordInput from "~/app/_components/ui/PasswordInput";
-import { Button } from "~/app/_components/ui/Button";
+import PasswordInput from "~/app/_components/common/ui/PasswordInput";
+import { Button } from "~/app/_components/common/ui/Button";
 import CollapsibleSettingsCard from "./CollapsibleSettingsCard";
 
 export default function UpdateEmailSection({

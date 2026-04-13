@@ -3,25 +3,27 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useState, useCallback } from "react";
-import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
-import { ViewToggle } from "~/app/_components/common/ViewToggle";
-import { LoadMoreTrigger } from "~/app/_components/common/LoadMoreTrigger";
-import { LineupListLoader } from "~/app/_components/common/LineupListLoader";
+import LineupCardGrid from "~/app/_components/common/lineups/LineupCardGrid";
+import { ViewToggle } from "~/app/_components/common/lineups/ViewToggle";
+import {
+  LineupListLoader,
+  LoadMoreTrigger,
+} from "~/app/_components/common/loaders";
 import { useViewModeStore } from "~/stores/viewMode";
 import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "~/components/ui/tooltip";
+} from "~/app/_components/common/ui/tooltip";
 import { getId } from "~/lib/types";
 import { SORT_OPTIONS, type SortOption } from "~/lib/constants";
 import { api } from "~/trpc/react";
 import { useLineupFilters } from "~/hooks/useLineupFilters";
-import LineupFilters from "~/app/_components/common/LineupFilters";
+import LineupFilters from "~/app/_components/common/lineups/LineupFilters";
 
 export default function ExploreLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");

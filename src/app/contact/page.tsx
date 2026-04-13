@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
 import { DuplicateHints } from "~/app/_components/PlayerRequest/DuplicateHints";
 
 const sectionVariants = {

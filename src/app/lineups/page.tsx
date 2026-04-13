@@ -4,19 +4,21 @@ import Link from "next/link";
 import { useState, useCallback } from "react";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
 import { getId } from "~/lib/types";
 import { SORT_OPTIONS, type SortOption } from "~/lib/constants";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { useLineupFilters } from "~/hooks/useLineupFilters";
-import LineupFilters from "../_components/common/LineupFilters";
+import LineupFilters from "../_components/common/lineups/LineupFilters";
 import LineupsHeader from "../_components/Header/LineupsHeader";
-import LineupCardGrid from "../_components/common/LineupCardGrid";
-import { LoadMoreTrigger } from "../_components/common/LoadMoreTrigger";
-import { LineupListLoader } from "../_components/common/LineupListLoader";
-import { ViewToggle } from "../_components/common/ViewToggle";
-import { ConfirmModal } from "../_components/common/ConfirmModal";
+import LineupCardGrid from "../_components/common/lineups/LineupCardGrid";
+import {
+  LineupListLoader,
+  LoadMoreTrigger,
+} from "../_components/common/loaders";
+import { ViewToggle } from "../_components/common/lineups/ViewToggle";
+import ConfirmModal from "../_components/common/ui/ConfirmModal";
 import { useViewModeStore } from "~/stores/viewMode";
 
 export default function MyLineupsPage() {

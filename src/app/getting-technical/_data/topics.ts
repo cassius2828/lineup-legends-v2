@@ -328,9 +328,9 @@ The script processes each player sequentially, logging progress with skip/fetch/
 
 | Component | Location | Purpose |
 |-----------|----------|---------|
-| \`CareerStatsToggle\` | \`_components/common/\` | Toggle between career averages and season bests |
-| \`CareerStatValue\` | \`_components/common/\` | Individual stat cell with shimmer loading |
-| \`WikiPlayerMeasurements\` | \`_components/common/\` | Height/weight from infobox |
+| \`CareerStatsToggle\` | \`_components/common/career/\` | Toggle between career averages and season bests |
+| \`CareerStatValue\` | \`_components/common/career/\` | Individual stat cell with shimmer loading |
+| \`WikiPlayerMeasurements\` | \`_components/common/wiki/\` | Height/weight from infobox |
 | \`useEnsureWikiData\` | \`hooks/\` | Shared hook for triggering wiki fetch |
 `,
   },

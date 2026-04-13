@@ -10,7 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { api } from "~/trpc/react";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
 import { LineupCardSkeleton } from "../common/skeletons";
-import { Spinner } from "../ui/Spinner";
+import { Spinner } from "../common/loaders";
 import { LineupCard } from "../LineupCard/LineupCard";
 import CommentCard from "./CommentCard";
 import ThreadCard from "./ThreadCard";

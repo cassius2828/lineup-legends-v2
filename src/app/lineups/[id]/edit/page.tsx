@@ -28,7 +28,7 @@ import {
 } from "~/lib/constants";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 
 interface SortablePositionCardProps {

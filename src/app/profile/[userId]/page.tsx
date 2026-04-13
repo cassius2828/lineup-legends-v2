@@ -6,15 +6,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
-import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
-import { ViewToggle } from "~/app/_components/common/ViewToggle";
-import { Button } from "~/app/_components/ui/Button";
+import LineupCardGrid from "~/app/_components/common/lineups/LineupCardGrid";
+import { ViewToggle } from "~/app/_components/common/lineups/ViewToggle";
+import { Button } from "~/app/_components/common/ui/Button";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { getId } from "~/lib/types";
 import { useViewModeStore } from "~/stores/viewMode";
 import { useLineupFilters } from "~/hooks/useLineupFilters";
-import LineupFilters from "~/app/_components/common/LineupFilters";
+import LineupFilters from "~/app/_components/common/lineups/LineupFilters";
 
 function FollowListModal({
   userId,

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ViewMode } from "~/app/_components/common/ViewToggle";
+import type { ViewMode } from "~/app/_components/common/lineups/ViewToggle";
 
 interface ViewModeState {
   view: ViewMode;

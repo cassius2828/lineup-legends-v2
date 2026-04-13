@@ -1,12 +1,12 @@
 "use client";
 
 import type { LineupOutput } from "~/server/api/schemas/output";
-import { Button, ButtonLink } from "../ui/Button";
+import { Button, ButtonLink } from "../common/ui/Button";
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-} from "~/components/ui/tooltip";
+} from "~/app/_components/common/ui/tooltip";
 
 interface LineupCardOwnerActionsProps {
   lineup: LineupOutput;

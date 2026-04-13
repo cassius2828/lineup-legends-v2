@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { AuthPageShell } from "~/app/_components/auth/AuthPageShell";
-import PrimaryLoadingButton from "~/app/_components/ui/PrimaryLoadingButton";
-import PasswordInput from "~/app/_components/ui/PasswordInput";
-import PasswordRequirements from "~/app/_components/ui/PasswordRequirements";
+import PrimaryLoadingButton from "~/app/_components/common/ui/PrimaryLoadingButton";
+import PasswordInput from "~/app/_components/common/ui/PasswordInput";
+import PasswordRequirements from "~/app/_components/common/ui/PasswordRequirements";
 import { validatePassword } from "~/lib/password-validation";
 import { postJson } from "~/lib/post-json";
 

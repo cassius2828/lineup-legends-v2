@@ -3,7 +3,7 @@
 import Fuse from "fuse.js";
 import { useState } from "react";
 import SearchInput from "~/app/_components/Forms/SearchInput";
-import GoldCircleSpinnerLoader from "~/app/_components/loaders/GoldCircleSpinnerLoader";
+import { GoldCircleSpinnerLoader } from "~/app/_components/common/loaders";
 import { api } from "~/trpc/react";
 import { CantFindPlayerSection } from "./components/CantFindPlayerSection";
 import DefaultPlayersOnInitialRender from "./components/DefaultPlayersOnInitialRender";

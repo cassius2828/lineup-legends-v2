@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { PlayerCard } from "~/app/_components/PlayerCard";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
 import {
   RATING_MIN,
   RATING_MAX,

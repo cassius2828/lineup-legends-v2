@@ -1,4 +1,4 @@
-import { ButtonLink } from "../ui/Button";
+import { ButtonLink } from "../common/ui/Button";
 
 const LineupsHeader = ({
   title,

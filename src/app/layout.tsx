@@ -4,7 +4,7 @@ import { type Metadata } from "next";
 import { Geist, Stick_No_Bills } from "next/font/google";
 import { Toaster } from "sonner";
 
-import { TooltipProvider } from "~/components/ui/tooltip";
+import { TooltipProvider } from "~/app/_components/common/ui/tooltip";
 import { TRPCReactProvider } from "~/trpc/react";
 import Nav from "./_components/Nav";
 import { Footer } from "./_components/landing";

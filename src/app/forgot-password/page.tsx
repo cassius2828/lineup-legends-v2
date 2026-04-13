@@ -4,8 +4,8 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useState } from "react";
 import { AuthPageShell } from "~/app/_components/auth/AuthPageShell";
-import FormInput from "~/app/_components/ui/FormInput";
-import PrimaryLoadingButton from "~/app/_components/ui/PrimaryLoadingButton";
+import FormInput from "~/app/_components/common/ui/FormInput";
+import PrimaryLoadingButton from "~/app/_components/common/ui/PrimaryLoadingButton";
 import { postJson } from "~/lib/post-json";
 
 type PageState = "form" | "loading" | "success" | "oauth_only";

@@ -5,11 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { api } from "~/trpc/react";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
 import { isValidImageUrl } from "~/lib/utils";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
-import { ConfirmModal } from "~/app/_components/common/ConfirmModal";
+import ConfirmModal from "~/app/_components/common/ui/ConfirmModal";
 import { DuplicateHints } from "~/app/_components/PlayerRequest/DuplicateHints";
 
 export default function RequestedPlayerDetailPage() {

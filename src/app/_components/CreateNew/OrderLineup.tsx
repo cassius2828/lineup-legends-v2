@@ -4,8 +4,8 @@ import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-} from "~/components/ui/tooltip";
-import { Button } from "../ui/Button";
+} from "~/app/_components/common/ui/tooltip";
+import { Button } from "../common/ui/Button";
 import { DroppablePositionSlot } from "../DroppablePositionSlot";
 
 export default function OrderLineup({

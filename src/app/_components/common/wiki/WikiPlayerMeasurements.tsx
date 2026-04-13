@@ -1,5 +1,7 @@
 "use client";
 
+import { WikiMeasurementsLinesSkeleton } from "../skeletons";
+
 type WikiPlayerMeasurementsProps = {
   listedHeight: string | null | undefined;
   listedWeight: string | null | undefined;
@@ -41,8 +43,7 @@ export function WikiPlayerMeasurements({
       <HeadingTag className={titleClass}>Measurements</HeadingTag>
       {showLoading && !h && !w ? (
         <div className="border-foreground/10 bg-foreground/5 space-y-2 rounded-lg border p-3">
-          <div className="bg-foreground/10 h-3 w-[88%] max-w-xs animate-pulse rounded" />
-          <div className="bg-foreground/10 h-3 w-[72%] max-w-xs animate-pulse rounded" />
+          <WikiMeasurementsLinesSkeleton />
           <p className="text-foreground/40 text-xs">Loading measurements…</p>
         </div>
       ) : (

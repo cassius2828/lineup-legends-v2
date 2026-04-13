@@ -1,7 +1,7 @@
 import { validatePassword } from "~/lib/password-validation";
-import PasswordInput from "~/app/_components/ui/PasswordInput";
-import PasswordRequirements from "~/app/_components/ui/PasswordRequirements";
-import { Button } from "~/app/_components/ui/Button";
+import PasswordInput from "~/app/_components/common/ui/PasswordInput";
+import PasswordRequirements from "~/app/_components/common/ui/PasswordRequirements";
+import { Button } from "~/app/_components/common/ui/Button";
 import type { LoadingProvider } from "../page";
 
 export default function SignUpForm({
