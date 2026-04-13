@@ -1,0 +1,14 @@
+import Link from "next/link";
+
+export function ProfileNotFound() {
+  return (
+    <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-foreground text-2xl font-bold">User not found</h1>
+        <Link href="/" className="text-gold-300 mt-4 hover:underline">
+          Go home
+        </Link>
+      </div>
+    </main>
+  );
+}
