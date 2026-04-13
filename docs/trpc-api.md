@@ -25,6 +25,7 @@ src/
 │       │   ├── comment.ts
 │       │   ├── feedback.ts
 │       │   ├── lineup.ts
+│       │   ├── lineup-filter.ts  # Shared pagination/filter input for lineup endpoints
 │       │   ├── pagination.ts
 │       │   └── player.ts
 │       └── routers/

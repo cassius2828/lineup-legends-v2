@@ -15,8 +15,10 @@ Welcome to **Lineup Legends v2**, the modernized fantasy basketball lineup creat
 
 ### Community Engagement
 
-- **Explore Lineups**: Browse lineups created by other users.
+- **Explore Lineups**: Browse lineups created by other users with infinite scroll and server-side filtering.
+- **Filter & Sort**: Filter lineups by date range (presets or custom calendar), minimum rating, or user. Sort by newest, oldest, highest-rated, or most-rated.
 - **Rate Lineups**: Rate other users' lineups on a scale.
+- **Bookmark Lineups**: Save lineups for later viewing.
 - **Follow Users**: Follow other users and build your network.
 - **User Profiles**: Customize your profile with images and bio.
 

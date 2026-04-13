@@ -2,7 +2,15 @@ import { TRPCError } from "@trpc/server";
 import mongoose from "mongoose";
 import { z } from "zod";
 import { lineupPopulateFields } from "~/server/lib/lineup-queries";
-import { buildLineupSort } from "~/server/services/lineup";
+import {
+  buildLineupFilter,
+  applyCursor,
+  paginateLineups,
+} from "~/server/services/lineup";
+import {
+  lineupFilterInput,
+  mongoIdString,
+} from "~/server/api/schemas/lineup-filter";
 import { logger } from "~/lib/logger";
 
 import {
@@ -20,6 +28,7 @@ import {
 } from "~/server/models";
 import {
   lineupOutput,
+  paginatedLineupsOutput,
   gambleResultOutput,
   populated,
 } from "~/server/api/schemas/output";
@@ -98,72 +107,48 @@ export const lineupRouter = createTRPCRouter({
       );
     }),
 
-  // Get current user's lineups (protected)
   getLineupsByCurrentUser: protectedProcedure
-    .output(z.array(lineupOutput))
-    .input(
-      z
-        .object({
-          sort: z
-            .enum(["newest", "oldest", "highest-rated", "most-rated"])
-            .optional()
-            .default("newest"),
-        })
-        .optional(),
-    )
+    .output(paginatedLineupsOutput)
+    .input(lineupFilterInput)
     .query(async ({ ctx, input }) => {
-      const data = await LineupModel.find({ owner: ctx.session.user.id })
-        .sort(buildLineupSort(input?.sort))
-        .populate(lineupPopulateFields)
-        .lean();
-      return populated(data);
+      const base = { owner: ctx.session.user.id };
+      const filter = applyCursor(
+        buildLineupFilter(input, base),
+        input.cursor,
+        input.sort,
+      );
+      return paginateLineups(filter, input);
     }),
 
-  // Get a specific user's lineups (public)
-  // look into adding pagination similar to players router
   getLineupsByOtherUsers: publicProcedure
-    .output(z.array(lineupOutput))
+    .output(paginatedLineupsOutput)
     .input(
-      z.object({
-        userId: z.string().optional(),
-        sort: z
-          .enum(["newest", "oldest", "highest-rated", "most-rated"])
-          .optional()
-          .default("newest"),
+      lineupFilterInput.extend({
+        excludeUserId: mongoIdString.optional(),
       }),
     )
     .query(async ({ input }) => {
-      const filter = input.userId
-        ? { owner: { $ne: new mongoose.Types.ObjectId(input.userId) } }
+      const base = input.excludeUserId
+        ? { owner: { $ne: new mongoose.Types.ObjectId(input.excludeUserId) } }
         : {};
-
-      return populated(
-        await LineupModel.find(filter)
-          .sort(buildLineupSort(input?.sort))
-          .populate(lineupPopulateFields)
-          .lean(),
+      const filter = applyCursor(
+        buildLineupFilter(input, base),
+        input.cursor,
+        input.sort,
       );
+      return paginateLineups(filter, input);
     }),
 
   getAllLineups: publicProcedure
-    .output(z.array(lineupOutput))
-    .input(
-      z
-        .object({
-          sort: z
-            .enum(["newest", "oldest", "highest-rated"])
-            .optional()
-            .default("newest"),
-        })
-        .optional(),
-    )
+    .output(paginatedLineupsOutput)
+    .input(lineupFilterInput)
     .query(async ({ input }) => {
-      return populated(
-        await LineupModel.find()
-          .sort(buildLineupSort(input?.sort))
-          .populate(lineupPopulateFields)
-          .lean(),
+      const filter = applyCursor(
+        buildLineupFilter(input),
+        input.cursor,
+        input.sort,
       );
+      return paginateLineups(filter, input);
     }),
 
   getLineupById: publicProcedure

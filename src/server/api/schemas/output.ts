@@ -157,7 +157,7 @@ export const lineupOutput = z.object({
   updatedAt: z.coerce.date(),
   featured: z.boolean(),
   players: lineupPlayersOutput,
-  owner: userOutput,
+  owner: userSummaryOutput,
   avgRating: z.number().default(0),
   ratingCount: z.number().default(0),
   ratingSum: z.number().default(0),
@@ -166,6 +166,12 @@ export const lineupOutput = z.object({
   gambleStreak: z.number().default(0),
   dailyGamblesUsed: z.number().default(0),
   dailyGamblesResetAt: z.coerce.date().nullable().optional(),
+});
+
+export const paginatedLineupsOutput = z.object({
+  lineups: z.array(lineupOutput),
+  hasMore: z.boolean(),
+  cursor: z.string().optional(),
 });
 
 // ─── Comment / Thread ───────────────────────────────────────────────────────────
@@ -531,6 +537,7 @@ export type UserSummaryOutput = z.infer<typeof userSummaryOutput>;
 export type UserFollowSummaryOutput = z.infer<typeof userFollowSummaryOutput>;
 export type LineupPlayersOutput = z.infer<typeof lineupPlayersOutput>;
 export type LineupOutput = z.infer<typeof lineupOutput>;
+export type PaginatedLineupsOutput = z.infer<typeof paginatedLineupsOutput>;
 export type CommentOutput = z.infer<typeof commentOutput>;
 export type ThreadOutput = z.infer<typeof threadOutput>;
 export type GambleOutcomeTier = z.infer<typeof gambleOutcomeTierSchema>;
