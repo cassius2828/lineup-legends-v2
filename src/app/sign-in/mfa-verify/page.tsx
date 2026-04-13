@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { AuthPageShell } from "~/app/_components/auth/AuthPageShell";
-import OtpCodeInput from "~/app/_components/ui/OtpCodeInput";
-import PrimaryLoadingButton from "~/app/_components/ui/PrimaryLoadingButton";
+import OtpCodeInput from "~/app/_components/common/ui/OtpCodeInput";
+import PrimaryLoadingButton from "~/app/_components/common/ui/PrimaryLoadingButton";
 import type {
   SendMfaPasskeyOptionsResponse,
   VerifyMfaRequestBody,

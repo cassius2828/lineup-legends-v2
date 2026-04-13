@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { skipToken } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { api } from "~/trpc/react";
@@ -7,8 +8,9 @@ import { getId } from "~/lib/types";
 import type { PlayerOutput } from "~/server/api/schemas/output";
 import { VALUE_SHADOWS } from "~/lib/constants";
 import { useEnsureWikiData } from "~/hooks/useEnsureWikiData";
-import { CareerStatsToggle } from "../common/CareerStatsToggle";
-import { WikiPlayerMeasurements } from "../common/WikiPlayerMeasurements";
+import { CareerStatsToggle } from "../common/career/CareerStatsToggle";
+import { WikiPlayerMeasurements } from "../common/wiki/WikiPlayerMeasurements";
+import { WikiInsetLoadingCard } from "../common/skeletons";
 import { PlayerImage } from "../PlayerImage";
 
 interface CreateLineupPlayerDetailPanelProps {
@@ -101,19 +103,7 @@ export function CreateLineupPlayerDetailPanel({
             className="text-foreground/60 hover:text-foreground hover:bg-foreground/10 shrink-0 rounded-lg p-2 transition-colors"
             aria-label="Close"
           >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <X className="h-5 w-5" />
           </button>
         </div>
 
@@ -170,13 +160,10 @@ export function CreateLineupPlayerDetailPanel({
                 </button>
               </div>
             ) : showWikiSkeleton ? (
-              <div className="border-foreground/10 bg-foreground/5 space-y-2 rounded-lg border p-3">
-                <div className="bg-foreground/10 h-3 w-full animate-pulse rounded" />
-                <div className="bg-foreground/10 h-3 w-[92%] animate-pulse rounded" />
-                <p className="text-foreground/40 pt-1 text-xs">
-                  Loading Wikipedia…
-                </p>
-              </div>
+              <WikiInsetLoadingCard
+                secondLineWide="92"
+                caption="Loading Wikipedia…"
+              />
             ) : hasWiki && resolved.wikiSummaryExtract?.trim() ? (
               <p className="text-foreground/85 text-sm leading-relaxed whitespace-pre-wrap">
                 {resolved.wikiSummaryExtract}
@@ -212,25 +199,13 @@ export function CreateLineupPlayerDetailPanel({
                 player page.
               </p>
             ) : showWikiSkeleton ? (
-              <div className="border-foreground/10 bg-foreground/5 space-y-2 rounded-lg border p-3">
-                <div className="bg-foreground/10 h-3 w-full animate-pulse rounded" />
-                <div className="bg-foreground/10 h-3 w-[88%] animate-pulse rounded" />
-                <p className="text-foreground/40 pt-1 text-xs">
-                  Loading awards from Wikipedia…
-                </p>
-              </div>
+              <WikiInsetLoadingCard caption="Loading awards from Wikipedia…" />
             ) : hasWiki && resolved.wikiAwardsHonorsText?.trim() ? (
               <p className="text-foreground/85 max-h-64 overflow-y-auto text-sm leading-relaxed whitespace-pre-wrap">
                 {resolved.wikiAwardsHonorsText}
               </p>
             ) : ensureAwardsAI.isPending ? (
-              <div className="border-foreground/10 bg-foreground/5 space-y-2 rounded-lg border p-3">
-                <div className="bg-foreground/10 h-3 w-full animate-pulse rounded" />
-                <div className="bg-foreground/10 h-3 w-[88%] animate-pulse rounded" />
-                <p className="text-foreground/40 pt-1 text-xs">
-                  Searching for awards via AI…
-                </p>
-              </div>
+              <WikiInsetLoadingCard caption="Searching for awards via AI…" />
             ) : (
               <p className="text-foreground/50 text-sm">
                 No awards found for this player.

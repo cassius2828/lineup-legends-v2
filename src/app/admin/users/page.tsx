@@ -5,7 +5,8 @@ import { api } from "~/trpc/react";
 import Image from "next/image";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { Users, Shield } from "lucide-react";
+import { Users, Shield, Search } from "lucide-react";
+import { AdminPageHeader } from "../_components/AdminPageHeader";
 import {
   AdminFilterTabs,
   AdminSpinner,
@@ -34,28 +35,14 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-foreground text-3xl font-bold">User Management</h1>
-        <p className="text-foreground/50 mt-1">
-          Search, review, and manage user accounts
-        </p>
-      </div>
+      <AdminPageHeader
+        title="User Management"
+        description="Search, review, and manage user accounts"
+      />
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row">
         <div className="relative flex-1">
-          <svg
-            className="text-foreground/40 absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
+          <Search className="text-foreground/40 absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2" />
           <input
             type="text"
             value={query}

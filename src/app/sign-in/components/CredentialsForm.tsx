@@ -1,6 +1,6 @@
 import Link from "next/link";
-import PasswordInput from "~/app/_components/ui/PasswordInput";
-import { Button } from "~/app/_components/ui/Button";
+import PasswordInput from "~/app/_components/common/ui/PasswordInput";
+import { Button } from "~/app/_components/common/ui/Button";
 import type { LoadingProvider } from "../page";
 
 export default function CredentialsForm({

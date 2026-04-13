@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { PlayerOutput } from "~/server/api/schemas/output";
@@ -73,17 +74,7 @@ export function DraggablePlayerCard({
         {/* Selected Indicator Overlay */}
         {selected && !isDragging && (
           <div className="bg-gold-600/30 absolute inset-0 flex items-center justify-center">
-            <svg
-              className="text-gold-300 h-4 w-4 sm:h-6 sm:w-6"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <Check className="text-gold-300 h-4 w-4 sm:h-6 sm:w-6" />
           </div>
         )}
       </div>

@@ -5,11 +5,15 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { api } from "~/trpc/react";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
 import { isValidImageUrl } from "~/lib/utils";
+import { AdminBackLink } from "../../_components/AdminBackLink";
+import { AdminPageHeader } from "../../_components/AdminPageHeader";
 import { toast } from "sonner";
 import { Check } from "lucide-react";
-import { ConfirmModal } from "~/app/_components/common/ConfirmModal";
+import { GoldCircleSpinnerLoader } from "~/app/_components/common/loaders";
+import ConfirmModal from "~/app/_components/common/ui/ConfirmModal";
+import { ValuePicker } from "~/app/_components/common/ui/ValuePicker";
 import { DuplicateHints } from "~/app/_components/PlayerRequest/DuplicateHints";
 
 export default function RequestedPlayerDetailPage() {
@@ -99,11 +103,7 @@ export default function RequestedPlayerDetailPage() {
       : 3;
 
   if (isLoading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <div className="border-t-gold border-foreground/20 h-12 w-12 animate-spin rounded-full border-4" />
-      </div>
-    );
+    return <GoldCircleSpinnerLoader />;
   }
 
   if (!requestedPlayer) {
@@ -124,32 +124,13 @@ export default function RequestedPlayerDetailPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      {/* Header */}
-      <div className="mb-8">
-        <Link
-          href="/admin/requested"
-          className="text-foreground/60 hover:text-foreground/80 mb-4 inline-flex items-center gap-1 text-sm"
-        >
-          <svg
-            className="h-4 w-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Back to Requested Players
-        </Link>
-        <h1 className="text-foreground text-3xl font-bold">Player Request</h1>
-        <p className="text-foreground/60 mt-2">
-          View request details and user suggestions
-        </p>
-      </div>
+      <AdminBackLink href="/admin/requested">
+        Back to Requested Players
+      </AdminBackLink>
+      <AdminPageHeader
+        title="Player Request"
+        description="View request details and user suggestions"
+      />
 
       {/* Player Info Card */}
       <div className="border-foreground/10 bg-foreground/3 mb-8 rounded-xl border p-6">
@@ -298,22 +279,11 @@ export default function RequestedPlayerDetailPage() {
               <label className="text-foreground/60 mb-1.5 block text-sm">
                 Value (1-5)
               </label>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setPlayerValue(v)}
-                    className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-bold transition-all ${
-                      playerValue === v
-                        ? "bg-gold text-black"
-                        : "bg-foreground/10 text-foreground/60 hover:bg-foreground/20"
-                    }`}
-                  >
-                    ${v}
-                  </button>
-                ))}
-              </div>
+              <ValuePicker
+                value={playerValue}
+                onChange={setPlayerValue}
+                size="square"
+              />
               <p className="text-foreground/30 mt-1.5 text-xs">
                 Average suggested: ${avgSuggestedValue}
               </p>

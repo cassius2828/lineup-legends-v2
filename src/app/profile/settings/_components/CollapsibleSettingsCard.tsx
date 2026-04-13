@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ChevronDown } from "lucide-react";
 
 export default function CollapsibleSettingsCard({
   title,
@@ -24,19 +25,9 @@ export default function CollapsibleSettingsCard({
           <h3 className="text-foreground font-medium">{title}</h3>
           <p className="text-foreground/50 text-sm">{description}</p>
         </div>
-        <svg
+        <ChevronDown
           className={`text-foreground/40 h-5 w-5 transition-transform ${isOpen ? "rotate-180" : ""}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
+        />
       </button>
       {isOpen ? <div className="mt-4">{children}</div> : null}
     </div>

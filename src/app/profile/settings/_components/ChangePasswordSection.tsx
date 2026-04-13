@@ -4,9 +4,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { validatePassword } from "~/lib/password-validation";
-import PasswordInput from "~/app/_components/ui/PasswordInput";
-import PasswordRequirements from "~/app/_components/ui/PasswordRequirements";
-import { Button } from "~/app/_components/ui/Button";
+import PasswordInput from "~/app/_components/common/ui/PasswordInput";
+import PasswordRequirements from "~/app/_components/common/ui/PasswordRequirements";
+import { Button } from "~/app/_components/common/ui/Button";
 import CollapsibleSettingsCard from "./CollapsibleSettingsCard";
 
 export default function ChangePasswordSection({

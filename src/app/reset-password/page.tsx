@@ -1,12 +1,13 @@
 "use client";
 
+import { CheckCircle2, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { AuthPageShell } from "~/app/_components/auth/AuthPageShell";
-import PrimaryLoadingButton from "~/app/_components/ui/PrimaryLoadingButton";
-import PasswordInput from "~/app/_components/ui/PasswordInput";
-import PasswordRequirements from "~/app/_components/ui/PasswordRequirements";
+import PrimaryLoadingButton from "~/app/_components/common/ui/PrimaryLoadingButton";
+import PasswordInput from "~/app/_components/common/ui/PasswordInput";
+import PasswordRequirements from "~/app/_components/common/ui/PasswordRequirements";
 import { validatePassword } from "~/lib/password-validation";
 import { postJson } from "~/lib/post-json";
 
@@ -22,19 +23,7 @@ function InvalidLinkCard({
   return (
     <div className="text-center">
       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10">
-        <svg
-          className="h-7 w-7 text-red-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={2}
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M6 18L18 6M6 6l12 12"
-          />
-        </svg>
+        <XCircle className="h-7 w-7 text-red-400" strokeWidth={2} />
       </div>
       <h2 className="text-foreground mb-2 text-lg font-semibold">{title}</h2>
       <p className="text-foreground/50 mb-6 text-sm">{message}</p>
@@ -119,19 +108,10 @@ function ResetPasswordContent() {
         {success ? (
           <div className="text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-green-500/20 bg-green-500/10">
-              <svg
+              <CheckCircle2
                 className="h-7 w-7 text-green-400"
-                fill="none"
-                viewBox="0 0 24 24"
                 strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4.5 12.75l6 6 9-13.5"
-                />
-              </svg>
+              />
             </div>
             <h2 className="text-foreground mb-2 text-lg font-semibold">
               Password reset!

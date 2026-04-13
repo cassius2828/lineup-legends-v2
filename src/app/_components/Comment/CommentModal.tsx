@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, X } from "lucide-react";
@@ -9,13 +9,21 @@ import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { api } from "~/trpc/react";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
-import { Spinner } from "../ui/Spinner";
+import { LineupCardSkeleton } from "../common/skeletons";
+import { Spinner } from "../common/loaders";
 import { LineupCard } from "../LineupCard/LineupCard";
 import CommentCard from "./CommentCard";
 import ThreadCard from "./ThreadCard";
-import ComposerToolbar from "./ComposerToolbar";
 import type { ComposerMedia } from "./ComposerToolbar";
-import type { LineupOutput } from "~/server/api/schemas/output";
+import { CommentComposerField, ComposerMetaRow } from "./CommentComposerField";
+import {
+  applyMobileComposerBlur,
+  composerHasContent,
+  handleComposerMetaEnter,
+} from "./commentComposerUtils";
+import { ComposerUserAvatar } from "./ComposerUserAvatar";
+import { useIsDesktop } from "~/hooks/useIsDesktop";
+import { cn } from "~/lib/utils";
 
 export interface ParentComment {
   _id: string;
@@ -82,6 +90,13 @@ export default function CommentModal({
   const [media, setMedia] = useState<ComposerMedia>({});
   const [mounted, setMounted] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const listComposerRef = useRef<HTMLDivElement>(null);
+  const threadComposerRef = useRef<HTMLDivElement>(null);
+  const isDesktop = useIsDesktop();
+  const [mobileListComposerExpanded, setMobileListComposerExpanded] =
+    useState(false);
+  const [mobileThreadComposerExpanded, setMobileThreadComposerExpanded] =
+    useState(false);
 
   // Internal navigation within comment mode
   const [internalView, setInternalView] = useState<"comments" | "thread">(
@@ -188,8 +203,15 @@ export default function CommentModal({
     if (!open) {
       setInternalView("comments");
       setSelectedComment(null);
+      setMobileListComposerExpanded(false);
+      setMobileThreadComposerExpanded(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    setMobileListComposerExpanded(false);
+    setMobileThreadComposerExpanded(false);
+  }, [internalView, mode]);
 
   useEffect(() => {
     if (open) {
@@ -204,12 +226,12 @@ export default function CommentModal({
     };
   }, [open]);
 
-  // Focus textarea on open or view change
+  // Focus textarea on open or view change (desktop only — mobile stays collapsed)
   useEffect(() => {
-    if (open) {
+    if (open && isDesktop) {
       setTimeout(() => textareaRef.current?.focus(), 50);
     }
-  }, [open, internalView]);
+  }, [open, internalView, isDesktop]);
 
   useEffect(() => {
     if (!open) return;
@@ -229,17 +251,32 @@ export default function CommentModal({
 
   if (!open || !mounted) return null;
 
-  const hasContent = text.trim().length > 0 || !!media.image || !!media.gif;
+  const hasContent = composerHasContent(text, media);
   const activeSubmit = showThreadView ? submitThread : submitComment;
+  const isComposerSubmitting = showThreadView
+    ? isThreadSubmitting
+    : isCommentSubmitting;
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault();
-      activeSubmit(text, media);
-    }
+    handleComposerMetaEnter(e, {
+      hasContent,
+      isSubmitting: isComposerSubmitting,
+      onSubmit: () => activeSubmit(text, media),
+    });
+  };
+
+  const sharedComposerFieldProps = {
+    textareaRef,
+    value: text,
+    onChange: setText,
+    onKeyDown: handleKeyDown,
+    media,
+    onMediaChange: setMedia,
   };
 
   const userImage = session?.image ?? session?.profileImg;
+  const sessionAvatarSrc = userImage ?? "/default-user.jpg";
+  const sessionAvatarAlt = session?.name ?? "You";
   const parentDisplayName =
     effectiveParent?.user.name ?? effectiveParent?.user.username ?? "Anonymous";
 
@@ -275,6 +312,167 @@ export default function CommentModal({
     : mode === "reply"
       ? "Reply"
       : "Thread";
+
+  const showListComposerChrome =
+    isDesktop || mobileListComposerExpanded || hasContent;
+  const showThreadComposerChrome =
+    isDesktop || mobileThreadComposerExpanded || hasContent;
+
+  const handleListComposerBlur = (e: React.FocusEvent) =>
+    applyMobileComposerBlur(e, {
+      isDesktop,
+      containerRef: listComposerRef,
+      hasContent,
+      onCollapse: () => setMobileListComposerExpanded(false),
+    });
+
+  const handleThreadComposerBlur = (e: React.FocusEvent) =>
+    applyMobileComposerBlur(e, {
+      isDesktop,
+      containerRef: threadComposerRef,
+      hasContent,
+      onCollapse: () => setMobileThreadComposerExpanded(false),
+    });
+
+  const lineupCardSection = (
+    <div className="border-foreground/10 shrink-0 border-b px-5 py-4">
+      {lineup ? (
+        <LineupCard lineup={lineup} hideFooter />
+      ) : isLineupLoading ? (
+        <LineupCardSkeleton />
+      ) : null}
+    </div>
+  );
+
+  const commentsListSection = (
+    <>
+      {isCommentsLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Spinner />
+        </div>
+      ) : allComments.length === 0 ? (
+        <div className="py-8 text-center">
+          <p className="text-foreground/30 text-sm">
+            No comments yet. Be the first!
+          </p>
+        </div>
+      ) : (
+        <>
+          {allComments.map((comment) => (
+            <CommentCard
+              key={comment._id}
+              comment={comment}
+              lineupId={lineupId}
+              currentUserId={effectiveUserId}
+              userVote={myCommentVotes?.[comment._id] ?? null}
+              onReplyClick={() => handleReplyClick(comment)}
+            />
+          ))}
+          {hasMoreComments && (
+            <div className="flex justify-center py-4">
+              <button
+                className="text-foreground/40 hover:text-foreground/70 text-sm transition-colors"
+                type="button"
+                disabled={isFetchingMoreComments}
+                onClick={() => fetchMoreComments()}
+              >
+                {isFetchingMoreComments ? "Loading..." : "Show more comments"}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </>
+  );
+
+  const threadScrollSection = effectiveParent ? (
+    <>
+      <div className="flex gap-3">
+        <div className="flex w-9 shrink-0 flex-col items-center">
+          <Image
+            src={
+              effectiveParent.user.image ??
+              effectiveParent.user.profileImg ??
+              "/default-user.jpg"
+            }
+            alt={parentDisplayName}
+            width={36}
+            height={36}
+            className="h-9 w-9 shrink-0 rounded-full"
+          />
+          {allThreads.length > 0 && (
+            <div className="bg-foreground/20 mt-2 w-0.5 flex-1" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1 pb-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-foreground text-sm font-medium">
+              {parentDisplayName}
+            </span>
+            <span className="text-foreground/30">&middot;</span>
+            <span className="text-foreground/40 text-xs">
+              {formatDistanceToNow(new Date(effectiveParent.createdAt), {
+                addSuffix: true,
+              })}
+            </span>
+          </div>
+          {effectiveParent.text && (
+            <p className="text-foreground/60 mt-1 text-sm leading-relaxed">
+              {effectiveParent.text}
+            </p>
+          )}
+          {effectiveParent.image && (
+            <Image
+              src={effectiveParent.image}
+              alt="Attachment"
+              width={200}
+              height={150}
+              className="mt-2 max-h-[150px] w-auto rounded-lg object-cover"
+              unoptimized
+            />
+          )}
+          {effectiveParent.gif && (
+            <img
+              src={effectiveParent.gif}
+              alt="GIF"
+              className="mt-2 max-h-[150px] w-auto rounded-lg object-cover"
+            />
+          )}
+        </div>
+      </div>
+
+      {isThreadsLoading ? (
+        <div className="flex items-center justify-center py-6">
+          <Spinner />
+        </div>
+      ) : (
+        allThreads.map((thread, index) => (
+          <ThreadCard
+            key={thread._id}
+            thread={thread}
+            lineupId={lineupId}
+            commentId={effectiveParent._id}
+            currentUserId={effectiveUserId}
+            userVote={myThreadVotes?.[thread._id] ?? null}
+            replyingTo={parentDisplayName}
+            isLast={index === allThreads.length - 1}
+          />
+        ))
+      )}
+      {hasMoreThreads && (
+        <div className="flex justify-center py-4">
+          <button
+            className="text-foreground/40 hover:text-foreground/70 text-sm transition-colors"
+            type="button"
+            disabled={isFetchingMoreThreads}
+            onClick={() => fetchMoreThreads()}
+          >
+            {isFetchingMoreThreads ? "Loading..." : "Show more replies"}
+          </button>
+        </div>
+      )}
+    </>
+  ) : null;
 
   return createPortal(
     <motion.div
@@ -323,241 +521,105 @@ export default function CommentModal({
           </div>
 
           {/* ── Comments list view ── */}
-          {showCommentsList && (
+          {showCommentsList && isDesktop && (
             <div className="flex max-h-[80vh] flex-col">
-              {/* Lineup card */}
-              <div className="border-foreground/10 shrink-0 border-b px-5 py-4">
-                {lineup ? (
-                  <LineupCard lineup={lineup as LineupOutput} hideFooter />
-                ) : isLineupLoading ? (
-                  <div className="from-surface-800/90 to-surface-950/90 animate-pulse rounded-2xl bg-gradient-to-br p-6">
-                    {/* Header skeleton: avatar + name + time + value badge */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-foreground/10 h-10 w-10 rounded-full" />
-                        <div className="space-y-1.5">
-                          <div className="bg-foreground/10 h-3.5 w-28 rounded" />
-                          <div className="bg-foreground/10 h-3 w-20 rounded" />
-                        </div>
-                      </div>
-                      <div className="bg-foreground/10 h-6 w-16 rounded-full" />
-                    </div>
-                    {/* Stats bar skeleton */}
-                    <div className="mt-3 flex items-center gap-4">
-                      <div className="bg-foreground/10 h-4 w-24 rounded" />
-                      <div className="bg-foreground/10 h-4 w-20 rounded" />
-                    </div>
-                    {/* Players grid skeleton: 5 circles with labels */}
-                    <div className="mt-4 flex justify-between px-2">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="flex flex-col items-center gap-1.5"
-                        >
-                          <div className="bg-foreground/10 h-3 w-5 rounded" />
-                          <div className="bg-foreground/10 h-16 w-16 rounded-full" />
-                          <div className="bg-foreground/10 h-3 w-14 rounded" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-
-              {/* Composer */}
+              {lineupCardSection}
               {session ? (
                 <div className="border-foreground/10 shrink-0 border-b px-5 py-4">
                   <div className="flex gap-3">
-                    <Image
-                      src={userImage ?? "/default-user.jpg"}
-                      alt={session?.name ?? "You"}
-                      width={36}
-                      height={36}
-                      className="h-9 w-9 shrink-0 rounded-full"
+                    <ComposerUserAvatar
+                      src={sessionAvatarSrc}
+                      alt={sessionAvatarAlt}
                     />
                     <div className="flex-1">
-                      <textarea
-                        ref={textareaRef}
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Post your reply"
-                        maxLength={1000}
+                      <CommentComposerField
+                        {...sharedComposerFieldProps}
                         rows={3}
-                        className="text-foreground placeholder:text-foreground/30 w-full resize-none bg-transparent text-sm focus:outline-none"
                       />
-                      <ComposerToolbar media={media} onMediaChange={setMedia} />
                     </div>
                   </div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-foreground/30 text-xs">
-                      {text.length}/1000
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => submitComment(text, media)}
-                      disabled={!hasContent || isCommentSubmitting}
-                      className="bg-gold hover:bg-gold-light rounded-full px-5 py-1.5 text-sm font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {isCommentSubmitting ? "Posting..." : "Reply"}
-                    </button>
-                  </div>
+                  <ComposerMetaRow
+                    textLength={text.length}
+                    onSubmit={() => submitComment(text, media)}
+                    disabled={!hasContent || isCommentSubmitting}
+                    isSubmitting={isCommentSubmitting}
+                  />
                 </div>
               ) : (
                 <SignInCta action="comment" border="border-b" />
               )}
-
-              {/* Comment feed */}
               <div className="flex-1 overflow-y-auto px-5">
-                {isCommentsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Spinner />
-                  </div>
-                ) : allComments.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <p className="text-foreground/30 text-sm">
-                      No comments yet. Be the first!
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {allComments.map((comment) => (
-                      <CommentCard
-                        key={comment._id}
-                        comment={comment}
-                        lineupId={lineupId}
-                        currentUserId={effectiveUserId}
-                        userVote={myCommentVotes?.[comment._id] ?? null}
-                        onReplyClick={() => handleReplyClick(comment)}
-                      />
-                    ))}
-                    {hasMoreComments && (
-                      <div className="flex justify-center py-4">
-                        <button
-                          className="text-foreground/40 hover:text-foreground/70 text-sm transition-colors"
-                          type="button"
-                          disabled={isFetchingMoreComments}
-                          onClick={() => fetchMoreComments()}
-                        >
-                          {isFetchingMoreComments
-                            ? "Loading..."
-                            : "Show more comments"}
-                        </button>
-                      </div>
-                    )}
-                  </>
-                )}
+                {commentsListSection}
               </div>
             </div>
           )}
 
-          {/* ── Thread view (reply mode or drilled-in from comment list) ── */}
-          {showThreadView && effectiveParent && (
-            <div className="flex max-h-[70vh] flex-col">
-              {/* Scrollable thread area */}
-              <div className="flex-1 overflow-y-auto px-5 py-4">
-                {/* Parent comment with connector line */}
-                <div className="flex gap-3">
-                  <div className="flex w-9 shrink-0 flex-col items-center">
-                    <Image
-                      src={
-                        effectiveParent.user.image ??
-                        effectiveParent.user.profileImg ??
-                        "/default-user.jpg"
-                      }
-                      alt={parentDisplayName}
-                      width={36}
-                      height={36}
-                      className="h-9 w-9 shrink-0 rounded-full"
+          {showCommentsList && !isDesktop && (
+            <div className="flex max-h-[min(80vh,100dvh-8rem)] min-h-0 flex-col">
+              <div className="border-foreground/10 flex min-h-0 flex-1 flex-col overflow-y-auto pb-2">
+                {lineupCardSection}
+                <div className="flex-1 px-5">{commentsListSection}</div>
+              </div>
+              {session ? (
+                <div
+                  ref={listComposerRef}
+                  onBlur={handleListComposerBlur}
+                  className="border-foreground/10 bg-surface-800 shrink-0 border-t px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+                >
+                  <div
+                    className={cn(
+                      "flex gap-3",
+                      showListComposerChrome ? "" : "items-center",
+                    )}
+                  >
+                    <ComposerUserAvatar
+                      src={sessionAvatarSrc}
+                      alt={sessionAvatarAlt}
                     />
-                    {allThreads.length > 0 && (
-                      <div className="bg-foreground/20 mt-2 w-0.5 flex-1" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1 pb-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-foreground text-sm font-medium">
-                        {parentDisplayName}
-                      </span>
-                      <span className="text-foreground/30">&middot;</span>
-                      <span className="text-foreground/40 text-xs">
-                        {formatDistanceToNow(
-                          new Date(effectiveParent.createdAt),
-                          { addSuffix: true },
-                        )}
-                      </span>
+                    <div className="min-w-0 flex-1">
+                      <CommentComposerField
+                        {...sharedComposerFieldProps}
+                        rows={showListComposerChrome ? 3 : 1}
+                        showToolbar={showListComposerChrome}
+                        onFocus={() => setMobileListComposerExpanded(true)}
+                        textareaClassName={
+                          !showListComposerChrome
+                            ? "min-h-[2.75rem]"
+                            : undefined
+                        }
+                      />
+                      {showListComposerChrome ? (
+                        <ComposerMetaRow
+                          textLength={text.length}
+                          onSubmit={() => submitComment(text, media)}
+                          disabled={!hasContent || isCommentSubmitting}
+                          isSubmitting={isCommentSubmitting}
+                        />
+                      ) : null}
                     </div>
-                    {effectiveParent.text && (
-                      <p className="text-foreground/60 mt-1 text-sm leading-relaxed">
-                        {effectiveParent.text}
-                      </p>
-                    )}
-                    {effectiveParent.image && (
-                      <Image
-                        src={effectiveParent.image}
-                        alt="Attachment"
-                        width={200}
-                        height={150}
-                        className="mt-2 max-h-[150px] w-auto rounded-lg object-cover"
-                        unoptimized
-                      />
-                    )}
-                    {effectiveParent.gif && (
-                      <img
-                        src={effectiveParent.gif}
-                        alt="GIF"
-                        className="mt-2 max-h-[150px] w-auto rounded-lg object-cover"
-                      />
-                    )}
                   </div>
                 </div>
+              ) : (
+                <div className="shrink-0">
+                  <SignInCta action="comment" border="border-t" />
+                </div>
+              )}
+            </div>
+          )}
 
-                {/* Thread replies */}
-                {isThreadsLoading ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Spinner />
-                  </div>
-                ) : (
-                  allThreads.map((thread, index) => (
-                    <ThreadCard
-                      key={thread._id}
-                      thread={thread}
-                      lineupId={lineupId}
-                      commentId={effectiveParent._id}
-                      currentUserId={effectiveUserId}
-                      userVote={myThreadVotes?.[thread._id] ?? null}
-                      replyingTo={parentDisplayName}
-                      isLast={index === allThreads.length - 1}
-                    />
-                  ))
-                )}
-                {hasMoreThreads && (
-                  <div className="flex justify-center py-4">
-                    <button
-                      className="text-foreground/40 hover:text-foreground/70 text-sm transition-colors"
-                      type="button"
-                      disabled={isFetchingMoreThreads}
-                      onClick={() => fetchMoreThreads()}
-                    >
-                      {isFetchingMoreThreads
-                        ? "Loading..."
-                        : "Show more replies"}
-                    </button>
-                  </div>
-                )}
+          {/* ── Thread view (reply mode or drilled-in from comment list) ── */}
+          {showThreadView && effectiveParent && isDesktop && (
+            <div className="flex max-h-[70vh] flex-col">
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                {threadScrollSection}
               </div>
-
-              {/* Sticky composer at bottom */}
               {session ? (
                 <div className="border-foreground/10 border-t px-5 py-3">
                   <div className="flex gap-3">
                     <div className="w-9 shrink-0">
-                      <Image
-                        src={userImage ?? "/default-user.jpg"}
-                        alt={session?.name ?? "You"}
-                        width={36}
-                        height={36}
-                        className="h-9 w-9 shrink-0 rounded-full"
+                      <ComposerUserAvatar
+                        src={sessionAvatarSrc}
+                        alt={sessionAvatarAlt}
                       />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -565,30 +627,76 @@ export default function CommentModal({
                         Replying to{" "}
                         <span className="text-gold">@{parentDisplayName}</span>
                       </span>
-                      <textarea
-                        ref={textareaRef}
-                        value={text}
-                        onChange={(e) => setText(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="Post your reply"
-                        maxLength={1000}
+                      <CommentComposerField
+                        {...sharedComposerFieldProps}
                         rows={2}
-                        className="text-foreground placeholder:text-foreground/30 w-full resize-none bg-transparent text-sm focus:outline-none"
                       />
-                      <ComposerToolbar media={media} onMediaChange={setMedia} />
-                      <div className="mt-2 flex items-center justify-between">
-                        <span className="text-foreground/30 text-xs">
-                          {text.length}/1000
+                      <ComposerMetaRow
+                        textLength={text.length}
+                        onSubmit={() => submitThread(text, media)}
+                        disabled={!hasContent || isThreadSubmitting}
+                        isSubmitting={isThreadSubmitting}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <SignInCta action="reply" border="border-t" />
+              )}
+            </div>
+          )}
+
+          {showThreadView && effectiveParent && !isDesktop && (
+            <div className="flex max-h-[min(70vh,100dvh-8rem)] min-h-0 flex-col">
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 pb-6">
+                {threadScrollSection}
+              </div>
+              {session ? (
+                <div
+                  ref={threadComposerRef}
+                  onBlur={handleThreadComposerBlur}
+                  className="border-foreground/10 bg-surface-800 shrink-0 border-t px-5 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+                >
+                  <div
+                    className={cn(
+                      "flex gap-3",
+                      showThreadComposerChrome ? "" : "items-center",
+                    )}
+                  >
+                    <div className="w-9 shrink-0">
+                      <ComposerUserAvatar
+                        src={sessionAvatarSrc}
+                        alt={sessionAvatarAlt}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      {showThreadComposerChrome && (
+                        <span className="text-foreground/40 mb-1 block text-xs">
+                          Replying to{" "}
+                          <span className="text-gold">
+                            @{parentDisplayName}
+                          </span>
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => submitThread(text, media)}
+                      )}
+                      <CommentComposerField
+                        {...sharedComposerFieldProps}
+                        rows={showThreadComposerChrome ? 2 : 1}
+                        showToolbar={showThreadComposerChrome}
+                        onFocus={() => setMobileThreadComposerExpanded(true)}
+                        textareaClassName={
+                          !showThreadComposerChrome
+                            ? "min-h-[2.75rem]"
+                            : undefined
+                        }
+                      />
+                      {showThreadComposerChrome ? (
+                        <ComposerMetaRow
+                          textLength={text.length}
+                          onSubmit={() => submitThread(text, media)}
                           disabled={!hasContent || isThreadSubmitting}
-                          className="bg-gold hover:bg-gold-light rounded-full px-5 py-1.5 text-sm font-semibold text-black transition-colors disabled:cursor-not-allowed disabled:opacity-40"
-                        >
-                          {isThreadSubmitting ? "Posting..." : "Reply"}
-                        </button>
-                      </div>
+                          isSubmitting={isThreadSubmitting}
+                        />
+                      ) : null}
                     </div>
                   </div>
                 </div>

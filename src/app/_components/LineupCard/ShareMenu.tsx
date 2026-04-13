@@ -1,16 +1,47 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  type LucideIcon,
   Share2,
   Copy,
   ExternalLink,
   Mail,
-  MessageSquare,
   Twitter,
   Facebook,
 } from "lucide-react";
 import { toast } from "sonner";
+
+const shareMenuItemClassName =
+  "text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors";
+
+function ShareMenuItem({
+  onClick,
+  icon: Icon,
+  children,
+}: {
+  onClick: () => void;
+  icon: LucideIcon;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      role="menuitem"
+      type="button"
+      onClick={onClick}
+      className={shareMenuItemClassName}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      {children}
+    </button>
+  );
+}
 
 interface ShareMenuProps {
   lineupId: string;
@@ -105,12 +136,6 @@ export default function ShareMenu({ lineupId }: ShareMenuProps) {
     setOpen(false);
   }
 
-  function handleSms() {
-    const url = getUrl();
-    window.location.href = `sms:?body=${encodeURIComponent(`${shareText} ${url}`)}`;
-    setOpen(false);
-  }
-
   function handleEmail() {
     const url = getUrl();
     window.location.href = `mailto:?subject=${encodeURIComponent("Check out this lineup!")}&body=${encodeURIComponent(`${shareText}\n\n${url}`)}`;
@@ -137,71 +162,29 @@ export default function ShareMenu({ lineupId }: ShareMenuProps) {
           aria-label="Share options"
           className="border-foreground/10 bg-background absolute right-0 bottom-full z-50 mb-2 w-48 overflow-hidden rounded-lg border shadow-lg"
         >
-          <button
-            role="menuitem"
-            type="button"
-            onClick={handleCopyLink}
-            className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-          >
-            <Copy className="h-4 w-4 shrink-0" />
+          <ShareMenuItem onClick={handleCopyLink} icon={Copy}>
             Copy Link
-          </button>
+          </ShareMenuItem>
 
           {supportsNativeShare && (
-            <button
-              role="menuitem"
-              type="button"
-              onClick={handleNativeShare}
-              className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-            >
-              <ExternalLink className="h-4 w-4 shrink-0" />
+            <ShareMenuItem onClick={handleNativeShare} icon={ExternalLink}>
               Share&hellip;
-            </button>
+            </ShareMenuItem>
           )}
 
           <div className="border-foreground/10 mx-3 border-t" />
 
-          <button
-            role="menuitem"
-            type="button"
-            onClick={handleTwitter}
-            className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-          >
-            <Twitter className="h-4 w-4 shrink-0" />
+          <ShareMenuItem onClick={handleTwitter} icon={Twitter}>
             Share on X
-          </button>
+          </ShareMenuItem>
 
-          <button
-            role="menuitem"
-            type="button"
-            onClick={handleFacebook}
-            className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-          >
-            <Facebook className="h-4 w-4 shrink-0" />
+          <ShareMenuItem onClick={handleFacebook} icon={Facebook}>
             Share on Facebook
-          </button>
+          </ShareMenuItem>
 
-          <div className="border-foreground/10 mx-3 border-t" />
-
-          <button
-            role="menuitem"
-            type="button"
-            onClick={handleSms}
-            className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-          >
-            <MessageSquare className="h-4 w-4 shrink-0" />
-            Send via SMS
-          </button>
-
-          <button
-            role="menuitem"
-            type="button"
-            onClick={handleEmail}
-            className="text-foreground/60 hover:bg-foreground/5 hover:text-gold flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-          >
-            <Mail className="h-4 w-4 shrink-0" />
+          <ShareMenuItem onClick={handleEmail} icon={Mail}>
             Send via Email
-          </button>
+          </ShareMenuItem>
         </div>
       )}
     </div>

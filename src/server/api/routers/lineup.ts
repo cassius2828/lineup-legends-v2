@@ -120,6 +120,23 @@ export const lineupRouter = createTRPCRouter({
       return paginateLineups(filter, input);
     }),
 
+  getLineupsByUser: publicProcedure
+    .output(paginatedLineupsOutput)
+    .input(
+      lineupFilterInput.extend({
+        userId: mongoIdString,
+      }),
+    )
+    .query(async ({ input }) => {
+      const base = { owner: new mongoose.Types.ObjectId(input.userId) };
+      const filter = applyCursor(
+        buildLineupFilter(input, base),
+        input.cursor,
+        input.sort,
+      );
+      return paginateLineups(filter, input);
+    }),
+
   getLineupsByOtherUsers: publicProcedure
     .output(paginatedLineupsOutput)
     .input(

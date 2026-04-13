@@ -7,7 +7,8 @@ import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle, XCircle, Ban, Clock } from "lucide-react";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
+import { AdminPageHeader } from "../_components/AdminPageHeader";
 import {
   AdminFilterTabs,
   AdminSpinner,
@@ -51,12 +52,10 @@ export default function FlaggedContentPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-foreground text-3xl font-bold">Flagged Content</h1>
-        <p className="text-foreground/50 mt-1">
-          Review content flagged by the profanity filter
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Flagged Content"
+        description="Review content flagged by the profanity filter"
+      />
 
       <div className="mb-6">
         <AdminFilterTabs

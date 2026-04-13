@@ -1,12 +1,12 @@
 "use client";
 
-import type { Session } from "next-auth";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { IoIosLogOut } from "react-icons/io";
 
-const DesktopNav = ({ session }: { session: Session | null }) => {
+const DesktopNav = () => {
+  const { data: session } = useSession();
   return (
     <div className="hidden items-center gap-6 text-sm md:flex">
       <Link

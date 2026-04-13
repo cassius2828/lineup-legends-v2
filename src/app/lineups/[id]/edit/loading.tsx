@@ -1,4 +1,4 @@
-import GoldCircleSpinnerLoader from "~/app/_components/loaders/GoldCircleSpinnerLoader";
+import { GoldCircleSpinnerLoader } from "~/app/_components/common/loaders";
 
 export default function Loading() {
   return (

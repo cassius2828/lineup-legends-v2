@@ -4,6 +4,13 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import {
+  ChevronLeft,
+  Play,
+  VideoOff,
+  FileText,
+  LayoutGrid,
+} from "lucide-react";
 import { getTopicBySlug, CATEGORIES } from "../_data/topics";
 import { MarkdownContent } from "../_components/MarkdownContent";
 
@@ -43,19 +50,7 @@ export default function TopicDetailPage() {
             href="/getting-technical"
             className="text-foreground/50 hover:text-foreground/80 mb-6 inline-flex items-center gap-1.5 text-sm transition-colors"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
+            <ChevronLeft className="h-4 w-4" />
             All Topics
           </Link>
         </motion.div>
@@ -125,13 +120,10 @@ export default function TopicDetailPage() {
                     />
                     <div className="absolute inset-0 bg-black/30 transition-colors group-hover:bg-black/20" />
                     <div className="absolute flex h-16 w-16 items-center justify-center rounded-full bg-red-600 shadow-lg transition-transform group-hover:scale-110 sm:h-20 sm:w-20">
-                      <svg
+                      <Play
                         className="ml-1 h-7 w-7 text-white sm:h-8 sm:w-8"
                         fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
+                      />
                     </div>
                   </button>
                 )}
@@ -152,19 +144,7 @@ export default function TopicDetailPage() {
             <div className="border-foreground/10 bg-foreground/[0.02] flex aspect-video items-center justify-center rounded-xl border border-dashed">
               <div className="text-center">
                 <div className="bg-foreground/5 mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full">
-                  <svg
-                    className="text-foreground/20 h-7 w-7"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
+                  <VideoOff className="text-foreground/20 h-7 w-7" />
                 </div>
                 <p className="text-foreground/30 text-sm font-medium">
                   Video coming soon
@@ -185,19 +165,7 @@ export default function TopicDetailPage() {
           transition={{ duration: 0.4, delay: 0.2 }}
         >
           <div className="mb-6 flex items-center gap-3">
-            <svg
-              className="text-foreground/30 h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
+            <FileText className="text-foreground/30 h-5 w-5" />
             <h2 className="text-foreground text-lg font-bold">Documentation</h2>
           </div>
 
@@ -212,19 +180,7 @@ export default function TopicDetailPage() {
             href="/getting-technical"
             className="border-foreground/10 text-foreground/50 hover:border-gold/30 hover:text-gold inline-flex items-center gap-2 rounded-lg border px-5 py-2.5 text-sm transition-colors"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-              />
-            </svg>
+            <LayoutGrid className="h-4 w-4" />
             Browse All Topics
           </Link>
         </div>
