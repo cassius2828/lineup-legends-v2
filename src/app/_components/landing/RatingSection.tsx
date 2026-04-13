@@ -50,13 +50,13 @@ export function RatingSection() {
             className="font-stencil text-foreground text-4xl tracking-wide uppercase sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
-            Upvoting and
+            Rate &amp;
           </motion.h2>
           <motion.h2
             className="font-stencil text-4xl tracking-wide uppercase sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
-            <span className="text-gradient-gold">Rating</span>
+            <span className="text-gradient-gold">Review</span>
           </motion.h2>
 
           <motion.div
@@ -68,9 +68,10 @@ export function RatingSection() {
             className="text-foreground/70 mt-8 max-w-xl text-lg leading-relaxed"
             variants={textVariants}
           >
-            Engage with the community by upvoting or downvoting lineups you see.
-            Highlight the most popular and highest-rated lineups to help users
-            discover top strategies and standout creations.
+            Score any lineup from 1 to 10 to show the community what you think.
+            Average ratings surface the best creations on the Explore page, so
+            the cream rises to the top. Jump into the comments to upvote,
+            downvote, and debate lineup picks in threaded conversations.
           </motion.p>
         </motion.div>
 

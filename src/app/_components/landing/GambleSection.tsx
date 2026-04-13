@@ -68,11 +68,12 @@ export function GambleSection() {
             className="text-foreground/70 mt-8 max-w-xl text-lg leading-relaxed"
             variants={textVariants}
           >
-            Take a chance to enhance your lineup by gambling for a new player.
-            You could get a player one level higher or risk getting a
-            lower-level player. Value 1 players can only be gambled for fellow
-            value 1 players, adding an extra layer of strategy. You may only
-            gamble once per lineup — choose wisely.
+            Roll the dice on any position for a random replacement. A weighted
+            probability system ties risk to reward — lower-value players carry
+            higher risk but a real shot at a big upgrade, while higher-value
+            players are safer bets. You only get one gamble per lineup, so make
+            it count. An NBA 2K-inspired card reveal shows the outcome with
+            tier-based animations and sound effects.
           </motion.p>
         </motion.div>
 

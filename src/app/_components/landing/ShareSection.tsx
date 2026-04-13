@@ -72,10 +72,11 @@ export function ShareSection() {
             className="text-foreground/70 mt-8 text-lg leading-relaxed"
             variants={textVariants}
           >
-            Showcase your fantasy basketball prowess by sharing your lineups on
-            social media or via text messages. Engage your friends and
-            followers, and maybe even recruit some new competitors to join
-            Lineup Legends.
+            When your lineup is ready, share the link on X, Instagram, in group
+            chats, or anywhere your crew hangs out—recruit friends or flex a hot
+            build. Browse Explore to discover lineups from across the community,
+            sorted by rating and popularity, and bookmark favorites to revisit,
+            rate, and comment later from your saved collection.
           </motion.p>
         </div>
       </motion.div>
