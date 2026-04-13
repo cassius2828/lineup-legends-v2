@@ -3,11 +3,14 @@ import mongoose from "mongoose";
 import { z } from "zod";
 import { lineupPopulateFields } from "~/server/lib/lineup-queries";
 import {
-  buildLineupSort,
   buildLineupFilter,
   applyCursor,
+  paginateLineups,
 } from "~/server/services/lineup";
-import { lineupFilterInput } from "~/server/api/schemas/lineup-filter";
+import {
+  lineupFilterInput,
+  mongoIdString,
+} from "~/server/api/schemas/lineup-filter";
 import { logger } from "~/lib/logger";
 
 import {
@@ -114,28 +117,14 @@ export const lineupRouter = createTRPCRouter({
         input.cursor,
         input.sort,
       );
-      const limit = input.limit;
-      const data = await LineupModel.find(filter)
-        .sort(buildLineupSort(input.sort))
-        .limit(limit + 1)
-        .populate(lineupPopulateFields)
-        .lean();
-
-      const hasMore = data.length > limit;
-      const lineups = hasMore ? data.slice(0, limit) : data;
-
-      return populated({
-        lineups,
-        hasMore,
-        cursor: lineups[lineups.length - 1]?._id?.toString(),
-      });
+      return paginateLineups(filter, input);
     }),
 
   getLineupsByOtherUsers: publicProcedure
     .output(paginatedLineupsOutput)
     .input(
       lineupFilterInput.extend({
-        excludeUserId: z.string().optional(),
+        excludeUserId: mongoIdString.optional(),
       }),
     )
     .query(async ({ input }) => {
@@ -147,21 +136,7 @@ export const lineupRouter = createTRPCRouter({
         input.cursor,
         input.sort,
       );
-      const limit = input.limit;
-      const data = await LineupModel.find(filter)
-        .sort(buildLineupSort(input.sort))
-        .limit(limit + 1)
-        .populate(lineupPopulateFields)
-        .lean();
-
-      const hasMore = data.length > limit;
-      const lineups = hasMore ? data.slice(0, limit) : data;
-
-      return populated({
-        lineups,
-        hasMore,
-        cursor: lineups[lineups.length - 1]?._id?.toString(),
-      });
+      return paginateLineups(filter, input);
     }),
 
   getAllLineups: publicProcedure
@@ -173,21 +148,7 @@ export const lineupRouter = createTRPCRouter({
         input.cursor,
         input.sort,
       );
-      const limit = input.limit;
-      const data = await LineupModel.find(filter)
-        .sort(buildLineupSort(input.sort))
-        .limit(limit + 1)
-        .populate(lineupPopulateFields)
-        .lean();
-
-      const hasMore = data.length > limit;
-      const lineups = hasMore ? data.slice(0, limit) : data;
-
-      return populated({
-        lineups,
-        hasMore,
-        cursor: lineups[lineups.length - 1]?._id?.toString(),
-      });
+      return paginateLineups(filter, input);
     }),
 
   getLineupById: publicProcedure

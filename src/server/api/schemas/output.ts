@@ -157,7 +157,7 @@ export const lineupOutput = z.object({
   updatedAt: z.coerce.date(),
   featured: z.boolean(),
   players: lineupPlayersOutput,
-  owner: userOutput,
+  owner: userSummaryOutput,
   avgRating: z.number().default(0),
   ratingCount: z.number().default(0),
   ratingSum: z.number().default(0),

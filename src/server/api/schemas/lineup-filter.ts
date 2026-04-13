@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const mongoIdString = z.string().regex(/^[a-f\d]{24}$/i, "Invalid ID");
+
 export const lineupFilterInput = z.object({
   sort: z
     .enum(["newest", "oldest", "highest-rated", "most-rated"])
@@ -10,7 +12,7 @@ export const lineupFilterInput = z.object({
   dateFrom: z.coerce.date().optional(),
   dateTo: z.coerce.date().optional(),
   minRating: z.number().min(0).max(10).optional(),
-  filterUserId: z.string().optional(),
+  filterUserId: mongoIdString.optional(),
 });
 
 export type LineupFilterInput = z.infer<typeof lineupFilterInput>;

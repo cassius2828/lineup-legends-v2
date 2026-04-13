@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
@@ -52,30 +53,41 @@ export const bookmarkRouter = createTRPCRouter({
       const skip = input.cursor ? parseInt(input.cursor, 10) : 0;
       const limit = input.limit;
 
-      const bookmarks = await BookmarkModel.find({
-        user: ctx.session.user.id,
-      })
-        .sort({ createdAt: sortDir })
-        .select("lineup")
-        .lean();
+      const pipeline: mongoose.PipelineStage[] = [
+        {
+          $match: {
+            user: new mongoose.Types.ObjectId(ctx.session.user.id),
+          },
+        },
+        { $sort: { createdAt: sortDir as 1 | -1 } },
+        { $skip: skip },
+        { $limit: limit + 1 },
+        {
+          $lookup: {
+            from: "lineups",
+            localField: "lineup",
+            foreignField: "_id",
+            as: "lineupDoc",
+          },
+        },
+        { $unwind: "$lineupDoc" },
+        { $replaceRoot: { newRoot: "$lineupDoc" } },
+      ];
 
-      const lineupIds = bookmarks.map((b) => b.lineup);
-      if (lineupIds.length === 0) {
-        return populated({ lineups: [], hasMore: false, cursor: undefined });
+      const filterMatch = buildLineupFilter(input);
+      if (Object.keys(filterMatch).length > 0) {
+        pipeline.push({ $match: filterMatch });
       }
 
-      const base = { _id: { $in: lineupIds } };
-      const filter = buildLineupFilter(input, base);
+      const data = await BookmarkModel.aggregate(pipeline);
 
-      const data = await LineupModel.find(filter)
-        .sort({ createdAt: sortDir })
-        .skip(skip)
-        .limit(limit + 1)
-        .populate(lineupPopulateFields)
-        .lean();
+      const populatedData = await LineupModel.populate(
+        data,
+        lineupPopulateFields,
+      );
 
-      const hasMore = data.length > limit;
-      const lineups = hasMore ? data.slice(0, limit) : data;
+      const hasMore = populatedData.length > limit;
+      const lineups = hasMore ? populatedData.slice(0, limit) : populatedData;
 
       return populated({
         lineups,

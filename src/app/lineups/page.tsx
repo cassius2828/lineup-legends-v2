@@ -14,6 +14,7 @@ import LineupFilters from "../_components/common/LineupFilters";
 import LineupsHeader from "../_components/Header/LineupsHeader";
 import LineupCardGrid from "../_components/common/LineupCardGrid";
 import { LoadMoreTrigger } from "../_components/common/LoadMoreTrigger";
+import { LineupListLoader } from "../_components/common/LineupListLoader";
 import { ViewToggle } from "../_components/common/ViewToggle";
 import { ConfirmModal } from "../_components/common/ConfirmModal";
 import { useViewModeStore } from "~/stores/viewMode";
@@ -119,12 +120,7 @@ export default function MyLineupsPage() {
 
         {/* Lineups Grid */}
         {isLoading ? (
-          <div className="flex h-64 items-center justify-center">
-            <div className="text-center">
-              <div className="border-foreground/20 border-t-gold mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4" />
-              <p className="text-foreground/60">Loading lineups...</p>
-            </div>
-          </div>
+          <LineupListLoader />
         ) : lineups.length > 0 ? (
           <>
             <LineupCardGrid view={view}>

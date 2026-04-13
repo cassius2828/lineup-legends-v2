@@ -6,6 +6,7 @@ import { useState, useCallback } from "react";
 import LineupCardGrid from "~/app/_components/common/LineupCardGrid";
 import { ViewToggle } from "~/app/_components/common/ViewToggle";
 import { LoadMoreTrigger } from "~/app/_components/common/LoadMoreTrigger";
+import { LineupListLoader } from "~/app/_components/common/LineupListLoader";
 import { useViewModeStore } from "~/stores/viewMode";
 import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
@@ -119,12 +120,7 @@ export default function ExploreLineupsPage() {
 
         {/* Lineups Grid */}
         {isLoading ? (
-          <div className="flex h-64 items-center justify-center">
-            <div className="text-center">
-              <div className="border-foreground/20 border-t-gold mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4" />
-              <p className="text-foreground/60">Loading lineups...</p>
-            </div>
-          </div>
+          <LineupListLoader />
         ) : lineups.length > 0 ? (
           <>
             <LineupCardGrid view={view}>
