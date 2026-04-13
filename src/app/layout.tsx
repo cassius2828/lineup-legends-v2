@@ -72,7 +72,7 @@ export default function RootLayout({
           enableSystem={false}
         >
           <TRPCReactProvider>
-            <SessionProvider>
+            <SessionProvider refetchOnWindowFocus refetchInterval={5 * 60}>
               <MfaGuard />
               <TooltipProvider>
                 <div id="global-nav">

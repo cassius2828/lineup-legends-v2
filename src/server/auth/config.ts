@@ -71,6 +71,22 @@ export const authConfig = {
   // Database strategy doesn't work with Credentials because it doesn't persist sessions
   session: {
     strategy: "jwt",
+    maxAge: 7 * 24 * 60 * 60, // 1 week
+  },
+  cookies: {
+    sessionToken: {
+      name:
+        process.env.NODE_ENV === "production"
+          ? "__Secure-authjs.session-token"
+          : "authjs.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax" as const,
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 7 * 24 * 60 * 60, // match session maxAge so cookie persists across browser restarts
+      },
+    },
   },
   pages: {
     signIn: "/sign-in",
