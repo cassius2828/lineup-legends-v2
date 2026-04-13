@@ -18,10 +18,14 @@ import {
 import { getId } from "~/lib/types";
 import { SORT_OPTIONS, type SortOption } from "~/lib/constants";
 import { api } from "~/trpc/react";
+import { useLineupFilters } from "~/hooks/useLineupFilters";
+import LineupFilters from "~/app/_components/common/LineupFilters";
 
 export default function ExploreLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const { view, setView } = useViewModeStore();
+  const { filters, setFilters, filterLineups, activeFilterCount } =
+    useLineupFilters();
   const utils = api.useUtils();
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
@@ -62,38 +66,49 @@ export default function ExploreLineupsPage() {
         />
 
         {/* Sort Controls */}
-        <div className="mb-6 flex gap-2">
-          {SORT_OPTIONS.map((option) => (
-            <Button
-              key={option.value}
-              onMouseEnter={() => handlePreFetchLineups(option.value)}
-              onClick={() => setSort(option.value)}
-              color={sort === option.value ? "gold" : "white"}
-              variant={sort === option.value ? "solid" : "subtle"}
-            >
-              {option.label}
-            </Button>
-          ))}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={handleRefreshAllLineups}
-                className="text-foreground/50 hover:bg-foreground/10 hover:text-foreground/70 flex cursor-pointer items-center justify-center rounded-lg p-1.5 transition-colors"
+        <div className="mb-6 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {SORT_OPTIONS.map((option) => (
+              <Button
+                key={option.value}
+                onMouseEnter={() => handlePreFetchLineups(option.value)}
+                onClick={() => setSort(option.value)}
+                color={sort === option.value ? "gold" : "white"}
+                variant={sort === option.value ? "solid" : "subtle"}
               >
-                <svg
-                  className="h-4 w-4"
-                  viewBox="0 0 640 640"
-                  fill="currentColor"
+                {option.label}
+              </Button>
+            ))}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={handleRefreshAllLineups}
+                  className="text-foreground/50 hover:bg-foreground/10 hover:text-foreground/70 flex cursor-pointer items-center justify-center rounded-lg p-1.5 transition-colors"
                 >
-                  <path d="M129.9 292.5C143.2 199.5 223.3 128 320 128C373 128 421 149.5 455.8 184.2C456 184.4 456.2 184.6 456.4 184.8L464 192L416.1 192C398.4 192 384.1 206.3 384.1 224C384.1 241.7 398.4 256 416.1 256L544.1 256C561.8 256 576.1 241.7 576.1 224L576.1 96C576.1 78.3 561.8 64 544.1 64C526.4 64 512.1 78.3 512.1 96L512.1 149.4L500.8 138.7C454.5 92.6 390.5 64 320 64C191 64 84.3 159.4 66.6 283.5C64.1 301 76.2 317.2 93.7 319.7C111.2 322.2 127.4 310 129.9 292.6zM573.4 356.5C575.9 339 563.7 322.8 546.3 320.3C528.9 317.8 512.6 330 510.1 347.4C496.8 440.4 416.7 511.9 320 511.9C267 511.9 219 490.4 184.2 455.7C184 455.5 183.8 455.3 183.6 455.1L176 447.9L223.9 447.9C241.6 447.9 255.9 433.6 255.9 415.9C255.9 398.2 241.6 383.9 223.9 383.9L96 384C87.5 384 79.3 387.4 73.3 393.5C67.3 399.6 63.9 407.7 64 416.3L65 543.3C65.1 561 79.6 575.2 97.3 575C115 574.8 129.2 560.4 129 542.7L128.6 491.2L139.3 501.3C185.6 547.4 249.5 576 320 576C449 576 555.7 480.6 573.4 356.5z" />
-                </svg>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Refresh lineups</TooltipContent>
-          </Tooltip>
-          <div className="ml-auto">
-            <ViewToggle view={view} onChange={setView} />
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 640 640"
+                    fill="currentColor"
+                  >
+                    <path d="M129.9 292.5C143.2 199.5 223.3 128 320 128C373 128 421 149.5 455.8 184.2C456 184.4 456.2 184.6 456.4 184.8L464 192L416.1 192C398.4 192 384.1 206.3 384.1 224C384.1 241.7 398.4 256 416.1 256L544.1 256C561.8 256 576.1 241.7 576.1 224L576.1 96C576.1 78.3 561.8 64 544.1 64C526.4 64 512.1 78.3 512.1 96L512.1 149.4L500.8 138.7C454.5 92.6 390.5 64 320 64C191 64 84.3 159.4 66.6 283.5C64.1 301 76.2 317.2 93.7 319.7C111.2 322.2 127.4 310 129.9 292.6zM573.4 356.5C575.9 339 563.7 322.8 546.3 320.3C528.9 317.8 512.6 330 510.1 347.4C496.8 440.4 416.7 511.9 320 511.9C267 511.9 219 490.4 184.2 455.7C184 455.5 183.8 455.3 183.6 455.1L176 447.9L223.9 447.9C241.6 447.9 255.9 433.6 255.9 415.9C255.9 398.2 241.6 383.9 223.9 383.9L96 384C87.5 384 79.3 387.4 73.3 393.5C67.3 399.6 63.9 407.7 64 416.3L65 543.3C65.1 561 79.6 575.2 97.3 575C115 574.8 129.2 560.4 129 542.7L128.6 491.2L139.3 501.3C185.6 547.4 249.5 576 320 576C449 576 555.7 480.6 573.4 356.5z" />
+                  </svg>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh lineups</TooltipContent>
+            </Tooltip>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <LineupFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              activeFilterCount={activeFilterCount}
+              showUserFilter={true}
+              excludeUserId={session?.user?.id}
+            />
+            <div className="ml-auto">
+              <ViewToggle view={view} onChange={setView} />
+            </div>
           </div>
         </div>
 
@@ -106,25 +121,36 @@ export default function ExploreLineupsPage() {
             </div>
           </div>
         ) : lineups && lineups.length > 0 ? (
-          <LineupCardGrid view={view}>
-            {lineups.map((lineup) =>
-              view === "grid" ? (
-                <LineupCardCompact
-                  key={getId(lineup)}
-                  lineup={lineup}
-                  featured={lineup.featured}
-                />
-              ) : (
-                <LineupCard
-                  key={getId(lineup)}
-                  lineup={lineup}
-                  showOwner={true}
-                  isOwner={false}
-                  currentUserId={session?.user.id ?? ""}
-                />
-              ),
-            )}
-          </LineupCardGrid>
+          (() => {
+            const filtered = filterLineups(lineups);
+            return filtered.length > 0 ? (
+              <LineupCardGrid view={view}>
+                {filtered.map((lineup) =>
+                  view === "grid" ? (
+                    <LineupCardCompact
+                      key={getId(lineup)}
+                      lineup={lineup}
+                      featured={lineup.featured}
+                    />
+                  ) : (
+                    <LineupCard
+                      key={getId(lineup)}
+                      lineup={lineup}
+                      showOwner={true}
+                      isOwner={false}
+                      currentUserId={session?.user.id ?? ""}
+                    />
+                  ),
+                )}
+              </LineupCardGrid>
+            ) : (
+              <div className="bg-foreground/5 rounded-2xl p-12 text-center">
+                <p className="text-foreground/60">
+                  No lineups match the current filters.
+                </p>
+              </div>
+            );
+          })()
         ) : (
           <div className="bg-foreground/5 rounded-2xl p-12 text-center">
             <div className="bg-foreground/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">

@@ -14,12 +14,16 @@ import { Button } from "~/app/_components/ui/Button";
 import { getId } from "~/lib/types";
 import { SORT_OPTIONS_BASIC } from "~/lib/constants";
 import { api } from "~/trpc/react";
+import { useLineupFilters } from "~/hooks/useLineupFilters";
+import LineupFilters from "~/app/_components/common/LineupFilters";
 
 type SortOption = "newest" | "oldest";
 
 export default function BookmarkedLineupsPage() {
   const [sort, setSort] = useState<SortOption>("newest");
   const { view, setView } = useViewModeStore();
+  const { filters, setFilters, filterLineups, activeFilterCount } =
+    useLineupFilters();
   const { data: session } = useSession();
 
   const { data: lineups, isLoading } =
@@ -40,19 +44,28 @@ export default function BookmarkedLineupsPage() {
           createLinkText="+ Create Lineup"
         />
 
-        <div className="mb-6 flex items-center gap-2">
-          {SORT_OPTIONS_BASIC.map((option) => (
-            <Button
-              key={option.value}
-              onClick={() => setSort(option.value)}
-              color={sort === option.value ? "gold" : "white"}
-              variant={sort === option.value ? "solid" : "subtle"}
-            >
-              {option.label}
-            </Button>
-          ))}
-          <div className="ml-auto">
-            <ViewToggle view={view} onChange={setView} />
+        <div className="mb-6 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {SORT_OPTIONS_BASIC.map((option) => (
+              <Button
+                key={option.value}
+                onClick={() => setSort(option.value)}
+                color={sort === option.value ? "gold" : "white"}
+                variant={sort === option.value ? "solid" : "subtle"}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <LineupFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              activeFilterCount={activeFilterCount}
+            />
+            <div className="ml-auto">
+              <ViewToggle view={view} onChange={setView} />
+            </div>
           </div>
         </div>
 
@@ -64,25 +77,36 @@ export default function BookmarkedLineupsPage() {
             </div>
           </div>
         ) : lineups && lineups.length > 0 ? (
-          <LineupCardGrid view={view}>
-            {lineups.map((lineup) =>
-              view === "grid" ? (
-                <LineupCardCompact
-                  key={getId(lineup)}
-                  lineup={lineup}
-                  featured={lineup.featured}
-                />
-              ) : (
-                <LineupCard
-                  key={getId(lineup)}
-                  lineup={lineup}
-                  showOwner={true}
-                  isOwner={false}
-                  currentUserId={session?.user.id ?? ""}
-                />
-              ),
-            )}
-          </LineupCardGrid>
+          (() => {
+            const filtered = filterLineups(lineups);
+            return filtered.length > 0 ? (
+              <LineupCardGrid view={view}>
+                {filtered.map((lineup) =>
+                  view === "grid" ? (
+                    <LineupCardCompact
+                      key={getId(lineup)}
+                      lineup={lineup}
+                      featured={lineup.featured}
+                    />
+                  ) : (
+                    <LineupCard
+                      key={getId(lineup)}
+                      lineup={lineup}
+                      showOwner={true}
+                      isOwner={false}
+                      currentUserId={session?.user.id ?? ""}
+                    />
+                  ),
+                )}
+              </LineupCardGrid>
+            ) : (
+              <div className="bg-foreground/5 rounded-2xl p-12 text-center">
+                <p className="text-foreground/60">
+                  No lineups match the current filters.
+                </p>
+              </div>
+            );
+          })()
         ) : (
           <div className="bg-foreground/5 rounded-2xl p-12 text-center">
             <div className="bg-foreground/10 mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full">

@@ -78,7 +78,7 @@ export default function RootLayout({
                 <div id="global-nav">
                   <Nav />
                 </div>
-                <div id="global-nav-spacer" className="mb-24 md:mb-16"></div>
+                <div id="global-nav-spacer" className="mb-16"></div>
                 <div className="flex-1">
                   <Suspense
                     fallback={

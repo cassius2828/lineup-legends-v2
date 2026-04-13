@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { getId } from "~/lib/types";
 import { useViewModeStore } from "~/stores/viewMode";
+import { useLineupFilters } from "~/hooks/useLineupFilters";
+import LineupFilters from "~/app/_components/common/LineupFilters";
 
 function FollowListModal({
   userId,
@@ -253,6 +255,8 @@ export default function ProfilePage() {
 
   const isOwnProfile = session?.id === userId;
   const { view, setView } = useViewModeStore();
+  const { filters, setFilters, filterLineups, activeFilterCount } =
+    useLineupFilters();
   const [followListType, setFollowListType] = useState<
     "followers" | "following" | null
   >(null);
@@ -546,36 +550,56 @@ export default function ProfilePage() {
 
         {/* Recent Lineups Section */}
         <div className="pb-16">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-foreground text-xl font-semibold">
-              Recent Lineups
-            </h2>
-            <div className="flex items-center gap-3">
+          <div className="mb-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-foreground text-xl font-semibold">
+                Recent Lineups
+              </h2>
               {profile.lineups.length > 0 && (
                 <span className="text-foreground/50 text-sm">
                   Showing {profile.lineups.length} of{" "}
                   {profile.stats?.totalLineups ?? profile._count.lineups}
                 </span>
               )}
-              <ViewToggle view={view} onChange={setView} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <LineupFilters
+                filters={filters}
+                onFiltersChange={setFilters}
+                activeFilterCount={activeFilterCount}
+              />
+              <div className="ml-auto">
+                <ViewToggle view={view} onChange={setView} />
+              </div>
             </div>
           </div>
 
           {profile.lineups.length > 0 ? (
-            <LineupCardGrid view={view}>
-              {profile.lineups.map((lineup) =>
-                view === "grid" ? (
-                  <LineupCardCompact key={getId(lineup)} lineup={lineup} />
-                ) : (
-                  <LineupCard
-                    key={getId(lineup)}
-                    lineup={lineup}
-                    showOwner={false}
-                    isOwner={false}
-                  />
-                ),
-              )}
-            </LineupCardGrid>
+            (() => {
+              const filtered = filterLineups(profile.lineups);
+              return filtered.length > 0 ? (
+                <LineupCardGrid view={view}>
+                  {filtered.map((lineup) =>
+                    view === "grid" ? (
+                      <LineupCardCompact key={getId(lineup)} lineup={lineup} />
+                    ) : (
+                      <LineupCard
+                        key={getId(lineup)}
+                        lineup={lineup}
+                        showOwner={false}
+                        isOwner={false}
+                      />
+                    ),
+                  )}
+                </LineupCardGrid>
+              ) : (
+                <div className="bg-foreground/5 rounded-2xl p-12 text-center">
+                  <p className="text-foreground/60">
+                    No lineups match the current filters.
+                  </p>
+                </div>
+              );
+            })()
           ) : (
             <div className="bg-foreground/5 rounded-2xl p-12 text-center">
               <p className="text-foreground/60">No lineups yet</p>
