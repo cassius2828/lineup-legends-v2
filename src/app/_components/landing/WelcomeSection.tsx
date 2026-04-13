@@ -101,12 +101,12 @@ export function WelcomeSection() {
             className="text-foreground/70 mt-8 max-w-xl text-lg leading-relaxed"
             variants={textVariants}
           >
-            The ultimate fantasy basketball lineup creation and management
-            platform. Start by creating your lineup within a set budget,
-            choosing from a pool of past and present players. Each player in
-            their value tier is randomly selected to ensure a fair and exciting
-            experience. Strategically manage your budget and player selections
-            to build the best possible team.
+            The ultimate fantasy basketball lineup builder. Draft a 5-player
+            squad from over 300 past and present NBA players, each valued $1 to
+            $5, all within a $15 budget. Players in each value tier are randomly
+            assigned to keep things fair and exciting. Dive into full player
+            profiles powered by Wikipedia — career stats, awards, bios, and more
+            — to craft the smartest lineup possible.
           </motion.p>
         </motion.div>
       </div>

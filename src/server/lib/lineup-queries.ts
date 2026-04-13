@@ -4,5 +4,9 @@ export const lineupPopulateFields = [
   { path: "players.sf", model: "Player" },
   { path: "players.pf", model: "Player" },
   { path: "players.c", model: "Player" },
-  { path: "owner", model: "User" },
+  {
+    path: "owner",
+    model: "User",
+    select: "name username image profileImg",
+  },
 ];

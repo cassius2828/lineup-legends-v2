@@ -74,9 +74,10 @@ export function FeaturedSection() {
           className="text-foreground/70 mt-8 max-w-2xl text-lg leading-relaxed"
           variants={textVariants}
         >
-          Showcase your fantasy basketball prowess by sharing your lineups on
-          social media or via text messages. Engage your friends and followers,
-          and maybe even recruit some new competitors to join Lineup Legends.
+          Pin up to three of your best lineups as featured to showcase them
+          front and center on your profile. Featured lineups also appear on the
+          Explore page, giving the community a chance to rate, comment, and
+          discover your top creations.
         </motion.p>
 
         {/* CTA */}

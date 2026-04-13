@@ -1,9 +1,12 @@
+import mongoose from "mongoose";
 import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { BookmarkModel, LineupModel } from "~/server/models";
 import { lineupPopulateFields } from "~/server/lib/lineup-queries";
-import { lineupOutput, populated } from "~/server/api/schemas/output";
+import { paginatedLineupsOutput, populated } from "~/server/api/schemas/output";
+import { lineupFilterInput } from "~/server/api/schemas/lineup-filter";
+import { buildLineupFilter } from "~/server/services/lineup";
 
 export const bookmarkRouter = createTRPCRouter({
   toggle: protectedProcedure
@@ -43,39 +46,53 @@ export const bookmarkRouter = createTRPCRouter({
     }),
 
   getBookmarkedLineups: protectedProcedure
-    .output(z.array(lineupOutput))
-    .input(
-      z
-        .object({
-          sort: z.enum(["newest", "oldest"]).optional().default("newest"),
-        })
-        .optional(),
-    )
+    .output(paginatedLineupsOutput)
+    .input(lineupFilterInput)
     .query(async ({ ctx, input }) => {
-      const sortDir = input?.sort === "oldest" ? 1 : -1;
+      const sortDir = input.sort === "oldest" ? 1 : -1;
+      const skip = input.cursor ? parseInt(input.cursor, 10) : 0;
+      const limit = input.limit;
 
-      const bookmarks = await BookmarkModel.find({
-        user: ctx.session.user.id,
-      })
-        .sort({ createdAt: sortDir })
-        .select("lineup")
-        .lean();
+      const pipeline: mongoose.PipelineStage[] = [
+        {
+          $match: {
+            user: new mongoose.Types.ObjectId(ctx.session.user.id),
+          },
+        },
+        { $sort: { createdAt: sortDir as 1 | -1 } },
+        { $skip: skip },
+        { $limit: limit + 1 },
+        {
+          $lookup: {
+            from: "lineups",
+            localField: "lineup",
+            foreignField: "_id",
+            as: "lineupDoc",
+          },
+        },
+        { $unwind: "$lineupDoc" },
+        { $replaceRoot: { newRoot: "$lineupDoc" } },
+      ];
 
-      const lineupIds = bookmarks.map((b) => b.lineup);
+      const filterMatch = buildLineupFilter(input);
+      if (Object.keys(filterMatch).length > 0) {
+        pipeline.push({ $match: filterMatch });
+      }
 
-      if (lineupIds.length === 0) return [];
+      const data = await BookmarkModel.aggregate(pipeline);
 
-      const lineups = await LineupModel.find({ _id: { $in: lineupIds } })
-        .populate(lineupPopulateFields)
-        .lean();
-
-      const idOrder = new Map(lineupIds.map((id, i) => [id.toString(), i]));
-      lineups.sort(
-        (a, b) =>
-          (idOrder.get(a._id.toString()) ?? 0) -
-          (idOrder.get(b._id.toString()) ?? 0),
+      const populatedData = await LineupModel.populate(
+        data,
+        lineupPopulateFields,
       );
 
-      return populated(lineups);
+      const hasMore = populatedData.length > limit;
+      const lineups = hasMore ? populatedData.slice(0, limit) : populatedData;
+
+      return populated({
+        lineups,
+        hasMore,
+        cursor: hasMore ? String(skip + limit) : undefined,
+      });
     }),
 });

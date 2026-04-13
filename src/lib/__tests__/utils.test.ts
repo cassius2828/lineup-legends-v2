@@ -143,10 +143,11 @@ describe("lineupPopulateFields", () => {
     });
   });
 
-  it("should include the owner field", () => {
+  it("should include the owner field with select", () => {
     expect(lineupPopulateFields).toContainEqual({
       path: "owner",
       model: "User",
+      select: "name username image profileImg",
     });
   });
 

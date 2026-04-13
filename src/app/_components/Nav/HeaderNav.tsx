@@ -4,7 +4,7 @@ const HeaderNav = () => {
   return (
     <Link
       href="/"
-      className="group font-stencil text-foreground text-2xl tracking-wide uppercase"
+      className="group font-stencil text-foreground shrink-0 text-2xl tracking-wide whitespace-nowrap uppercase"
     >
       <span className="text-gold group-hover:text-gold-light transition-colors">
         Lineup

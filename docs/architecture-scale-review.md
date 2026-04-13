@@ -32,24 +32,24 @@ This document provides a comprehensive analysis of the Lineup Legends v2 databas
 
 ### Model Summary
 
-| Model               | Purpose                                              | Indexes                                                                                             | Document Size Risk                   |
-| ------------------- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------ |
-| `User`              | User accounts & profiles                             | `email` (unique), `username` (unique sparse), `name`                                                | Low                                  |
-| `Player`            | Basketball player reference data + Wikipedia profile | `firstName/lastName` (text), `value`                                                                | Low (wiki fields are nullable Mixed) |
-| `Lineup`            | User-created fantasy lineups                         | `owner+createdAt`, `owner+updatedAt`, `featured+createdAt`, `avgRating`, `ratingCount`, `createdAt` | Low                                  |
-| `Rating`            | Lineup ratings (1-10)                                | `user + lineup` (compound unique)                                                                   | Low                                  |
-| `Comment`           | Comments on lineups                                  | `lineup + createdAt`, `user + createdAt`                                                            | Low                                  |
-| `Thread`            | Replies to comments                                  | `user + comment + createdAt`                                                                        | Low                                  |
-| `CommentVote`       | Comment upvotes/downvotes                            | `user + comment` (compound unique)                                                                  | Low                                  |
-| `ThreadVote`        | Thread upvotes/downvotes                             | `user + thread` (compound unique)                                                                   | Low                                  |
-| `Follow`            | User follow relationships                            | `follower + following` (unique), `follower`, `following`                                            | Low                                  |
-| `Bookmark`          | Saved lineups per user                               | `user + lineup` (unique), `user + createdAt`                                                        | Low                                  |
-| `Video`             | Getting Technical videos                             | `youtubeId` (unique)                                                                                | Low                                  |
-| `RequestedPlayer`   | Player requests from users                           | `firstName + lastName` (unique, case-insensitive)                                                   | Medium (embedded array)              |
-| `Feedback`          | User-submitted feedback                              | `createdAt`                                                                                         | Low                                  |
-| `Account`           | OAuth provider links                                 | `provider + providerAccountId`                                                                      | Low                                  |
-| `Session`           | Active user sessions                                 | `sessionToken`, `user`, `expires`                                                                   | Low                                  |
-| `VerificationToken` | Email verification tokens                            | `identifier + token` (unique)                                                                       | Low                                  |
+| Model               | Purpose                                              | Indexes                                                                                                     | Document Size Risk                   |
+| ------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| `User`              | User accounts & profiles                             | `email` (unique), `username` (unique sparse), `name`                                                        | Low                                  |
+| `Player`            | Basketball player reference data + Wikipedia profile | `firstName/lastName` (text), `value`                                                                        | Low (wiki fields are nullable Mixed) |
+| `Lineup`            | User-created fantasy lineups                         | `owner+createdAt`, `owner+updatedAt`, `featured+createdAt`, `avgRating+_id`, `ratingCount+_id`, `createdAt` | Low                                  |
+| `Rating`            | Lineup ratings (1-10)                                | `user + lineup` (compound unique)                                                                           | Low                                  |
+| `Comment`           | Comments on lineups                                  | `lineup + createdAt`, `user + createdAt`                                                                    | Low                                  |
+| `Thread`            | Replies to comments                                  | `user + comment + createdAt`                                                                                | Low                                  |
+| `CommentVote`       | Comment upvotes/downvotes                            | `user + comment` (compound unique)                                                                          | Low                                  |
+| `ThreadVote`        | Thread upvotes/downvotes                             | `user + thread` (compound unique)                                                                           | Low                                  |
+| `Follow`            | User follow relationships                            | `follower + following` (unique), `follower`, `following`                                                    | Low                                  |
+| `Bookmark`          | Saved lineups per user                               | `user + lineup` (unique), `user + createdAt`                                                                | Low                                  |
+| `Video`             | Getting Technical videos                             | `youtubeId` (unique)                                                                                        | Low                                  |
+| `RequestedPlayer`   | Player requests from users                           | `firstName + lastName` (unique, case-insensitive)                                                           | Medium (embedded array)              |
+| `Feedback`          | User-submitted feedback                              | `createdAt`                                                                                                 | Low                                  |
+| `Account`           | OAuth provider links                                 | `provider + providerAccountId`                                                                              | Low                                  |
+| `Session`           | Active user sessions                                 | `sessionToken`, `user`, `expires`                                                                           | Low                                  |
+| `VerificationToken` | Email verification tokens                            | `identifier + token` (unique)                                                                               | Low                                  |
 
 ---
 
@@ -242,14 +242,14 @@ FollowSchema.index({ follower: 1, following: 1 }, { unique: true });
 
 ### 4. Lineup Indexes Improved
 
-Multiple targeted indexes for different query patterns:
+Multiple targeted indexes for different query patterns, including compound indexes with `_id` for cursor-based pagination on rating sorts:
 
 ```typescript
 LineupSchema.index({ owner: 1, createdAt: -1 });
 LineupSchema.index({ owner: 1, updatedAt: -1 });
 LineupSchema.index({ featured: 1, createdAt: -1 });
-LineupSchema.index({ avgRating: -1 });
-LineupSchema.index({ ratingCount: -1 });
+LineupSchema.index({ avgRating: -1, _id: -1 }); // cursor pagination by rating
+LineupSchema.index({ ratingCount: -1, _id: -1 }); // cursor pagination by rating count
 LineupSchema.index({ createdAt: -1 });
 ```
 
@@ -294,7 +294,13 @@ The `descriptions` array is still embedded but is lower risk:
 
 ### 2. Pagination
 
-Most list endpoints now support cursor-based pagination (comments, threads, followers, following). Lineup list endpoints use simple sorting without cursor pagination — this should be added as lineup counts grow.
+All list endpoints now support cursor-based pagination:
+
+- **Comments & threads**: `_id`-based cursor with `useInfiniteQuery`
+- **Followers & following**: cursor-based
+- **Lineups** (Explore, My Lineups, All Lineups): `_id`-based cursor for date sorts, offset-based for rating sorts. Server-side filtering by date range, minimum rating, and user. All pages use `useInfiniteQuery` with infinite scroll (50 items at a time).
+- **Bookmarked lineups**: MongoDB aggregation pipeline (`$match` → `$sort` → `$skip/$limit` → `$lookup`) for bounded pagination without loading all bookmark IDs into memory.
+- **Profile lineups**: Embedded (max 6), filtered client-side — not a scalability concern.
 
 ### 3. Session TTL Index
 
@@ -360,8 +366,8 @@ const LineupSchema = new Schema<LineupDoc>(
 LineupSchema.index({ owner: 1, createdAt: -1 });
 LineupSchema.index({ owner: 1, updatedAt: -1 });
 LineupSchema.index({ featured: 1, createdAt: -1 });
-LineupSchema.index({ avgRating: -1 });
-LineupSchema.index({ ratingCount: -1 });
+LineupSchema.index({ avgRating: -1, _id: -1 });
+LineupSchema.index({ ratingCount: -1, _id: -1 });
 LineupSchema.index({ createdAt: -1 });
 ```
 

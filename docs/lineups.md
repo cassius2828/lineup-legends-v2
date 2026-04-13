@@ -131,44 +131,72 @@ Creates a new lineup for the authenticated user.
 
 ### `lineup.getLineupsByCurrentUser` (Protected)
 
-Gets all lineups owned by the authenticated user.
-
-**Input (optional):**
-
-```typescript
-{
-  sort?: "newest" | "oldest"; // Default: "newest"
-}
-```
-
-**Returns:** Array of lineups with players and owner.
-
-### `lineup.getLineupsByOtherUsers` (Public)
-
-Gets lineups from users other than the specified user (used on the explore page with the current user's ID to show other people's lineups).
+Gets lineups owned by the authenticated user with cursor-based pagination and server-side filtering.
 
 **Input:**
 
 ```typescript
 {
-  userId: string;
   sort?: "newest" | "oldest" | "highest-rated" | "most-rated"; // Default: "newest"
+  limit?: number;     // 1–100, default 50
+  cursor?: string;    // pagination cursor (ObjectId for date sorts, offset for rating sorts)
+  dateFrom?: Date;    // filter: lineups created on or after this date
+  dateTo?: Date;      // filter: lineups created on or before this date
+  minRating?: number; // filter: minimum avgRating (0–10)
+  filterUserId?: string; // filter: owner ObjectId
 }
 ```
 
-### `lineup.getAllLineups` (Public)
+**Returns:** `{ lineups: Lineup[], hasMore: boolean, cursor?: string }`
 
-Gets all lineups in the system.
+### `lineup.getLineupsByOtherUsers` (Public)
 
-**Input (optional):**
+Gets lineups from users other than the specified user (used on the explore page with the current user's ID to show other people's lineups). Supports cursor-based pagination and server-side filtering.
+
+**Input:**
 
 ```typescript
 {
   sort?: "newest" | "oldest" | "highest-rated" | "most-rated"; // Default: "newest"
+  limit?: number;
+  cursor?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  minRating?: number;
+  filterUserId?: string;
+  excludeUserId?: string; // exclude this user's lineups (validated as ObjectId)
 }
 ```
 
+**Returns:** `{ lineups: Lineup[], hasMore: boolean, cursor?: string }`
+
+### `lineup.getAllLineups` (Public)
+
+Gets all lineups in the system with cursor-based pagination and server-side filtering.
+
+**Input:**
+
+```typescript
+{
+  sort?: "newest" | "oldest" | "highest-rated" | "most-rated"; // Default: "newest"
+  limit?: number;
+  cursor?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+  minRating?: number;
+  filterUserId?: string;
+}
+```
+
+**Returns:** `{ lineups: Lineup[], hasMore: boolean, cursor?: string }`
+
 Sort options: **Newest** / **Oldest** (by `createdAt`), **Highest rated** (by `avgRating`), **Most rated** (by `ratingCount`).
+
+#### Pagination strategy
+
+- **Date sorts** (`newest`, `oldest`): Uses `_id`-based cursor (`$lt` / `$gt`) since `_id` is monotonic with `createdAt`
+- **Rating sorts** (`highest-rated`, `most-rated`): Uses offset-based pagination (`.skip()`) to avoid complexity of compound cursors
+- All endpoints fetch `limit + 1` rows to determine `hasMore`, then slice to `limit`
 
 ### `lineup.getLineupById` (Public)
 
@@ -263,14 +291,16 @@ Swap a player at a given position for a random replacement based on weighted pro
 
 ### My Lineups (`/lineups`)
 
-Displays all lineups owned by the current user with options to:
+Displays lineups owned by the current user with infinite scroll (50 at a time) and server-side filtering:
 
+- Filter by date range (presets or custom calendar), minimum rating, or specific user
+- Sort by Newest, Oldest, Highest rated, or Most rated
+- Grid/list view toggle
 - Delete lineups
 - Toggle featured status
 - Reorder player positions
 - Gamble players
-- Navigate to create new lineup
-- Navigate to explore page
+- Navigate to create new lineup or explore page
 
 ### Create Lineup (`/lineups/new`)
 
@@ -285,9 +315,11 @@ Interactive player selection interface:
 
 ### Explore Lineups (`/lineups/explore`)
 
-Public page showing lineups from other users:
+Public page showing lineups from other users with infinite scroll (50 at a time) and server-side filtering:
 
+- Filter by date range (presets or custom calendar), minimum rating, or specific user
 - Sort by Newest, Oldest, Highest rated, or Most rated
+- Grid/list view toggle
 - Shows lineup owner with avatar and links to profiles
 - Each card shows **average rating** and **rating count**
 - Links to rate a lineup (`/lineups/[id]/rate`) for non-owners
@@ -318,10 +350,12 @@ Gamble interface for swapping players. See [Gambling Mechanic](./gambling-mechan
 
 ### Bookmarked Lineups (`/lineups/bookmarked`)
 
-Shows lineups the current user has bookmarked:
+Shows lineups the current user has bookmarked with infinite scroll (50 at a time):
 
+- Filter by date range, minimum rating
 - Sort by newest or oldest bookmarked
-- Each lineup card with full details
+- Grid/list view toggle
+- Uses a MongoDB aggregation pipeline (`$lookup`) for bounded pagination — no unbounded bookmark fetch
 - Requires authentication
 
 ### Lineup Detail (`/lineups/[id]`)

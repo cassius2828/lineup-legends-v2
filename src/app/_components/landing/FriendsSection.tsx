@@ -67,7 +67,7 @@ export function FriendsSection() {
             className="font-stencil text-foreground text-4xl tracking-wide uppercase sm:text-5xl lg:text-6xl"
             variants={textVariants}
           >
-            Add <span className="text-gradient-gold">Friends</span>
+            Follow <span className="text-gradient-gold">Players</span>
           </motion.h2>
 
           <motion.div
@@ -79,9 +79,10 @@ export function FriendsSection() {
             className="text-foreground/70 mt-8 max-w-xl text-lg leading-relaxed"
             variants={textVariants}
           >
-            Expand your network by adding friends on Lineup Legends. Follow
-            their lineup updates, compete in friendly challenges, and stay
-            connected through your shared passion for fantasy basketball.
+            Search for other users, follow them, and keep up with their latest
+            lineups. Customize your own profile with a banner, avatar, and bio —
+            then check out your lineup stats, featured creations, and follower
+            count all in one place.
           </motion.p>
         </motion.div>
       </div>
