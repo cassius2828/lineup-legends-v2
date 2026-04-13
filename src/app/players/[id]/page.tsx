@@ -5,8 +5,12 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { api } from "~/trpc/react";
 import { useEnsureWikiData } from "~/hooks/useEnsureWikiData";
-import { CareerStatsToggle } from "~/app/_components/common/CareerStatsToggle";
-import { WikiPlayerMeasurements } from "~/app/_components/common/WikiPlayerMeasurements";
+import { CareerStatsToggle } from "~/app/_components/common/career/CareerStatsToggle";
+import { WikiPlayerMeasurements } from "~/app/_components/common/wiki/WikiPlayerMeasurements";
+import {
+  WikiBiographyLinesSkeleton,
+  WikiInsetLoadingCard,
+} from "~/app/_components/common/skeletons";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 
 const VALUE_TIERS: Record<
@@ -134,9 +138,7 @@ export default function PlayerPage() {
             </h2>
             {showWikiSkeleton ? (
               <div className="space-y-2">
-                <div className="bg-foreground/10 h-4 w-full animate-pulse rounded" />
-                <div className="bg-foreground/10 h-4 w-[92%] animate-pulse rounded" />
-                <div className="bg-foreground/10 h-4 w-[85%] animate-pulse rounded" />
+                <WikiBiographyLinesSkeleton />
                 <p className="text-foreground/50 text-xs">Loading Wikipedia…</p>
               </div>
             ) : player.wikiSummaryExtract ? (
@@ -214,13 +216,7 @@ export default function PlayerPage() {
                     {player.wikiAwardsHonorsText}
                   </p>
                 ) : ensureAwardsAI.isPending ? (
-                  <div className="border-foreground/10 bg-foreground/5 space-y-2 rounded-lg border p-3">
-                    <div className="bg-foreground/10 h-3 w-full animate-pulse rounded" />
-                    <div className="bg-foreground/10 h-3 w-[88%] animate-pulse rounded" />
-                    <p className="text-foreground/40 pt-1 text-xs">
-                      Searching for awards via AI…
-                    </p>
-                  </div>
+                  <WikiInsetLoadingCard caption="Searching for awards via AI…" />
                 ) : (
                   <p className="text-foreground/50 text-sm">
                     No awards found for this player.

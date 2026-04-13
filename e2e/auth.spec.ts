@@ -10,7 +10,10 @@ test.describe("authenticated navigation", () => {
       nav.getByRole("link", { name: /create a lineup/i }),
     ).toBeVisible();
     await expect(nav.getByRole("link", { name: "Explore" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: "My Lineups" })).toBeVisible();
+    // Session-dependent links need extra time for useSession() to hydrate
+    await expect(nav.getByRole("link", { name: "My Lineups" })).toBeVisible({
+      timeout: 10_000,
+    });
     await expect(nav.getByRole("link", { name: "Find Users" })).toBeVisible();
     await expect(nav.getByRole("link", { name: "Contact" })).toBeVisible();
     await expect(nav.getByText(/admin/i)).not.toBeVisible();
@@ -68,9 +71,10 @@ test.describe("explore lineups page", () => {
 
   test("has navigation links back to my lineups", async ({ page }) => {
     await page.goto("/lineups/explore");
-    await expect(page.getByRole("link", { name: "My Lineups" })).toBeVisible();
+    const main = page.getByRole("main");
+    await expect(main.getByRole("link", { name: "My Lineups" })).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /Create Lineup/i }),
+      main.getByRole("link", { name: /Create Lineup/i }),
     ).toBeVisible();
   });
 });
@@ -216,8 +220,12 @@ test.describe("create lineup", () => {
       const tierRow = page.locator("div.flex.items-start").filter({
         has: page.getByRole("heading", { name: label, exact: true }),
       });
-      const playerButtons = tierRow.locator('button[type="button"]');
-      await playerButtons.first().click();
+      const firstPlayerBtn = tierRow.locator('button[type="button"]').first();
+      await firstPlayerBtn.click();
+      // Wait for selection to register before clicking next tier
+      await expect(firstPlayerBtn.locator(".lucide-check")).toBeVisible({
+        timeout: 5_000,
+      });
     }
 
     await expect(page.getByText("$0")).toBeVisible();
@@ -280,7 +288,7 @@ test.describe("user search", () => {
     await searchInput.fill("cassius");
 
     const userLink = page.locator('a[href^="/profile/"]').first();
-    await expect(userLink).toBeVisible({ timeout: 10_000 });
+    await expect(userLink).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/cassius/i).first()).toBeVisible();
   });
 

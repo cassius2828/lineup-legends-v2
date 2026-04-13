@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import { Ban, Clock, ChevronDown } from "lucide-react";
+import { Spinner } from "~/app/_components/common/loaders";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -55,7 +56,7 @@ export function AdminFilterTabs<T extends string>({
 export function AdminSpinner() {
   return (
     <div className="flex items-center justify-center py-12">
-      <div className="border-foreground/20 border-t-gold h-8 w-8 animate-spin rounded-full border-2" />
+      <Spinner size="md" />
     </div>
   );
 }

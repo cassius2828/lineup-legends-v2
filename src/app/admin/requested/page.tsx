@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { api } from "~/trpc/react";
+import { GoldCircleSpinnerLoader } from "~/app/_components/common/loaders";
+import { AdminPageHeader } from "../_components/AdminPageHeader";
 
 export default function AdminRequestedPlayersPage() {
   const { data: requestedPlayers, isLoading } =
@@ -9,25 +11,18 @@ export default function AdminRequestedPlayersPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-foreground text-3xl font-bold">
-              Requested Players
-            </h1>
-            <p className="text-foreground/50 mt-1">
-              View and manage player requests submitted by users
-            </p>
-          </div>
+      <AdminPageHeader
+        title="Requested Players"
+        description="View and manage player requests submitted by users"
+        actions={
           <Link
             href="/admin/players"
             className="bg-foreground/10 text-foreground hover:bg-foreground/20 rounded-lg px-6 py-3 font-semibold transition-colors"
           >
             View All Players
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* Results Count */}
       <div className="mb-4">
@@ -40,9 +35,7 @@ export default function AdminRequestedPlayersPage() {
 
       {/* Requested Players Grid */}
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center">
-          <div className="border-t-gold border-foreground/20 h-12 w-12 animate-spin rounded-full border-4" />
-        </div>
+        <GoldCircleSpinnerLoader />
       ) : (
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {requestedPlayers?.map((player) => (

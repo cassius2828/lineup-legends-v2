@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
 import {
   ArrowLeft,
   Ban,

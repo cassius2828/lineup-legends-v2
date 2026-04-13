@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
+import { ChevronDown, ChevronLeft, ChevronUp } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getId } from "~/lib/types";
@@ -28,7 +29,7 @@ import {
 } from "~/lib/constants";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
-import { Button } from "~/app/_components/ui/Button";
+import { Button } from "~/app/_components/common/ui/Button";
 import { PlayerImage } from "~/app/_components/PlayerImage";
 
 interface SortablePositionCardProps {
@@ -106,19 +107,7 @@ function SortablePositionCard({
             onClick={() => onSwap(pos, POSITIONS_LOWER[index - 1]!)}
             className="bg-foreground/10 text-foreground/60 hover:bg-foreground/20 hover:text-foreground rounded-lg p-2 transition-colors"
           >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 15l7-7 7 7"
-              />
-            </svg>
+            <ChevronUp className="h-4 w-4" />
           </button>
         )}
         {index < POSITIONS_LOWER.length - 1 && (
@@ -127,19 +116,7 @@ function SortablePositionCard({
             onClick={() => onSwap(pos, POSITIONS_LOWER[index + 1]!)}
             className="bg-foreground/10 text-foreground/60 hover:bg-foreground/20 hover:text-foreground rounded-lg p-2 transition-colors"
           >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 9l-7 7-7-7"
-              />
-            </svg>
+            <ChevronDown className="h-4 w-4" />
           </button>
         )}
       </div>
@@ -289,19 +266,7 @@ export default function EditLineupPage() {
             href="/lineups"
             className="text-foreground/60 hover:text-foreground/80 mb-2 inline-flex items-center gap-1 text-sm"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
+            <ChevronLeft className="h-4 w-4" />
             Back to My Lineups
           </Link>
           <h1 className="text-foreground text-3xl font-bold">Reorder Lineup</h1>

@@ -2,10 +2,11 @@
 
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { AlertTriangle, MailOpen } from "lucide-react";
 import { useState } from "react";
 import { AuthPageShell } from "~/app/_components/auth/AuthPageShell";
-import FormInput from "~/app/_components/ui/FormInput";
-import PrimaryLoadingButton from "~/app/_components/ui/PrimaryLoadingButton";
+import FormInput from "~/app/_components/common/ui/FormInput";
+import PrimaryLoadingButton from "~/app/_components/common/ui/PrimaryLoadingButton";
 import { postJson } from "~/lib/post-json";
 
 type PageState = "form" | "loading" | "success" | "oauth_only";
@@ -54,19 +55,10 @@ export default function ForgotPasswordPage() {
         {state === "oauth_only" ? (
           <div className="text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-amber-500/20 bg-amber-500/10">
-              <svg
+              <AlertTriangle
                 className="h-7 w-7 text-amber-400"
-                fill="none"
-                viewBox="0 0 24 24"
                 strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                />
-              </svg>
+              />
             </div>
             <h2 className="text-foreground mb-2 text-lg font-semibold">
               No password on this account
@@ -90,19 +82,7 @@ export default function ForgotPasswordPage() {
         ) : state === "success" ? (
           <div className="text-center">
             <div className="bg-gold/10 border-gold/20 mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border">
-              <svg
-                className="text-gold h-7 w-7"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"
-                />
-              </svg>
+              <MailOpen className="text-gold h-7 w-7" strokeWidth={1.5} />
             </div>
             <h2 className="text-foreground mb-2 text-lg font-semibold">
               Check your email

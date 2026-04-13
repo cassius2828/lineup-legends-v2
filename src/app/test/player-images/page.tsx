@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { ChevronLeft } from "lucide-react";
 import { api } from "~/trpc/react";
 
 interface BrokenImage {
@@ -105,19 +106,7 @@ export default function PlayerImagesTestPage() {
             href="/admin"
             className="text-foreground/60 hover:text-foreground/80 mb-4 inline-flex items-center gap-1 text-sm"
           >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
+            <ChevronLeft className="h-4 w-4" />
             Back to Dashboard
           </Link>
           <h1 className="text-foreground text-3xl font-bold">
