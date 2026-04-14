@@ -30,30 +30,29 @@ import { extractAwardsFromHtml } from "~/server/lib/ai-awards";
 
 const REFRESH_TIMEZONE = "America/New_York";
 
-/** Midnight today in ET — hardcoded so the client cannot manipulate the boundary. */
+/**
+ * Returns midnight today in ET as a UTC Date.
+ * Works by reading the current hour/min/sec in ET via Intl and subtracting
+ * the elapsed time from `now` — no locale-string-to-Date parsing involved.
+ */
 function getStartOfDayET(): Date {
   const now = new Date();
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: REFRESH_TIMEZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-  const parts = formatter.formatToParts(now);
-  const year = parts.find((p) => p.type === "year")!.value;
-  const month = parts.find((p) => p.type === "month")!.value;
-  const day = parts.find((p) => p.type === "day")!.value;
+    hourCycle: "h23",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+  }).formatToParts(now);
 
-  const midnightLocal = new Date(`${year}-${month}-${day}T00:00:00`);
-  const utcEquiv = new Date(
-    midnightLocal.toLocaleString("en-US", { timeZone: "UTC" }),
-  );
-  const tzEquiv = new Date(
-    midnightLocal.toLocaleString("en-US", { timeZone: REFRESH_TIMEZONE }),
-  );
-  const offsetMs = utcEquiv.getTime() - tzEquiv.getTime();
+  const get = (type: string) =>
+    Number(parts.find((p) => p.type === type)!.value);
 
-  return new Date(midnightLocal.getTime() + offsetMs);
+  const elapsedMs =
+    (get("hour") * 3600 + get("minute") * 60 + get("second")) * 1000 +
+    now.getMilliseconds();
+
+  return new Date(now.getTime() - elapsedMs);
 }
 
 export const playerRouter = createTRPCRouter({
