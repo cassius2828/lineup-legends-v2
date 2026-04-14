@@ -67,32 +67,6 @@ export function LineupListSkeleton({
   );
 }
 
-// ─── Lineup Detail ───────────────────────────────────────────────────────────
-
-/** Skeleton for the /lineups/[id] detail page: back link + card + composer. */
-export function LineupDetailSkeleton() {
-  return (
-    <div className="animate-pulse">
-      <div className="bg-foreground/10 mb-6 h-4 w-14 rounded" />
-
-      <LineupCardSkeleton />
-
-      <div className="border-foreground/10 mt-4 rounded-xl border p-4">
-        <div className="flex gap-3">
-          <div className="bg-foreground/10 h-10 w-10 shrink-0 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <div className="bg-foreground/10 h-16 w-full rounded-lg" />
-            <div className="flex items-center justify-between">
-              <div className="bg-foreground/10 h-3 w-12 rounded" />
-              <div className="bg-foreground/10 h-8 w-20 rounded-lg" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ─── Lineups ─────────────────────────────────────────────────────────────────
 
 const wikiInsetCardClass =

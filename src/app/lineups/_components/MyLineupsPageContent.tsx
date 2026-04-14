@@ -3,7 +3,6 @@
 import { Package } from "lucide-react";
 import { getId } from "~/lib/types";
 import { SORT_OPTIONS } from "~/lib/constants";
-import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import ConfirmModal from "~/app/_components/common/ui/ConfirmModal";
 import { useMyLineupsPage } from "../_hooks/useMyLineupsPage";
 import { LineupSortBar } from "./LineupSortBar";
@@ -36,16 +35,6 @@ export function MyLineupsPageContent() {
 
   return (
     <>
-      <LineupsHeader
-        title="My Lineups"
-        description="Manage your fantasy basketball lineups"
-        exploreLink="/lineups/explore"
-        createLink="/lineups/new"
-        exploreLinkText="Explore Lineups"
-        createLinkText="+ Create Lineup"
-        extraLinks={[{ href: "/lineups/bookmarked", label: "Bookmarked" }]}
-      />
-
       <div className="mb-6 space-y-2">
         <LineupSortBar
           options={SORT_OPTIONS}

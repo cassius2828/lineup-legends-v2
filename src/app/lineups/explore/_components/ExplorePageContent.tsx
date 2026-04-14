@@ -3,7 +3,6 @@
 import { Search } from "lucide-react";
 import { SORT_OPTIONS } from "~/lib/constants";
 import { RefreshIcon } from "~/app/_components/common/icons";
-import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import {
   Tooltip,
   TooltipContent,
@@ -36,20 +35,6 @@ export function ExplorePageContent() {
 
   return (
     <>
-      <LineupsHeader
-        title="Explore Lineups"
-        description="Discover lineups from the community"
-        exploreLink={isAuthenticated ? "/lineups" : ""}
-        createLink={isAuthenticated ? "/lineups/new" : ""}
-        exploreLinkText={isAuthenticated ? "My Lineups" : ""}
-        createLinkText={isAuthenticated ? "+ Create Lineup" : ""}
-        extraLinks={
-          isAuthenticated
-            ? [{ href: "/lineups/bookmarked", label: "Bookmarked" }]
-            : []
-        }
-      />
-
       <div className="mb-6 space-y-2">
         <LineupSortBar
           options={SORT_OPTIONS}

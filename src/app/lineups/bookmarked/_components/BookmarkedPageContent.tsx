@@ -2,7 +2,6 @@
 
 import { Bookmark } from "lucide-react";
 import { SORT_OPTIONS_BASIC } from "~/lib/constants";
-import LineupsHeader from "~/app/_components/Header/LineupsHeader";
 import { useBookmarkedPage } from "../_hooks/useBookmarkedPage";
 import { LineupSortBar } from "../../_components/LineupSortBar";
 import { LineupFilterRow } from "../../_components/LineupFilterRow";
@@ -28,15 +27,6 @@ export function BookmarkedPageContent() {
 
   return (
     <>
-      <LineupsHeader
-        title="Bookmarked Lineups"
-        description="Lineups you've saved for later"
-        exploreLink="/lineups/explore"
-        createLink="/lineups/new"
-        exploreLinkText="Explore Lineups"
-        createLinkText="+ Create Lineup"
-      />
-
       <div className="mb-6 space-y-2">
         <LineupSortBar
           options={SORT_OPTIONS_BASIC}
