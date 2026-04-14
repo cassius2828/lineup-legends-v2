@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
 import { useLineupFilters } from "~/hooks/useLineupFilters";
@@ -23,6 +23,11 @@ export function useMyLineupsPage() {
     );
 
   const lineups = data?.pages.flatMap((p) => p.lineups) ?? [];
+
+  const listQueryKey = useMemo(
+    () => JSON.stringify({ sort, ...filterParams }),
+    [sort, filterParams],
+  );
 
   const { data: session } = api.profile.getMe.useQuery(undefined, {
     retry: false,
@@ -89,5 +94,6 @@ export function useMyLineupsPage() {
     confirmDelete,
     cancelDelete,
     handleToggleFeatured,
+    listQueryKey,
   };
 }

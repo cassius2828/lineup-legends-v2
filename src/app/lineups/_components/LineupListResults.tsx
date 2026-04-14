@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
 import LineupCardGrid from "~/app/_components/common/lineups/LineupCardGrid";
@@ -30,6 +30,8 @@ type LineupListResultsProps = {
   emptyState: ReactNode;
   /** Seed the skeleton count before data loads (e.g. from profile stats) */
   initialCount?: number;
+  /** Serialized sort + filter params; when this changes, skeleton count cache resets so we don't reuse a stale length after filters/sort change */
+  listQueryKey: string;
 };
 
 export function LineupListResults({
@@ -46,8 +48,21 @@ export function LineupListResults({
   onToggleFeatured,
   emptyState,
   initialCount,
+  listQueryKey,
 }: LineupListResultsProps) {
   const lastCountRef = useRef<number | undefined>(initialCount);
+  const prevListQueryKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (prevListQueryKeyRef.current === null) {
+      prevListQueryKeyRef.current = listQueryKey;
+      return;
+    }
+    if (prevListQueryKeyRef.current !== listQueryKey) {
+      prevListQueryKeyRef.current = listQueryKey;
+      lastCountRef.current = undefined;
+    }
+  }, [listQueryKey]);
 
   if (!isLoading && lineups.length > 0) {
     lastCountRef.current = lineups.length;

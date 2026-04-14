@@ -29,6 +29,7 @@ export function ProfileLineupsClient({
       isFetchingNextPage={p.isFetchingNextPage}
       hasNextPage={p.hasNextPage}
       totalLineups={totalLineups}
+      listQueryKey={p.listQueryKey}
     />
   );
 }

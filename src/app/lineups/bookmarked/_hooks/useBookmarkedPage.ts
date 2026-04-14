@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
 import { useLineupFilters } from "~/hooks/useLineupFilters";
@@ -25,6 +25,11 @@ export function useBookmarkedPage() {
 
   const lineups = data?.pages.flatMap((p) => p.lineups) ?? [];
 
+  const listQueryKey = useMemo(
+    () => JSON.stringify({ sort, ...filterParams }),
+    [sort, filterParams],
+  );
+
   const handleFetchNextPage = useCallback(() => {
     void fetchNextPage();
   }, [fetchNextPage]);
@@ -43,5 +48,6 @@ export function useBookmarkedPage() {
     hasNextPage: hasNextPage ?? false,
     isFetchingNextPage,
     handleFetchNextPage,
+    listQueryKey,
   };
 }

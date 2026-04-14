@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
 import LineupCardGrid from "~/app/_components/common/lineups/LineupCardGrid";
@@ -33,6 +33,8 @@ type ProfileLineupsSectionProps = {
   hasNextPage: boolean;
   /** Pre-seed skeleton count from profile stats */
   totalLineups?: number;
+  /** Resets skeleton count cache when sort/filters change */
+  listQueryKey: string;
 };
 
 export function ProfileLineupsSection({
@@ -49,8 +51,21 @@ export function ProfileLineupsSection({
   isFetchingNextPage,
   hasNextPage,
   totalLineups,
+  listQueryKey,
 }: ProfileLineupsSectionProps) {
   const lastCountRef = useRef<number | undefined>(totalLineups);
+  const prevListQueryKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (prevListQueryKeyRef.current === null) {
+      prevListQueryKeyRef.current = listQueryKey;
+      return;
+    }
+    if (prevListQueryKeyRef.current !== listQueryKey) {
+      prevListQueryKeyRef.current = listQueryKey;
+      lastCountRef.current = undefined;
+    }
+  }, [listQueryKey]);
 
   if (!lineupsLoading && lineups.length > 0) {
     lastCountRef.current = lineups.length;

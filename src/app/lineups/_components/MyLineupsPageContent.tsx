@@ -31,6 +31,7 @@ export function MyLineupsPageContent() {
     confirmDelete,
     cancelDelete,
     handleToggleFeatured,
+    listQueryKey,
   } = useMyLineupsPage();
 
   return (
@@ -53,6 +54,7 @@ export function MyLineupsPageContent() {
       <LineupListResults
         lineups={lineups}
         isLoading={isLoading}
+        listQueryKey={listQueryKey}
         view={view}
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}

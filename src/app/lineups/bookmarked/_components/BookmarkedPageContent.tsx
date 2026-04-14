@@ -23,6 +23,7 @@ export function BookmarkedPageContent() {
     hasNextPage,
     isFetchingNextPage,
     handleFetchNextPage,
+    listQueryKey,
   } = useBookmarkedPage();
 
   return (
@@ -45,6 +46,7 @@ export function BookmarkedPageContent() {
       <LineupListResults
         lineups={lineups}
         isLoading={isLoading}
+        listQueryKey={listQueryKey}
         view={view}
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { api } from "~/trpc/react";
 import type { SortOption } from "~/lib/constants";
 import { useViewModeStore } from "~/stores/viewMode";
@@ -28,6 +28,11 @@ export function useProfileLineups(userId: string) {
 
   const lineups = lineupsData?.pages.flatMap((p) => p.lineups) ?? [];
 
+  const listQueryKey = useMemo(
+    () => JSON.stringify({ userId, sort, ...filterParams }),
+    [userId, sort, filterParams],
+  );
+
   const handleFetchNextPage = useCallback(() => {
     void fetchNextPage();
   }, [fetchNextPage]);
@@ -45,5 +50,6 @@ export function useProfileLineups(userId: string) {
     handleFetchNextPage,
     hasNextPage: hasNextPage ?? false,
     isFetchingNextPage,
+    listQueryKey,
   };
 }

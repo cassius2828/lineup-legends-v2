@@ -31,6 +31,7 @@ export function ExplorePageContent() {
     isFetchingNextPage,
     handleFetchNextPage,
     handleRefreshAllLineups,
+    listQueryKey,
   } = useExplorePage();
 
   return (
@@ -69,6 +70,7 @@ export function ExplorePageContent() {
       <LineupListResults
         lineups={lineups}
         isLoading={isLoading}
+        listQueryKey={listQueryKey}
         view={view}
         hasNextPage={hasNextPage}
         isFetchingNextPage={isFetchingNextPage}
