@@ -1,15 +1,11 @@
-"use client";
-
 import Image from "next/image";
-import { ImageUploadOverlay } from "./ImageUploadOverlay";
+import { ProfileAvatarUpload } from "./ProfileAvatarUpload";
 
 type ProfileAvatarSectionProps = {
   profileImg?: string | null;
   image?: string | null;
   name?: string | null;
   isOwnProfile: boolean;
-  onProfileUpload: (file: File) => void;
-  uploadingProfile: boolean;
 };
 
 export function ProfileAvatarSection({
@@ -17,8 +13,6 @@ export function ProfileAvatarSection({
   image,
   name,
   isOwnProfile,
-  onProfileUpload,
-  uploadingProfile,
 }: ProfileAvatarSectionProps) {
   return (
     <div className="relative -mt-16 mb-4 flex justify-center md:justify-start">
@@ -30,13 +24,7 @@ export function ProfileAvatarSection({
           alt={name ?? "User"}
           className="h-full w-full object-cover"
         />
-        {isOwnProfile && (
-          <ImageUploadOverlay
-            onUpload={onProfileUpload}
-            isUploading={uploadingProfile}
-            type="profile"
-          />
-        )}
+        {isOwnProfile && <ProfileAvatarUpload />}
       </div>
     </div>
   );

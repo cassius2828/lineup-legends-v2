@@ -1,41 +1,25 @@
-"use client";
-
 import Link from "next/link";
 import { Bookmark, Settings } from "lucide-react";
-import { Button } from "~/app/_components/common/ui/Button";
-import type {
-  ProfileMeOutput,
-  ProfileOutput,
-} from "~/server/api/schemas/output";
-
-type FollowStatus = { following: boolean } | undefined;
+import type { ProfileOutput } from "~/server/api/schemas/output";
+import { ProfileHeaderInteractions } from "./ProfileHeaderInteractions";
+import { FollowButtonClient } from "./FollowButtonClient";
 
 type ProfileHeaderProps = {
   profile: ProfileOutput;
-  session: ProfileMeOutput | null | undefined;
   isOwnProfile: boolean;
-  followStatus: FollowStatus;
-  toggleFollowPending: boolean;
-  onToggleFollow: () => void;
-  onOpenFollowers: () => void;
-  onOpenFollowing: () => void;
+  userId: string;
 };
 
 export function ProfileHeader({
   profile,
-  session,
   isOwnProfile,
-  followStatus,
-  toggleFollowPending,
-  onToggleFollow,
-  onOpenFollowers,
-  onOpenFollowing,
+  userId,
 }: ProfileHeaderProps) {
   return (
     <div className="mb-6 flex flex-col items-center gap-4 md:flex-row md:items-start md:gap-6">
       <div className="flex-1 text-center md:text-left">
         <h1 className="text-foreground text-3xl font-bold">
-          {profile.name ?? profile.username ?? "Anonymous"}
+          {profile.name ?? "Anonymous"}
         </h1>
         {profile.username && profile.name && (
           <p className="text-foreground/60">@{profile.username}</p>
@@ -44,28 +28,12 @@ export function ProfileHeader({
           <p className="text-foreground/70 mt-2 max-w-xl">{profile.bio}</p>
         )}
 
-        <div className="mt-3 flex items-center justify-center gap-4 md:justify-start">
-          <button
-            type="button"
-            onClick={onOpenFollowers}
-            className="text-foreground/70 hover:text-foreground text-sm transition-colors"
-          >
-            <span className="text-foreground font-semibold">
-              {profile.followerCount ?? 0}
-            </span>{" "}
-            followers
-          </button>
-          <button
-            type="button"
-            onClick={onOpenFollowing}
-            className="text-foreground/70 hover:text-foreground text-sm transition-colors"
-          >
-            <span className="text-foreground font-semibold">
-              {profile.followingCount ?? 0}
-            </span>{" "}
-            following
-          </button>
-        </div>
+        <ProfileHeaderInteractions
+          userId={userId}
+          followerCount={profile.followerCount ?? 0}
+          followingCount={profile.followingCount ?? 0}
+          isOwnProfile={isOwnProfile}
+        />
       </div>
 
       <div className="flex gap-3">
@@ -92,18 +60,9 @@ export function ProfileHeader({
               Settings
             </Link>
           </>
-        ) : session ? (
-          <Button
-            onClick={onToggleFollow}
-            color={followStatus?.following ? "white" : "gold"}
-            variant={followStatus?.following ? "subtle" : "solid"}
-            loading={toggleFollowPending}
-            loadingText="..."
-            className="px-5 py-2.5"
-          >
-            {followStatus?.following ? "Unfollow" : "Follow"}
-          </Button>
-        ) : null}
+        ) : (
+          <FollowButtonClient userId={userId} />
+        )}
       </div>
     </div>
   );
