@@ -1,5 +1,6 @@
 import { Info } from "lucide-react";
 import type { PlayerOutput } from "~/server/api/schemas/output";
+import { getId } from "~/lib/types";
 import { POSITIONS, type PositionSlots } from "~/lib/constants";
 import {
   Tooltip,
@@ -21,6 +22,8 @@ export default function OrderLineup({
   isAuthenticated = true,
   onOpenPlayerDetail,
   canOpenPlayerDetail = false,
+  detailPlayer,
+  onSelectForDetail,
 }: {
   positionSlots: PositionSlots;
   handleRemovePlayer: (player: PlayerOutput) => void;
@@ -33,6 +36,8 @@ export default function OrderLineup({
   isAuthenticated?: boolean;
   onOpenPlayerDetail?: () => void;
   canOpenPlayerDetail?: boolean;
+  detailPlayer?: PlayerOutput | null;
+  onSelectForDetail?: (player: PlayerOutput) => void;
 }) {
   const isDisabled = !canSubmit || isSubmitting || !isAuthenticated;
 
@@ -50,15 +55,26 @@ export default function OrderLineup({
   return (
     <div className="bg-surface-950/95 sticky bottom-0 z-40 ml-0 flex flex-col items-center rounded-md p-2 py-3 backdrop-blur-sm lg:static lg:ml-8 lg:bg-transparent lg:py-0 lg:backdrop-blur-none">
       <div className="mb-4 flex justify-center gap-2">
-        {POSITIONS.map((position) => (
-          <DroppablePositionSlot
-            key={position}
-            position={position}
-            player={positionSlots[position]}
-            onRemove={handleRemovePlayer}
-            isAnyDragging={activePlayer !== null}
-          />
-        ))}
+        {POSITIONS.map((position) => {
+          const slotPlayer = positionSlots[position];
+          return (
+            <DroppablePositionSlot
+              key={position}
+              position={position}
+              player={slotPlayer}
+              onRemove={handleRemovePlayer}
+              isAnyDragging={activePlayer !== null}
+              isDetailTarget={
+                !!(
+                  slotPlayer &&
+                  detailPlayer &&
+                  getId(slotPlayer) === getId(detailPlayer)
+                )
+              }
+              onSelectForDetail={onSelectForDetail}
+            />
+          );
+        })}
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-2">

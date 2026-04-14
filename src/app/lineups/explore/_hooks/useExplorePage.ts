@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
 import { useLineupFilters } from "~/hooks/useLineupFilters";
@@ -29,6 +29,16 @@ export function useExplorePage() {
 
   const lineups = data?.pages.flatMap((p) => p.lineups) ?? [];
 
+  const listQueryKey = useMemo(
+    () =>
+      JSON.stringify({
+        sort,
+        excludeUserId: session?.user?.id ?? null,
+        ...filterParams,
+      }),
+    [sort, session?.user?.id, filterParams],
+  );
+
   const handleRefreshAllLineups = () => {
     void utils.lineup.getLineupsByOtherUsers.invalidate();
   };
@@ -54,5 +64,6 @@ export function useExplorePage() {
     isFetchingNextPage,
     handleFetchNextPage,
     handleRefreshAllLineups,
+    listQueryKey,
   };
 }

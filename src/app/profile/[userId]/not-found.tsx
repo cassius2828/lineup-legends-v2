@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export function ProfileNotFound() {
+export default function ProfileNotFound() {
   return (
     <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
       <div className="container mx-auto px-4 py-16 text-center">

@@ -10,7 +10,6 @@ import { useCommentModalStore } from "~/stores/commentModal";
 import { api } from "~/trpc/react";
 
 interface LineupCardFooterProps {
-  commentCount: number;
   lineupId: string;
   ownerName: string;
   ownerImage?: string | null;
@@ -18,7 +17,6 @@ interface LineupCardFooterProps {
 }
 
 export default function LineupCardFooter({
-  commentCount,
   lineupId,
   ownerName,
   ownerImage,
@@ -27,6 +25,12 @@ export default function LineupCardFooter({
   const { data: session } = useSession();
   const openComment = useCommentModalStore((s) => s.openComment);
   const isAuthenticated = !!session?.user;
+
+  const { data: countData } = api.comment.getCommentCount.useQuery(
+    { lineupId },
+    { enabled: !!lineupId },
+  );
+  const commentCount = countData?.total ?? 0;
 
   const { data: bookmarkData } = api.bookmark.isBookmarked.useQuery(
     { lineupId },

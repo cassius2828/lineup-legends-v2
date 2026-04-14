@@ -1,5 +1,3 @@
-"use client";
-
 import type { LineupOutput } from "~/server/api/schemas/output";
 import { POSITIONS_LOWER, POSITION_LABELS } from "~/lib/constants";
 import { PlayerCard } from "../PlayerCard";

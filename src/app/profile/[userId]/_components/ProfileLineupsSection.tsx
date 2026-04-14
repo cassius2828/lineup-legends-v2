@@ -1,16 +1,9 @@
 "use client";
 
-import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
-import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
-import LineupCardGrid from "~/app/_components/common/lineups/LineupCardGrid";
 import { ViewToggle } from "~/app/_components/common/lineups/ViewToggle";
 import { Button } from "~/app/_components/common/ui/Button";
-import {
-  LineupListLoader,
-  LoadMoreTrigger,
-} from "~/app/_components/common/loaders";
 import LineupFilters from "~/app/_components/common/lineups/LineupFilters";
-import { getId } from "~/lib/types";
+import { LineupListResults } from "~/app/lineups/_components/LineupListResults";
 import { SORT_OPTIONS, type SortOption } from "~/lib/constants";
 import type { LineupOutput } from "~/server/api/schemas/output";
 import type { ViewMode } from "~/app/_components/common/lineups/ViewToggle";
@@ -29,6 +22,10 @@ type ProfileLineupsSectionProps = {
   onLoadMore: () => void;
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
+  /** Pre-seed skeleton count from profile stats */
+  totalLineups?: number;
+  /** Resets skeleton count cache when sort/filters change */
+  listQueryKey: string;
 };
 
 export function ProfileLineupsSection({
@@ -44,6 +41,8 @@ export function ProfileLineupsSection({
   onLoadMore,
   isFetchingNextPage,
   hasNextPage,
+  totalLineups,
+  listQueryKey,
 }: ProfileLineupsSectionProps) {
   return (
     <div className="pb-16">
@@ -73,35 +72,21 @@ export function ProfileLineupsSection({
         </div>
       </div>
 
-      {lineupsLoading ? (
-        <LineupListLoader />
-      ) : lineups.length > 0 ? (
-        <>
-          <LineupCardGrid view={view}>
-            {lineups.map((lineup) =>
-              view === "grid" ? (
-                <LineupCardCompact key={getId(lineup)} lineup={lineup} />
-              ) : (
-                <LineupCard
-                  key={getId(lineup)}
-                  lineup={lineup}
-                  showOwner={false}
-                  isOwner={false}
-                />
-              ),
-            )}
-          </LineupCardGrid>
-          <LoadMoreTrigger
-            onLoadMore={onLoadMore}
-            loading={isFetchingNextPage}
-            hasMore={hasNextPage}
-          />
-        </>
-      ) : (
-        <div className="bg-foreground/5 rounded-2xl p-12 text-center">
-          <p className="text-foreground/60">No lineups yet</p>
-        </div>
-      )}
+      <LineupListResults
+        lineups={lineups}
+        isLoading={lineupsLoading}
+        listQueryKey={listQueryKey}
+        view={view}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        onLoadMore={onLoadMore}
+        initialCount={totalLineups}
+        emptyState={
+          <div className="bg-foreground/5 rounded-2xl p-12 text-center">
+            <p className="text-foreground/60">No lineups yet</p>
+          </div>
+        }
+      />
     </div>
   );
 }

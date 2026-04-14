@@ -7,7 +7,8 @@ import {
   publicProcedure,
   rateLimitMiddleware,
 } from "~/server/api/trpc";
-import { PlayerModel } from "~/server/models";
+import { PlayerModel, PlayerAuditLogModel, UserModel } from "~/server/models";
+import type { PlayerSnapshot } from "~/server/models";
 import { escapeRegex } from "~/server/lib/escape-regex";
 import {
   getPlayersFromCacheOrDb,
@@ -27,6 +28,79 @@ import {
   wikiDebugEnabled,
 } from "~/server/lib/wikipedia-sections";
 import { extractAwardsFromHtml } from "~/server/lib/ai-awards";
+
+const REFRESH_TIMEZONE = "America/New_York";
+
+/**
+ * Returns midnight today in ET as a UTC Date.
+ * Works by reading the current hour/min/sec in ET via Intl and subtracting
+ * the elapsed time from `now` — no locale-string-to-Date parsing involved.
+ */
+function getStartOfDayET(): Date {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: REFRESH_TIMEZONE,
+    hourCycle: "h23",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+  }).formatToParts(now);
+
+  const get = (type: string) =>
+    Number(parts.find((p) => p.type === type)!.value);
+
+  const elapsedMs =
+    (get("hour") * 3600 + get("minute") * 60 + get("second")) * 1000 +
+    now.getMilliseconds();
+
+  return new Date(now.getTime() - elapsedMs);
+}
+
+async function samplePlayerPool() {
+  const results = await PlayerModel.aggregate([
+    {
+      $facet: {
+        value1Players: [{ $match: { value: 1 } }, { $sample: { size: 5 } }],
+        value2Players: [{ $match: { value: 2 } }, { $sample: { size: 5 } }],
+        value3Players: [{ $match: { value: 3 } }, { $sample: { size: 5 } }],
+        value4Players: [{ $match: { value: 4 } }, { $sample: { size: 5 } }],
+        value5Players: [{ $match: { value: 5 } }, { $sample: { size: 5 } }],
+      },
+    },
+  ]);
+  return populated(results[0]);
+}
+
+async function getRefreshEligibility(userId: string) {
+  const user = await UserModel.findById(userId)
+    .select("lastPlayerPoolRefreshAt")
+    .lean();
+
+  if (!user) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+  }
+
+  const todayStart = getStartOfDayET();
+  const usedToday = !!(
+    user.lastPlayerPoolRefreshAt && user.lastPlayerPoolRefreshAt >= todayStart
+  );
+
+  return { usedToday, todayStart };
+}
+
+function toSnapshot(doc: {
+  firstName: string;
+  lastName: string;
+  value: number;
+  imgUrl: string;
+}): PlayerSnapshot {
+  return {
+    firstName: doc.firstName,
+    lastName: doc.lastName,
+    value: doc.value,
+    imgUrl: doc.imgUrl,
+  };
+}
 
 export const playerRouter = createTRPCRouter({
   getAll: publicProcedure
@@ -239,20 +313,44 @@ export const playerRouter = createTRPCRouter({
 
   getRandomByValue: publicProcedure
     .output(playersByValueOutput)
-    .query(async () => {
-      const results = await PlayerModel.aggregate([
-        {
-          $facet: {
-            value1Players: [{ $match: { value: 1 } }, { $sample: { size: 5 } }],
-            value2Players: [{ $match: { value: 2 } }, { $sample: { size: 5 } }],
-            value3Players: [{ $match: { value: 3 } }, { $sample: { size: 5 } }],
-            value4Players: [{ $match: { value: 4 } }, { $sample: { size: 5 } }],
-            value5Players: [{ $match: { value: 5 } }, { $sample: { size: 5 } }],
-          },
-        },
-      ]);
+    .query(() => samplePlayerPool()),
 
-      return populated(results[0]);
+  refreshRandomByValue: protectedProcedure
+    .output(playersByValueOutput)
+    .mutation(async ({ ctx }) => {
+      const { usedToday } = await getRefreshEligibility(ctx.session.user.id);
+      if (usedToday) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message:
+            "You've already used your daily refresh. Resets at midnight ET.",
+        });
+      }
+
+      await UserModel.findByIdAndUpdate(ctx.session.user.id, {
+        lastPlayerPoolRefreshAt: new Date(),
+      });
+
+      return samplePlayerPool();
+    }),
+
+  canRefreshPool: protectedProcedure
+    .output(
+      z.object({
+        canRefresh: z.boolean(),
+        nextRefreshAt: z.string().nullable(),
+      }),
+    )
+    .query(async ({ ctx }) => {
+      const { usedToday, todayStart } = await getRefreshEligibility(
+        ctx.session.user.id,
+      );
+      if (usedToday) {
+        const tomorrow = new Date(todayStart);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return { canRefresh: false, nextRefreshAt: tomorrow.toISOString() };
+      }
+      return { canRefresh: true, nextRefreshAt: null };
     }),
 
   search: publicProcedure
@@ -287,8 +385,18 @@ export const playerRouter = createTRPCRouter({
       }),
     )
     .output(playerOutput)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...updateData } = input;
+
+      const existing = await PlayerModel.findById(id).lean();
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found",
+        });
+      }
+
+      const beforeSnap = toSnapshot(existing);
 
       const updatedPlayer = await PlayerModel.findByIdAndUpdate(
         id,
@@ -302,6 +410,16 @@ export const playerRouter = createTRPCRouter({
           message: "Player not found",
         });
       }
+
+      await PlayerAuditLogModel.create({
+        playerId: existing._id,
+        action: "update",
+        performedBy: ctx.session.user.id,
+        performedByEmail: ctx.session.user.email ?? "unknown",
+        before: beforeSnap,
+        after: toSnapshot(updatedPlayer),
+      });
+
       await invalidatePlayersCache();
       return populated(updatedPlayer.toObject());
     }),
@@ -316,7 +434,7 @@ export const playerRouter = createTRPCRouter({
       }),
     )
     .output(playerOutput)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const firstName = input.firstName.trim();
       const lastName = input.lastName.trim();
 
@@ -339,14 +457,74 @@ export const playerRouter = createTRPCRouter({
         imgUrl: input.imgUrl,
       });
 
+      await PlayerAuditLogModel.create({
+        playerId: newPlayer._id,
+        action: "create",
+        performedBy: ctx.session.user.id,
+        performedByEmail: ctx.session.user.email ?? "unknown",
+        before: null,
+        after: toSnapshot(newPlayer),
+      });
+
       await invalidatePlayersCache();
       return populated(newPlayer.toObject());
+    }),
+
+  auditLog: adminProcedure
+    .input(
+      z.object({
+        playerId: z.string().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        cursor: z.string().nullish(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const limit = input.limit;
+      const filter: Record<string, unknown> = {};
+      if (input.playerId) {
+        filter.playerId = input.playerId;
+      }
+      if (input.cursor) {
+        filter._id = { $lt: input.cursor };
+      }
+
+      const entries = await PlayerAuditLogModel.find(filter)
+        .sort({ _id: -1 })
+        .limit(limit + 1)
+        .lean();
+
+      const hasMore = entries.length > limit;
+      const items = hasMore ? entries.slice(0, limit) : entries;
+
+      return {
+        items: items.map((e) => ({
+          id: String(e._id),
+          playerId: String(e.playerId),
+          action: e.action,
+          performedByEmail: e.performedByEmail,
+          before: e.before,
+          after: e.after,
+          timestamp: e.timestamp.toISOString(),
+        })),
+        cursor: hasMore ? String(items[items.length - 1]!._id) : null,
+      };
     }),
 
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
     .output(z.object({ success: z.boolean() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const existing = await PlayerModel.findById(input.id).lean();
+      if (existing) {
+        await PlayerAuditLogModel.create({
+          playerId: existing._id,
+          action: "delete",
+          performedBy: ctx.session.user.id,
+          performedByEmail: ctx.session.user.email ?? "unknown",
+          before: toSnapshot(existing),
+          after: null,
+        });
+      }
       await PlayerModel.findByIdAndDelete(input.id);
       await invalidatePlayersCache();
       return { success: true };

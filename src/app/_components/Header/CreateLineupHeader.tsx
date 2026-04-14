@@ -1,15 +1,61 @@
+import { Loader2, RefreshCw } from "lucide-react";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "~/app/_components/common/ui/tooltip";
+
+interface CreateLineupHeaderProps {
+  remainingBudget: number;
+  activePlayer: boolean;
+  onRefresh: () => void;
+  canRefresh: boolean;
+  isRefreshing: boolean;
+  isAuthenticated: boolean;
+}
+
+function getTooltipText(isAuthenticated: boolean, canRefresh: boolean): string {
+  if (!isAuthenticated) return "Get a new selection of players";
+  if (canRefresh) return "Get a new selection of players (1 refresh per day)";
+  return "You've used your daily refresh. Resets at midnight ET.";
+}
+
 const CreateLineupHeader = ({
   remainingBudget,
   activePlayer,
-}: {
-  remainingBudget: number;
-  activePlayer: boolean;
-}) => {
+  onRefresh,
+  canRefresh,
+  isRefreshing,
+  isAuthenticated,
+}: CreateLineupHeaderProps) => {
+  const disabled = (isAuthenticated && !canRefresh) || isRefreshing;
+
   return (
     <header className="mb-4 flex flex-col items-center justify-center">
-      <h1 className="text-foreground font-bold tracking-wide uppercase md:text-2xl">
-        Build Your Starting 5
-      </h1>
+      <div className="flex items-center gap-2">
+        <h1 className="text-foreground font-bold tracking-wide uppercase md:text-2xl">
+          Build Your Starting 5
+        </h1>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={disabled}
+              className="text-foreground/60 hover:text-foreground/80 disabled:text-foreground/25 rounded-md p-1 transition-colors disabled:cursor-not-allowed"
+            >
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {getTooltipText(isAuthenticated, canRefresh)}
+          </TooltipContent>
+        </Tooltip>
+      </div>
       <span
         className={`mt-1 font-bold transition-colors duration-200 md:text-3xl ${
           remainingBudget < 3

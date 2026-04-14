@@ -38,6 +38,10 @@ interface PlayerSelectorProps {
   onSubmit: (selectedPlayers: PlayerOutput[]) => void;
   isSubmitting?: boolean;
   isAuthenticated?: boolean;
+  isLoading?: boolean;
+  onRefresh: () => void;
+  canRefresh: boolean;
+  isRefreshing: boolean;
 }
 
 export function PlayerSelector({
@@ -45,6 +49,10 @@ export function PlayerSelector({
   onSubmit,
   isSubmitting = false,
   isAuthenticated = true,
+  isLoading = false,
+  onRefresh,
+  canRefresh,
+  isRefreshing,
 }: PlayerSelectorProps) {
   const [positionSlots, setPositionSlots] = useState<PositionSlots>(
     INITIAL_POSITION_SLOTS,
@@ -54,11 +62,10 @@ export function PlayerSelector({
     useState<PlayerOutput | null>(null);
   const [playerDetailOpen, setPlayerDetailOpen] = useState(false);
 
-  // Configure sensors for better drag experience
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Require 5px movement before starting drag
+        distance: isLoading ? Infinity : 5,
       },
     }),
   );
@@ -99,46 +106,7 @@ export function PlayerSelector({
     return null;
   };
 
-  // Handle click to auto-select or deselect
-  const handlePlayerClick = (player: PlayerOutput) => {
-    const currentPosition = findPlayerPosition(player);
-
-    if (currentPosition) {
-      const nextSlots = {
-        ...positionSlots,
-        [currentPosition]: null,
-      };
-      const remaining = POSITIONS.map((p) => nextSlots[p]).filter(
-        (p): p is PlayerOutput => p !== null,
-      );
-      setPositionSlots(nextSlots);
-      if (remaining.length === 0) {
-        setLastSelectedPlayer(null);
-        setPlayerDetailOpen(false);
-        return;
-      }
-      setLastSelectedPlayer((prev) => {
-        if (prev && remaining.some((r) => getId(r) === getId(prev))) {
-          return prev;
-        }
-        return remaining[remaining.length - 1]!;
-      });
-    } else if (canAffordPlayer(player) && filledSlots < 5) {
-      const emptySlot = findFirstEmptySlot();
-      if (emptySlot) {
-        setPositionSlots((prev) => ({
-          ...prev,
-          [emptySlot]: player,
-        }));
-        setLastSelectedPlayer(player);
-      }
-    }
-  };
-
-  // Handle removing a player from a slot
-  const handleRemovePlayer = (player: PlayerOutput) => {
-    const position = findPlayerPosition(player);
-    if (!position) return;
+  const removeFromSlot = (position: Position) => {
     const nextSlots = { ...positionSlots, [position]: null };
     const remaining = POSITIONS.map((p) => nextSlots[p]).filter(
       (p): p is PlayerOutput => p !== null,
@@ -153,8 +121,26 @@ export function PlayerSelector({
       if (prev && remaining.some((r) => getId(r) === getId(prev))) {
         return prev;
       }
-      return remaining[remaining.length - 1]!;
+      return remaining[0]!;
     });
+  };
+
+  const handlePlayerClick = (player: PlayerOutput) => {
+    const currentPosition = findPlayerPosition(player);
+    if (currentPosition) {
+      removeFromSlot(currentPosition);
+    } else if (canAffordPlayer(player) && filledSlots < 5) {
+      const emptySlot = findFirstEmptySlot();
+      if (emptySlot) {
+        setPositionSlots((prev) => ({ ...prev, [emptySlot]: player }));
+        setLastSelectedPlayer(player);
+      }
+    }
+  };
+
+  const handleRemovePlayer = (player: PlayerOutput) => {
+    const position = findPlayerPosition(player);
+    if (position) removeFromSlot(position);
   };
 
   // Drag and drop handlers
@@ -228,6 +214,11 @@ export function PlayerSelector({
     setPlayerDetailOpen(false);
   };
 
+  const handleRefreshClick = () => {
+    clearSelection();
+    onRefresh();
+  };
+
   const allPlayers = [
     { label: "$5", value: 5, players: playersByValue.value5Players },
     { label: "$4", value: 4, players: playersByValue.value4Players },
@@ -249,6 +240,10 @@ export function PlayerSelector({
           <CreateLineupHeader
             remainingBudget={remainingBudget}
             activePlayer={!!activePlayer}
+            onRefresh={handleRefreshClick}
+            canRefresh={canRefresh}
+            isRefreshing={isRefreshing}
+            isAuthenticated={isAuthenticated}
           />
 
           {/* Player Grid - Rows by Value */}
@@ -258,6 +253,7 @@ export function PlayerSelector({
             handlePlayerClick={handlePlayerClick}
             canAffordPlayer={canAffordPlayer}
             filledSlots={filledSlots}
+            isLoading={isLoading}
           />
         </div>
 
@@ -274,6 +270,8 @@ export function PlayerSelector({
           isAuthenticated={isAuthenticated}
           onOpenPlayerDetail={() => setPlayerDetailOpen(true)}
           canOpenPlayerDetail={filledSlots >= 1}
+          detailPlayer={lastSelectedPlayer}
+          onSelectForDetail={setLastSelectedPlayer}
         />
       </div>
 

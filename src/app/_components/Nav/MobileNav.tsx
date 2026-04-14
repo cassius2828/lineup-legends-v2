@@ -1,13 +1,13 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
+import type { Session } from "next-auth";
+import { signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import Hamburger from "./Hamburger";
 
-const MobileNav = () => {
-  const { data: session } = useSession();
+const MobileNav = ({ session }: { session: Session | null }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleMenu = () => {

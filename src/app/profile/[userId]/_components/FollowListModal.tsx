@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Spinner } from "~/app/_components/common/loaders";
 import { api } from "~/trpc/react";
 
 type FollowListModalProps = {
@@ -16,16 +17,19 @@ export function FollowListModal({
   type,
   onClose,
 }: FollowListModalProps) {
-  const { data: followers } = api.follow.getFollowers.useQuery(
-    { userId },
-    { enabled: type === "followers" },
-  );
-  const { data: following } = api.follow.getFollowing.useQuery(
-    { userId },
-    { enabled: type === "following" },
-  );
+  const { data: followers, isLoading: followersLoading } =
+    api.follow.getFollowers.useQuery(
+      { userId },
+      { enabled: type === "followers" },
+    );
+  const { data: following, isLoading: followingLoading } =
+    api.follow.getFollowing.useQuery(
+      { userId },
+      { enabled: type === "following" },
+    );
   const router = useRouter();
 
+  const isLoading = type === "followers" ? followersLoading : followingLoading;
   const items = type === "followers" ? followers?.items : following?.items;
 
   return (
@@ -51,7 +55,11 @@ export function FollowListModal({
         </div>
 
         <div className="max-h-80 space-y-2 overflow-y-auto">
-          {!items || items.length === 0 ? (
+          {isLoading ? (
+            <div className="flex min-h-[200px] items-center justify-center py-8">
+              <Spinner size="lg" />
+            </div>
+          ) : !items || items.length === 0 ? (
             <p className="text-foreground/50 py-8 text-center">No {type} yet</p>
           ) : (
             items.map((item) => {

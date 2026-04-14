@@ -229,6 +229,7 @@ test.describe("create lineup", () => {
     }
 
     await expect(page.getByText("$0")).toBeVisible();
+    await page.waitForTimeout(3000);
     await expect(
       page.getByRole("button", { name: "Confirm Lineup" }),
     ).toBeEnabled();
@@ -286,6 +287,7 @@ test.describe("user search", () => {
 
     const searchInput = page.getByPlaceholder("Search by name or username...");
     await searchInput.fill("cassius");
+    await page.waitForTimeout(5000);
 
     const userLink = page.locator('a[href^="/profile/"]').first();
     await expect(userLink).toBeVisible({ timeout: 15_000 });

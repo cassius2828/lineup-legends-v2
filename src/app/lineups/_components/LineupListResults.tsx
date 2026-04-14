@@ -1,10 +1,12 @@
+import { useEffect, useRef } from "react";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
 import LineupCardGrid from "~/app/_components/common/lineups/LineupCardGrid";
 import {
-  LineupListLoader,
+  GoldCircleSpinnerLoader,
   LoadMoreTrigger,
 } from "~/app/_components/common/loaders";
+import { LineupListSkeleton } from "~/app/_components/common/skeletons";
 import { getId } from "~/lib/types";
 import type { LineupOutput } from "~/server/api/schemas/output";
 import type { ViewMode } from "~/app/_components/common/lineups/ViewToggle";
@@ -17,7 +19,6 @@ type LineupListResultsProps = {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onLoadMore: () => void;
-  loadingMessage?: string;
   /** Show the lineup owner avatar + name on each card */
   showOwner?: boolean;
   /** Current user is the owner (enables delete / feature actions) */
@@ -27,6 +28,10 @@ type LineupListResultsProps = {
   onToggleFeatured?: (id: string) => void;
   /** Rendered when no lineups exist */
   emptyState: ReactNode;
+  /** Seed the skeleton count before data loads (e.g. from profile stats) */
+  initialCount?: number;
+  /** Serialized sort + filter params; when this changes, skeleton count cache resets so we don't reuse a stale length after filters/sort change */
+  listQueryKey: string;
 };
 
 export function LineupListResults({
@@ -36,16 +41,45 @@ export function LineupListResults({
   hasNextPage,
   isFetchingNextPage,
   onLoadMore,
-  loadingMessage,
   showOwner = false,
   isOwner = false,
   currentUserId,
   onDelete,
   onToggleFeatured,
   emptyState,
+  initialCount,
+  listQueryKey,
 }: LineupListResultsProps) {
+  const lastCountRef = useRef<number | undefined>(initialCount);
+  const prevListQueryKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (prevListQueryKeyRef.current === null) {
+      prevListQueryKeyRef.current = listQueryKey;
+      return;
+    }
+    if (prevListQueryKeyRef.current !== listQueryKey) {
+      prevListQueryKeyRef.current = listQueryKey;
+      lastCountRef.current = undefined;
+    }
+  }, [listQueryKey]);
+
+  if (!isLoading && lineups.length > 0) {
+    lastCountRef.current = lineups.length;
+  }
+
   if (isLoading) {
-    return <LineupListLoader message={loadingMessage} />;
+    if (lastCountRef.current != null) {
+      return (
+        <LineupListSkeleton
+          view={view}
+          count={lastCountRef.current}
+          showOwner={showOwner}
+          isOwner={isOwner}
+        />
+      );
+    }
+    return <GoldCircleSpinnerLoader />;
   }
 
   if (lineups.length === 0) {

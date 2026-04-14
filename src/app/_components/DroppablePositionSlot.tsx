@@ -11,6 +11,8 @@ interface DroppablePositionSlotProps {
   player: PlayerOutput | null;
   onRemove: (player: PlayerOutput) => void;
   isAnyDragging?: boolean;
+  isDetailTarget?: boolean;
+  onSelectForDetail?: (player: PlayerOutput) => void;
 }
 
 export function DroppablePositionSlot({
@@ -18,6 +20,8 @@ export function DroppablePositionSlot({
   player,
   onRemove,
   isAnyDragging = false,
+  isDetailTarget = false,
+  onSelectForDetail,
 }: DroppablePositionSlotProps) {
   const { setNodeRef, isOver, active } = useDroppable({
     id: position,
@@ -43,6 +47,9 @@ export function DroppablePositionSlot({
       {/* Player Slot */}
       <div
         ref={setNodeRef}
+        onClick={() => {
+          if (player && onSelectForDetail) onSelectForDetail(player);
+        }}
         className={`relative flex h-12 w-12 items-center justify-center rounded-lg transition-all duration-200 sm:h-16 sm:w-16 ${
           isDraggedOver
             ? "border-gold bg-gold/20 scale-110 border-2 border-solid shadow-[0_0_20px_rgba(227,185,32,0.5)]"
@@ -51,7 +58,11 @@ export function DroppablePositionSlot({
               : player
                 ? "border-foreground/40 bg-foreground/10 border-2 border-solid"
                 : "border-foreground/30 bg-foreground/5 border-2 border-dashed"
-        } ${showSwapIndicator ? "ring-offset-surface-950 ring-2 ring-amber-400 ring-offset-2" : ""}`}
+        } ${showSwapIndicator ? "ring-offset-surface-950 ring-2 ring-amber-400 ring-offset-2" : ""} ${
+          isDetailTarget && player
+            ? "shadow-[0_0_12px_rgba(34,197,94,0.6)] ring-2 ring-green-500/60"
+            : ""
+        } ${player && onSelectForDetail ? "cursor-pointer" : ""}`}
       >
         {player ? (
           <>
@@ -66,7 +77,10 @@ export function DroppablePositionSlot({
             </div>
             {/* Remove Button */}
             <button
-              onClick={() => onRemove(player)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove(player);
+              }}
               className="text-foreground absolute -top-1 -right-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-xs transition-colors hover:bg-red-500"
             >
               ×

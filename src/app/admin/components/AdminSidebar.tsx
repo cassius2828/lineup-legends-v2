@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   AlertTriangle,
   Shield,
+  ClipboardList,
 } from "lucide-react";
 
 const navItems = [
@@ -47,6 +48,11 @@ const navItems = [
     label: "User Management",
     href: "/admin/users",
     icon: Shield,
+  },
+  {
+    label: "Player Audit Log",
+    href: "/admin/audit-log",
+    icon: ClipboardList,
   },
   {
     label: "Videos",

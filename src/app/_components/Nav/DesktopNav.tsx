@@ -1,12 +1,12 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
+import type { Session } from "next-auth";
+import { signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
-import { IoIosLogOut } from "react-icons/io";
+import { LogOut } from "lucide-react";
 
-const DesktopNav = () => {
-  const { data: session } = useSession();
+const DesktopNav = ({ session }: { session: Session | null }) => {
   return (
     <div className="hidden items-center gap-6 text-sm md:flex">
       <Link
@@ -80,7 +80,7 @@ const DesktopNav = () => {
             onClick={() => void signOut({ callbackUrl: "/" })}
             className="cursor-pointer"
           >
-            <IoIosLogOut className="hover:text-gold text-foreground text-2xl transition-colors duration-100" />
+            <LogOut className="hover:text-gold text-foreground h-5 w-5 transition-colors duration-100" />
           </button>
         </>
       ) : (
