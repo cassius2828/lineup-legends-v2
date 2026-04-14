@@ -1,10 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { type PointerEvent, useRef, useState } from "react";
 import { ImageIcon, X, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useImageUpload } from "~/hooks/useImageUpload";
 import GifPicker from "./GifPicker";
+
+/**
+ * Prevent toolbar button taps from stealing focus away from the textarea.
+ * Without this, iOS Safari fires blur → the mobile composer collapses
+ * before the button's click handler (file picker / GIF toggle) can run.
+ */
+const keepFocus = (e: PointerEvent) => e.preventDefault();
 
 export interface ComposerMedia {
   image?: string;
@@ -71,6 +78,7 @@ export default function ComposerToolbar({
           )}
           <button
             type="button"
+            onPointerDown={keepFocus}
             onClick={clearAttachment}
             className="bg-surface-800 text-foreground/60 hover:text-foreground absolute -top-1.5 -right-1.5 rounded-full p-0.5 shadow-md transition-colors"
           >
@@ -90,6 +98,7 @@ export default function ComposerToolbar({
         />
         <button
           type="button"
+          onPointerDown={keepFocus}
           onClick={() => fileRef.current?.click()}
           disabled={isUploading}
           className="text-foreground/30 hover:bg-foreground/5 hover:text-foreground/60 rounded-md p-1.5 transition-colors disabled:opacity-40"
@@ -103,6 +112,7 @@ export default function ComposerToolbar({
         </button>
         <button
           type="button"
+          onPointerDown={keepFocus}
           onClick={() => setShowGifPicker((v) => !v)}
           className={`text-foreground/30 hover:bg-foreground/5 hover:text-foreground/60 rounded-md p-1.5 transition-colors ${
             showGifPicker ? "bg-foreground/5 text-foreground/60" : ""
