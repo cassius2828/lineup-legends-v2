@@ -11,14 +11,38 @@ const RANDOM_PLAYERS_QUERY_OPTS = {
   refetchOnWindowFocus: false,
 } as const;
 
+function makeSkeletonPlayer(value: number, index: number): PlayerOutput {
+  return {
+    _id: `skeleton-${value}-${index}`,
+    firstName: "--",
+    lastName: "--",
+    imgUrl: "",
+    value,
+  };
+}
+
+const SKELETON_PLAYERS_BY_VALUE = {
+  value1Players: Array.from({ length: 5 }, (_, i) => makeSkeletonPlayer(1, i)),
+  value2Players: Array.from({ length: 5 }, (_, i) => makeSkeletonPlayer(2, i)),
+  value3Players: Array.from({ length: 5 }, (_, i) => makeSkeletonPlayer(3, i)),
+  value4Players: Array.from({ length: 5 }, (_, i) => makeSkeletonPlayer(4, i)),
+  value5Players: Array.from({ length: 5 }, (_, i) => makeSkeletonPlayer(5, i)),
+};
+
 export function useNewLineupPage() {
   const router = useRouter();
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
   const utils = api.useUtils();
 
-  const { data: playersByValue, isLoading } =
-    api.player.getRandomByValue.useQuery(undefined, RANDOM_PLAYERS_QUERY_OPTS);
+  const {
+    data: playersByValue,
+    isLoading,
+    isError,
+  } = api.player.getRandomByValue.useQuery(
+    undefined,
+    RANDOM_PLAYERS_QUERY_OPTS,
+  );
 
   const createLineup = api.lineup.create.useMutation({
     onSuccess: () => {
@@ -44,9 +68,12 @@ export function useNewLineupPage() {
     });
   };
 
+  const displayData = playersByValue ?? SKELETON_PLAYERS_BY_VALUE;
+
   return {
-    playersByValue,
+    playersByValue: displayData,
     isLoading,
+    isError,
     isAuthenticated,
     isSubmitting: createLineup.isPending,
     handleSubmit,

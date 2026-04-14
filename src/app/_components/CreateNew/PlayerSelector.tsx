@@ -38,6 +38,7 @@ interface PlayerSelectorProps {
   onSubmit: (selectedPlayers: PlayerOutput[]) => void;
   isSubmitting?: boolean;
   isAuthenticated?: boolean;
+  isLoading?: boolean;
 }
 
 export function PlayerSelector({
@@ -45,6 +46,7 @@ export function PlayerSelector({
   onSubmit,
   isSubmitting = false,
   isAuthenticated = true,
+  isLoading = false,
 }: PlayerSelectorProps) {
   const [positionSlots, setPositionSlots] = useState<PositionSlots>(
     INITIAL_POSITION_SLOTS,
@@ -54,11 +56,10 @@ export function PlayerSelector({
     useState<PlayerOutput | null>(null);
   const [playerDetailOpen, setPlayerDetailOpen] = useState(false);
 
-  // Configure sensors for better drag experience
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Require 5px movement before starting drag
+        distance: isLoading ? Infinity : 5,
       },
     }),
   );
@@ -258,6 +259,7 @@ export function PlayerSelector({
             handlePlayerClick={handlePlayerClick}
             canAffordPlayer={canAffordPlayer}
             filledSlots={filledSlots}
+            isLoading={isLoading}
           />
         </div>
 
