@@ -96,6 +96,7 @@ export function ProfilePageContent() {
             onLoadMore={p.handleFetchNextPage}
             isFetchingNextPage={p.isFetchingNextPage}
             hasNextPage={p.hasNextPage ?? false}
+            totalLineups={profile.stats?.totalLineups}
           />
         ) : (
           <ProfileLineupsSkeleton />

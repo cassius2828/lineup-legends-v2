@@ -1,7 +1,11 @@
+import { useRef } from "react";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
 import LineupCardGrid from "~/app/_components/common/lineups/LineupCardGrid";
-import { LoadMoreTrigger } from "~/app/_components/common/loaders";
+import {
+  GoldCircleSpinnerLoader,
+  LoadMoreTrigger,
+} from "~/app/_components/common/loaders";
 import { LineupListSkeleton } from "~/app/_components/common/skeletons";
 import { getId } from "~/lib/types";
 import type { LineupOutput } from "~/server/api/schemas/output";
@@ -24,6 +28,8 @@ type LineupListResultsProps = {
   onToggleFeatured?: (id: string) => void;
   /** Rendered when no lineups exist */
   emptyState: ReactNode;
+  /** Seed the skeleton count before data loads (e.g. from profile stats) */
+  initialCount?: number;
 };
 
 export function LineupListResults({
@@ -39,9 +45,19 @@ export function LineupListResults({
   onDelete,
   onToggleFeatured,
   emptyState,
+  initialCount,
 }: LineupListResultsProps) {
+  const lastCountRef = useRef<number | undefined>(initialCount);
+
+  if (!isLoading && lineups.length > 0) {
+    lastCountRef.current = lineups.length;
+  }
+
   if (isLoading) {
-    return <LineupListSkeleton view={view} />;
+    if (lastCountRef.current != null) {
+      return <LineupListSkeleton view={view} count={lastCountRef.current} />;
+    }
+    return <GoldCircleSpinnerLoader />;
   }
 
   if (lineups.length === 0) {

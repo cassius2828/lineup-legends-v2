@@ -1,11 +1,15 @@
 "use client";
 
+import { useRef } from "react";
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
 import LineupCardGrid from "~/app/_components/common/lineups/LineupCardGrid";
 import { ViewToggle } from "~/app/_components/common/lineups/ViewToggle";
 import { Button } from "~/app/_components/common/ui/Button";
-import { LoadMoreTrigger } from "~/app/_components/common/loaders";
+import {
+  GoldCircleSpinnerLoader,
+  LoadMoreTrigger,
+} from "~/app/_components/common/loaders";
 import { LineupListSkeleton } from "~/app/_components/common/skeletons";
 import LineupFilters from "~/app/_components/common/lineups/LineupFilters";
 import { getId } from "~/lib/types";
@@ -27,6 +31,8 @@ type ProfileLineupsSectionProps = {
   onLoadMore: () => void;
   isFetchingNextPage: boolean;
   hasNextPage: boolean;
+  /** Pre-seed skeleton count from profile stats */
+  totalLineups?: number;
 };
 
 export function ProfileLineupsSection({
@@ -42,7 +48,21 @@ export function ProfileLineupsSection({
   onLoadMore,
   isFetchingNextPage,
   hasNextPage,
+  totalLineups,
 }: ProfileLineupsSectionProps) {
+  const lastCountRef = useRef<number | undefined>(totalLineups);
+
+  if (!lineupsLoading && lineups.length > 0) {
+    lastCountRef.current = lineups.length;
+  }
+
+  const loadingContent =
+    lastCountRef.current != null ? (
+      <LineupListSkeleton view={view} count={lastCountRef.current} />
+    ) : (
+      <GoldCircleSpinnerLoader />
+    );
+
   return (
     <div className="pb-16">
       <div className="mb-4 space-y-2">
@@ -72,7 +92,7 @@ export function ProfileLineupsSection({
       </div>
 
       {lineupsLoading ? (
-        <LineupListSkeleton view={view} />
+        loadingContent
       ) : lineups.length > 0 ? (
         <>
           <LineupCardGrid view={view}>
