@@ -42,7 +42,6 @@ interface PlayerSelectorProps {
   onRefresh: () => void;
   canRefresh: boolean;
   isRefreshing: boolean;
-  nextRefreshAt: string | null;
 }
 
 export function PlayerSelector({
@@ -54,7 +53,6 @@ export function PlayerSelector({
   onRefresh,
   canRefresh,
   isRefreshing,
-  nextRefreshAt,
 }: PlayerSelectorProps) {
   const [positionSlots, setPositionSlots] = useState<PositionSlots>(
     INITIAL_POSITION_SLOTS,
@@ -108,46 +106,7 @@ export function PlayerSelector({
     return null;
   };
 
-  // Handle click to auto-select or deselect
-  const handlePlayerClick = (player: PlayerOutput) => {
-    const currentPosition = findPlayerPosition(player);
-
-    if (currentPosition) {
-      const nextSlots = {
-        ...positionSlots,
-        [currentPosition]: null,
-      };
-      const remaining = POSITIONS.map((p) => nextSlots[p]).filter(
-        (p): p is PlayerOutput => p !== null,
-      );
-      setPositionSlots(nextSlots);
-      if (remaining.length === 0) {
-        setLastSelectedPlayer(null);
-        setPlayerDetailOpen(false);
-        return;
-      }
-      setLastSelectedPlayer((prev) => {
-        if (prev && remaining.some((r) => getId(r) === getId(prev))) {
-          return prev;
-        }
-        return remaining[0]!;
-      });
-    } else if (canAffordPlayer(player) && filledSlots < 5) {
-      const emptySlot = findFirstEmptySlot();
-      if (emptySlot) {
-        setPositionSlots((prev) => ({
-          ...prev,
-          [emptySlot]: player,
-        }));
-        setLastSelectedPlayer(player);
-      }
-    }
-  };
-
-  // Handle removing a player from a slot
-  const handleRemovePlayer = (player: PlayerOutput) => {
-    const position = findPlayerPosition(player);
-    if (!position) return;
+  const removeFromSlot = (position: Position) => {
     const nextSlots = { ...positionSlots, [position]: null };
     const remaining = POSITIONS.map((p) => nextSlots[p]).filter(
       (p): p is PlayerOutput => p !== null,
@@ -164,6 +123,24 @@ export function PlayerSelector({
       }
       return remaining[0]!;
     });
+  };
+
+  const handlePlayerClick = (player: PlayerOutput) => {
+    const currentPosition = findPlayerPosition(player);
+    if (currentPosition) {
+      removeFromSlot(currentPosition);
+    } else if (canAffordPlayer(player) && filledSlots < 5) {
+      const emptySlot = findFirstEmptySlot();
+      if (emptySlot) {
+        setPositionSlots((prev) => ({ ...prev, [emptySlot]: player }));
+        setLastSelectedPlayer(player);
+      }
+    }
+  };
+
+  const handleRemovePlayer = (player: PlayerOutput) => {
+    const position = findPlayerPosition(player);
+    if (position) removeFromSlot(position);
   };
 
   // Drag and drop handlers

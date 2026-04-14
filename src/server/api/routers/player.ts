@@ -55,6 +55,38 @@ function getStartOfDayET(): Date {
   return new Date(now.getTime() - elapsedMs);
 }
 
+async function samplePlayerPool() {
+  const results = await PlayerModel.aggregate([
+    {
+      $facet: {
+        value1Players: [{ $match: { value: 1 } }, { $sample: { size: 5 } }],
+        value2Players: [{ $match: { value: 2 } }, { $sample: { size: 5 } }],
+        value3Players: [{ $match: { value: 3 } }, { $sample: { size: 5 } }],
+        value4Players: [{ $match: { value: 4 } }, { $sample: { size: 5 } }],
+        value5Players: [{ $match: { value: 5 } }, { $sample: { size: 5 } }],
+      },
+    },
+  ]);
+  return populated(results[0]);
+}
+
+async function getRefreshEligibility(userId: string) {
+  const user = await UserModel.findById(userId)
+    .select("lastPlayerPoolRefreshAt")
+    .lean();
+
+  if (!user) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+  }
+
+  const todayStart = getStartOfDayET();
+  const usedToday = !!(
+    user.lastPlayerPoolRefreshAt && user.lastPlayerPoolRefreshAt >= todayStart
+  );
+
+  return { usedToday, todayStart };
+}
+
 export const playerRouter = createTRPCRouter({
   getAll: publicProcedure
     .input(z.object({ value: z.number().min(1).max(5).optional() }).optional())
@@ -266,39 +298,13 @@ export const playerRouter = createTRPCRouter({
 
   getRandomByValue: publicProcedure
     .output(playersByValueOutput)
-    .query(async () => {
-      const results = await PlayerModel.aggregate([
-        {
-          $facet: {
-            value1Players: [{ $match: { value: 1 } }, { $sample: { size: 5 } }],
-            value2Players: [{ $match: { value: 2 } }, { $sample: { size: 5 } }],
-            value3Players: [{ $match: { value: 3 } }, { $sample: { size: 5 } }],
-            value4Players: [{ $match: { value: 4 } }, { $sample: { size: 5 } }],
-            value5Players: [{ $match: { value: 5 } }, { $sample: { size: 5 } }],
-          },
-        },
-      ]);
-
-      return populated(results[0]);
-    }),
+    .query(() => samplePlayerPool()),
 
   refreshRandomByValue: protectedProcedure
     .output(playersByValueOutput)
     .mutation(async ({ ctx }) => {
-      const user = await UserModel.findById(ctx.session.user.id)
-        .select("lastPlayerPoolRefreshAt")
-        .lean();
-
-      if (!user) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-      }
-
-      const todayStart = getStartOfDayET();
-
-      if (
-        user.lastPlayerPoolRefreshAt &&
-        user.lastPlayerPoolRefreshAt >= todayStart
-      ) {
+      const { usedToday } = await getRefreshEligibility(ctx.session.user.id);
+      if (usedToday) {
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
           message:
@@ -310,19 +316,7 @@ export const playerRouter = createTRPCRouter({
         lastPlayerPoolRefreshAt: new Date(),
       });
 
-      const results = await PlayerModel.aggregate([
-        {
-          $facet: {
-            value1Players: [{ $match: { value: 1 } }, { $sample: { size: 5 } }],
-            value2Players: [{ $match: { value: 2 } }, { $sample: { size: 5 } }],
-            value3Players: [{ $match: { value: 3 } }, { $sample: { size: 5 } }],
-            value4Players: [{ $match: { value: 4 } }, { $sample: { size: 5 } }],
-            value5Players: [{ $match: { value: 5 } }, { $sample: { size: 5 } }],
-          },
-        },
-      ]);
-
-      return populated(results[0]);
+      return samplePlayerPool();
     }),
 
   canRefreshPool: protectedProcedure
@@ -333,25 +327,14 @@ export const playerRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx }) => {
-      const user = await UserModel.findById(ctx.session.user.id)
-        .select("lastPlayerPoolRefreshAt")
-        .lean();
-
-      if (!user) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-      }
-
-      const todayStart = getStartOfDayET();
-
-      if (
-        user.lastPlayerPoolRefreshAt &&
-        user.lastPlayerPoolRefreshAt >= todayStart
-      ) {
+      const { usedToday, todayStart } = await getRefreshEligibility(
+        ctx.session.user.id,
+      );
+      if (usedToday) {
         const tomorrow = new Date(todayStart);
         tomorrow.setDate(tomorrow.getDate() + 1);
         return { canRefresh: false, nextRefreshAt: tomorrow.toISOString() };
       }
-
       return { canRefresh: true, nextRefreshAt: null };
     }),
 
