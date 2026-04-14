@@ -10,7 +10,7 @@ import {
 } from "~/app/_components/Comment/CommentComposerField";
 import { ComposerUserAvatar } from "~/app/_components/Comment/ComposerUserAvatar";
 import { cn } from "~/lib/utils";
-import { GoldCircleSpinnerLoader } from "~/app/_components/common/loaders";
+import { LineupDetailSkeleton } from "~/app/_components/common/skeletons";
 import { useLineupDetailPage } from "../_hooks/useLineupDetailPage";
 
 export function LineupDetailContent() {
@@ -38,7 +38,14 @@ export function LineupDetailContent() {
     setMobileComposerExpanded,
   } = useLineupDetailPage();
 
-  if (isLoading) return <GoldCircleSpinnerLoader />;
+  if (isLoading) {
+    return (
+      <div className="mx-auto w-full max-w-3xl px-4 pt-8 md:my-12 md:pt-12">
+        <LineupDetailSkeleton />
+      </div>
+    );
+  }
+
   if (!lineup)
     return (
       <div className="text-foreground/50 p-12 text-center">

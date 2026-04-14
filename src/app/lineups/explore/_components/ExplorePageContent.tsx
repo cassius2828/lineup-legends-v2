@@ -35,79 +35,77 @@ export function ExplorePageContent() {
   } = useExplorePage();
 
   return (
-    <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
-      <div className="container mx-auto px-4 py-8">
-        <LineupsHeader
-          title="Explore Lineups"
-          description="Discover lineups from the community"
-          exploreLink={isAuthenticated ? "/lineups" : ""}
-          createLink={isAuthenticated ? "/lineups/new" : ""}
-          exploreLinkText={isAuthenticated ? "My Lineups" : ""}
-          createLinkText={isAuthenticated ? "+ Create Lineup" : ""}
-          extraLinks={
-            isAuthenticated
-              ? [{ href: "/lineups/bookmarked", label: "Bookmarked" }]
-              : []
+    <>
+      <LineupsHeader
+        title="Explore Lineups"
+        description="Discover lineups from the community"
+        exploreLink={isAuthenticated ? "/lineups" : ""}
+        createLink={isAuthenticated ? "/lineups/new" : ""}
+        exploreLinkText={isAuthenticated ? "My Lineups" : ""}
+        createLinkText={isAuthenticated ? "+ Create Lineup" : ""}
+        extraLinks={
+          isAuthenticated
+            ? [{ href: "/lineups/bookmarked", label: "Bookmarked" }]
+            : []
+        }
+      />
+
+      <div className="mb-6 space-y-2">
+        <LineupSortBar
+          options={SORT_OPTIONS}
+          sort={sort}
+          onSortChange={(s) => setSort(s as typeof sort)}
+          trailing={
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={handleRefreshAllLineups}
+                  className="text-foreground/50 hover:bg-foreground/10 hover:text-foreground/70 flex cursor-pointer items-center justify-center rounded-lg p-1.5 transition-colors"
+                >
+                  <RefreshIcon className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Refresh lineups</TooltipContent>
+            </Tooltip>
           }
         />
-
-        <div className="mb-6 space-y-2">
-          <LineupSortBar
-            options={SORT_OPTIONS}
-            sort={sort}
-            onSortChange={(s) => setSort(s as typeof sort)}
-            trailing={
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={handleRefreshAllLineups}
-                    className="text-foreground/50 hover:bg-foreground/10 hover:text-foreground/70 flex cursor-pointer items-center justify-center rounded-lg p-1.5 transition-colors"
-                  >
-                    <RefreshIcon className="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Refresh lineups</TooltipContent>
-              </Tooltip>
-            }
-          />
-          <LineupFilterRow
-            filters={filters}
-            onFiltersChange={setFilters}
-            activeFilterCount={activeFilterCount}
-            view={view}
-            onViewChange={setView}
-            showUserFilter={true}
-            excludeUserId={session?.user?.id}
-          />
-        </div>
-
-        <LineupListResults
-          lineups={lineups}
-          isLoading={isLoading}
+        <LineupFilterRow
+          filters={filters}
+          onFiltersChange={setFilters}
+          activeFilterCount={activeFilterCount}
           view={view}
-          hasNextPage={hasNextPage}
-          isFetchingNextPage={isFetchingNextPage}
-          onLoadMore={handleFetchNextPage}
-          showOwner={true}
-          isOwner={false}
-          currentUserId={session?.user.id ?? ""}
-          emptyState={
-            <LineupsEmptyState
-              icon={
-                <Search
-                  className="text-foreground/40 h-8 w-8"
-                  strokeWidth={1.5}
-                />
-              }
-              title="No lineups to explore"
-              message="Be the first to create a lineup!"
-              ctaHref="/lineups/new"
-              ctaLabel="Create a Lineup"
-            />
-          }
+          onViewChange={setView}
+          showUserFilter={true}
+          excludeUserId={session?.user?.id}
         />
       </div>
-    </main>
+
+      <LineupListResults
+        lineups={lineups}
+        isLoading={isLoading}
+        view={view}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        onLoadMore={handleFetchNextPage}
+        showOwner={true}
+        isOwner={false}
+        currentUserId={session?.user.id ?? ""}
+        emptyState={
+          <LineupsEmptyState
+            icon={
+              <Search
+                className="text-foreground/40 h-8 w-8"
+                strokeWidth={1.5}
+              />
+            }
+            title="No lineups to explore"
+            message="Be the first to create a lineup!"
+            ctaHref="/lineups/new"
+            ctaLabel="Create a Lineup"
+          />
+        }
+      />
+    </>
   );
 }

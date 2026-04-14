@@ -35,56 +35,54 @@ export function MyLineupsPageContent() {
   } = useMyLineupsPage();
 
   return (
-    <main className="from-surface-950 via-surface-800 to-surface-950 min-h-screen bg-gradient-to-b">
-      <div className="container mx-auto px-4 py-8">
-        <LineupsHeader
-          title="My Lineups"
-          description="Manage your fantasy basketball lineups"
-          exploreLink="/lineups/explore"
-          createLink="/lineups/new"
-          exploreLinkText="Explore Lineups"
-          createLinkText="+ Create Lineup"
-          extraLinks={[{ href: "/lineups/bookmarked", label: "Bookmarked" }]}
+    <>
+      <LineupsHeader
+        title="My Lineups"
+        description="Manage your fantasy basketball lineups"
+        exploreLink="/lineups/explore"
+        createLink="/lineups/new"
+        exploreLinkText="Explore Lineups"
+        createLinkText="+ Create Lineup"
+        extraLinks={[{ href: "/lineups/bookmarked", label: "Bookmarked" }]}
+      />
+
+      <div className="mb-6 space-y-2">
+        <LineupSortBar
+          options={SORT_OPTIONS}
+          sort={sort}
+          onSortChange={(s) => setSort(s as typeof sort)}
         />
-
-        <div className="mb-6 space-y-2">
-          <LineupSortBar
-            options={SORT_OPTIONS}
-            sort={sort}
-            onSortChange={(s) => setSort(s as typeof sort)}
-          />
-          <LineupFilterRow
-            filters={filters}
-            onFiltersChange={setFilters}
-            activeFilterCount={activeFilterCount}
-            view={view}
-            onViewChange={setView}
-          />
-        </div>
-
-        <LineupListResults
-          lineups={lineups}
-          isLoading={isLoading}
+        <LineupFilterRow
+          filters={filters}
+          onFiltersChange={setFilters}
+          activeFilterCount={activeFilterCount}
           view={view}
-          hasNextPage={hasNextPage}
-          isFetchingNextPage={isFetchingNextPage}
-          onLoadMore={handleFetchNextPage}
-          showOwner={false}
-          isOwner={true}
-          currentUserId={getId(session)}
-          onDelete={handleDelete}
-          onToggleFeatured={handleToggleFeatured}
-          emptyState={
-            <LineupsEmptyState
-              icon={<Package className="text-foreground/40 h-8 w-8" />}
-              title="No lineups yet"
-              message="Create your first lineup to get started!"
-              ctaHref="/lineups/new"
-              ctaLabel="Create Your First Lineup"
-            />
-          }
+          onViewChange={setView}
         />
       </div>
+
+      <LineupListResults
+        lineups={lineups}
+        isLoading={isLoading}
+        view={view}
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        onLoadMore={handleFetchNextPage}
+        showOwner={false}
+        isOwner={true}
+        currentUserId={getId(session)}
+        onDelete={handleDelete}
+        onToggleFeatured={handleToggleFeatured}
+        emptyState={
+          <LineupsEmptyState
+            icon={<Package className="text-foreground/40 h-8 w-8" />}
+            title="No lineups yet"
+            message="Create your first lineup to get started!"
+            ctaHref="/lineups/new"
+            ctaLabel="Create Your First Lineup"
+          />
+        }
+      />
 
       <ConfirmModal
         open={deleteTarget !== null}
@@ -96,6 +94,6 @@ export function MyLineupsPageContent() {
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />
-    </main>
+    </>
   );
 }

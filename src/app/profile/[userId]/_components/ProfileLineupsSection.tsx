@@ -5,10 +5,8 @@ import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompac
 import LineupCardGrid from "~/app/_components/common/lineups/LineupCardGrid";
 import { ViewToggle } from "~/app/_components/common/lineups/ViewToggle";
 import { Button } from "~/app/_components/common/ui/Button";
-import {
-  LineupListLoader,
-  LoadMoreTrigger,
-} from "~/app/_components/common/loaders";
+import { LoadMoreTrigger } from "~/app/_components/common/loaders";
+import { LineupListSkeleton } from "~/app/_components/common/skeletons";
 import LineupFilters from "~/app/_components/common/lineups/LineupFilters";
 import { getId } from "~/lib/types";
 import { SORT_OPTIONS, type SortOption } from "~/lib/constants";
@@ -74,7 +72,7 @@ export function ProfileLineupsSection({
       </div>
 
       {lineupsLoading ? (
-        <LineupListLoader />
+        <LineupListSkeleton view={view} />
       ) : lineups.length > 0 ? (
         <>
           <LineupCardGrid view={view}>

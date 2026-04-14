@@ -1,10 +1,8 @@
 import { LineupCard } from "~/app/_components/LineupCard/LineupCard";
 import { LineupCardCompact } from "~/app/_components/LineupCard/LineupCardCompact";
 import LineupCardGrid from "~/app/_components/common/lineups/LineupCardGrid";
-import {
-  LineupListLoader,
-  LoadMoreTrigger,
-} from "~/app/_components/common/loaders";
+import { LoadMoreTrigger } from "~/app/_components/common/loaders";
+import { LineupListSkeleton } from "~/app/_components/common/skeletons";
 import { getId } from "~/lib/types";
 import type { LineupOutput } from "~/server/api/schemas/output";
 import type { ViewMode } from "~/app/_components/common/lineups/ViewToggle";
@@ -17,7 +15,6 @@ type LineupListResultsProps = {
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
   onLoadMore: () => void;
-  loadingMessage?: string;
   /** Show the lineup owner avatar + name on each card */
   showOwner?: boolean;
   /** Current user is the owner (enables delete / feature actions) */
@@ -36,7 +33,6 @@ export function LineupListResults({
   hasNextPage,
   isFetchingNextPage,
   onLoadMore,
-  loadingMessage,
   showOwner = false,
   isOwner = false,
   currentUserId,
@@ -45,7 +41,7 @@ export function LineupListResults({
   emptyState,
 }: LineupListResultsProps) {
   if (isLoading) {
-    return <LineupListLoader message={loadingMessage} />;
+    return <LineupListSkeleton view={view} />;
   }
 
   if (lineups.length === 0) {
