@@ -7,6 +7,7 @@ import { ArrowLeft, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
+import { useSession } from "next-auth/react";
 import { api } from "~/trpc/react";
 import { useSubmitComment } from "~/hooks/useSubmitComment";
 import { LineupCardSkeleton } from "../common/skeletons";
@@ -83,9 +84,26 @@ export default function CommentModal({
   mode,
   ...rest
 }: CommentModalProps) {
-  const { data: session } = api.profile.getMe.useQuery(undefined, {
+  const { data: nextAuthSession, status: authStatus } = useSession();
+  const { data: profile } = api.profile.getMe.useQuery(undefined, {
+    enabled: open && authStatus === "authenticated",
     retry: false,
   });
+
+  /** Full profile from API when ready; otherwise NextAuth session (JWT cookie) so we never flash "sign in" while getMe is loading. */
+  const me =
+    profile ??
+    (authStatus === "authenticated" && nextAuthSession?.user
+      ? {
+          id: nextAuthSession.user.id,
+          name: nextAuthSession.user.name ?? null,
+          image: nextAuthSession.user.image ?? null,
+          profileImg: nextAuthSession.user.profileImg ?? null,
+        }
+      : null);
+
+  const sessionLoading = authStatus === "loading";
+  const isUnauthenticated = authStatus === "unauthenticated";
   const [text, setText] = useState("");
   const [media, setMedia] = useState<ComposerMedia>({});
   const [mounted, setMounted] = useState(false);
@@ -117,7 +135,7 @@ export default function CommentModal({
   const showThreadView =
     mode === "reply" || (mode === "comment" && internalView === "thread");
 
-  const effectiveUserId = currentUserId ?? session?.id;
+  const effectiveUserId = currentUserId ?? me?.id;
 
   const resetComposer = useCallback(() => {
     setText("");
@@ -274,9 +292,9 @@ export default function CommentModal({
     onMediaChange: setMedia,
   };
 
-  const userImage = session?.image ?? session?.profileImg;
+  const userImage = me?.image ?? me?.profileImg;
   const sessionAvatarSrc = userImage ?? "/default-user.jpg";
-  const sessionAvatarAlt = session?.name ?? "You";
+  const sessionAvatarAlt = me?.name ?? "You";
   const parentDisplayName =
     effectiveParent?.user.name ?? effectiveParent?.user.username ?? "Anonymous";
 
@@ -524,7 +542,13 @@ export default function CommentModal({
           {showCommentsList && isDesktop && (
             <div className="flex max-h-[80vh] flex-col">
               {lineupCardSection}
-              {session ? (
+              {sessionLoading ? (
+                <div className="border-foreground/10 flex shrink-0 justify-center border-b py-10">
+                  <Spinner size="lg" />
+                </div>
+              ) : isUnauthenticated ? (
+                <SignInCta action="comment" border="border-b" />
+              ) : me ? (
                 <div className="border-foreground/10 shrink-0 border-b px-5 py-4">
                   <div className="flex gap-3">
                     <ComposerUserAvatar
@@ -546,7 +570,9 @@ export default function CommentModal({
                   />
                 </div>
               ) : (
-                <SignInCta action="comment" border="border-b" />
+                <div className="border-foreground/10 flex shrink-0 justify-center border-b py-10">
+                  <Spinner size="lg" />
+                </div>
               )}
               <div className="flex-1 overflow-y-auto px-5">
                 {commentsListSection}
@@ -560,7 +586,15 @@ export default function CommentModal({
                 {lineupCardSection}
                 <div className="flex-1 px-5">{commentsListSection}</div>
               </div>
-              {session ? (
+              {sessionLoading ? (
+                <div className="border-foreground/10 flex shrink-0 justify-center border-t py-8">
+                  <Spinner size="lg" />
+                </div>
+              ) : isUnauthenticated ? (
+                <div className="shrink-0">
+                  <SignInCta action="comment" border="border-t" />
+                </div>
+              ) : me ? (
                 <div
                   ref={listComposerRef}
                   onBlur={handleListComposerBlur}
@@ -600,8 +634,8 @@ export default function CommentModal({
                   </div>
                 </div>
               ) : (
-                <div className="shrink-0">
-                  <SignInCta action="comment" border="border-t" />
+                <div className="border-foreground/10 flex shrink-0 justify-center border-t py-8">
+                  <Spinner size="lg" />
                 </div>
               )}
             </div>
@@ -613,7 +647,13 @@ export default function CommentModal({
               <div className="flex-1 overflow-y-auto px-5 py-4">
                 {threadScrollSection}
               </div>
-              {session ? (
+              {sessionLoading ? (
+                <div className="border-foreground/10 flex justify-center border-t py-8">
+                  <Spinner size="lg" />
+                </div>
+              ) : isUnauthenticated ? (
+                <SignInCta action="reply" border="border-t" />
+              ) : me ? (
                 <div className="border-foreground/10 border-t px-5 py-3">
                   <div className="flex gap-3">
                     <div className="w-9 shrink-0">
@@ -641,7 +681,9 @@ export default function CommentModal({
                   </div>
                 </div>
               ) : (
-                <SignInCta action="reply" border="border-t" />
+                <div className="border-foreground/10 flex justify-center border-t py-8">
+                  <Spinner size="lg" />
+                </div>
               )}
             </div>
           )}
@@ -651,7 +693,13 @@ export default function CommentModal({
               <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 pb-6">
                 {threadScrollSection}
               </div>
-              {session ? (
+              {sessionLoading ? (
+                <div className="border-foreground/10 flex shrink-0 justify-center border-t py-8">
+                  <Spinner size="lg" />
+                </div>
+              ) : isUnauthenticated ? (
+                <SignInCta action="reply" border="border-t" />
+              ) : me ? (
                 <div
                   ref={threadComposerRef}
                   onBlur={handleThreadComposerBlur}
@@ -701,7 +749,9 @@ export default function CommentModal({
                   </div>
                 </div>
               ) : (
-                <SignInCta action="reply" border="border-t" />
+                <div className="border-foreground/10 flex shrink-0 justify-center border-t py-8">
+                  <Spinner size="lg" />
+                </div>
               )}
             </div>
           )}
