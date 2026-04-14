@@ -37,6 +37,7 @@ export interface User {
   mfaMethods: MfaMethod[];
   totpSecret?: string | null;
   pendingTotpSecret?: string | null;
+  lastPlayerPoolRefreshAt?: Date | null;
 }
 
 // DB Type - for database operations
@@ -69,6 +70,7 @@ export interface UserDoc extends Document {
   mfaMethods: MfaMethod[];
   totpSecret?: string | null;
   pendingTotpSecret?: string | null;
+  lastPlayerPoolRefreshAt?: Date | null;
 }
 
 const SocialMediaSchema = new Schema<SocialMedia>(
@@ -112,6 +114,7 @@ const UserSchema = new Schema<UserDoc>(
     },
     totpSecret: { type: String, default: null },
     pendingTotpSecret: { type: String, default: null },
+    lastPlayerPoolRefreshAt: { type: Date, default: null },
   },
   {
     timestamps: false,

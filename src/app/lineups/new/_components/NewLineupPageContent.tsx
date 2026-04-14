@@ -11,6 +11,10 @@ export function NewLineupPageContent() {
     isAuthenticated,
     isSubmitting,
     handleSubmit,
+    handleRefresh,
+    canRefresh,
+    nextRefreshAt,
+    isRefreshing,
   } = useNewLineupPage();
 
   if (isError && !isLoading) {
@@ -30,6 +34,10 @@ export function NewLineupPageContent() {
       isSubmitting={isSubmitting}
       isAuthenticated={isAuthenticated}
       isLoading={isLoading}
+      onRefresh={handleRefresh}
+      canRefresh={canRefresh}
+      isRefreshing={isRefreshing}
+      nextRefreshAt={nextRefreshAt}
     />
   );
 }

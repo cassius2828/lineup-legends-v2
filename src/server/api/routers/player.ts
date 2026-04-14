@@ -7,7 +7,7 @@ import {
   publicProcedure,
   rateLimitMiddleware,
 } from "~/server/api/trpc";
-import { PlayerModel } from "~/server/models";
+import { PlayerModel, UserModel } from "~/server/models";
 import { escapeRegex } from "~/server/lib/escape-regex";
 import {
   getPlayersFromCacheOrDb,
@@ -27,6 +27,34 @@ import {
   wikiDebugEnabled,
 } from "~/server/lib/wikipedia-sections";
 import { extractAwardsFromHtml } from "~/server/lib/ai-awards";
+
+const REFRESH_TIMEZONE = "America/New_York";
+
+/** Midnight today in ET — hardcoded so the client cannot manipulate the boundary. */
+function getStartOfDayET(): Date {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: REFRESH_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = formatter.formatToParts(now);
+  const year = parts.find((p) => p.type === "year")!.value;
+  const month = parts.find((p) => p.type === "month")!.value;
+  const day = parts.find((p) => p.type === "day")!.value;
+
+  const midnightLocal = new Date(`${year}-${month}-${day}T00:00:00`);
+  const utcEquiv = new Date(
+    midnightLocal.toLocaleString("en-US", { timeZone: "UTC" }),
+  );
+  const tzEquiv = new Date(
+    midnightLocal.toLocaleString("en-US", { timeZone: REFRESH_TIMEZONE }),
+  );
+  const offsetMs = utcEquiv.getTime() - tzEquiv.getTime();
+
+  return new Date(midnightLocal.getTime() + offsetMs);
+}
 
 export const playerRouter = createTRPCRouter({
   getAll: publicProcedure
@@ -253,6 +281,79 @@ export const playerRouter = createTRPCRouter({
       ]);
 
       return populated(results[0]);
+    }),
+
+  refreshRandomByValue: protectedProcedure
+    .output(playersByValueOutput)
+    .mutation(async ({ ctx }) => {
+      const user = await UserModel.findById(ctx.session.user.id)
+        .select("lastPlayerPoolRefreshAt")
+        .lean();
+
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      const todayStart = getStartOfDayET();
+
+      if (
+        user.lastPlayerPoolRefreshAt &&
+        user.lastPlayerPoolRefreshAt >= todayStart
+      ) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message:
+            "You've already used your daily refresh. Resets at midnight ET.",
+        });
+      }
+
+      await UserModel.findByIdAndUpdate(ctx.session.user.id, {
+        lastPlayerPoolRefreshAt: new Date(),
+      });
+
+      const results = await PlayerModel.aggregate([
+        {
+          $facet: {
+            value1Players: [{ $match: { value: 1 } }, { $sample: { size: 5 } }],
+            value2Players: [{ $match: { value: 2 } }, { $sample: { size: 5 } }],
+            value3Players: [{ $match: { value: 3 } }, { $sample: { size: 5 } }],
+            value4Players: [{ $match: { value: 4 } }, { $sample: { size: 5 } }],
+            value5Players: [{ $match: { value: 5 } }, { $sample: { size: 5 } }],
+          },
+        },
+      ]);
+
+      return populated(results[0]);
+    }),
+
+  canRefreshPool: protectedProcedure
+    .output(
+      z.object({
+        canRefresh: z.boolean(),
+        nextRefreshAt: z.string().nullable(),
+      }),
+    )
+    .query(async ({ ctx }) => {
+      const user = await UserModel.findById(ctx.session.user.id)
+        .select("lastPlayerPoolRefreshAt")
+        .lean();
+
+      if (!user) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+
+      const todayStart = getStartOfDayET();
+
+      if (
+        user.lastPlayerPoolRefreshAt &&
+        user.lastPlayerPoolRefreshAt >= todayStart
+      ) {
+        const tomorrow = new Date(todayStart);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return { canRefresh: false, nextRefreshAt: tomorrow.toISOString() };
+      }
+
+      return { canRefresh: true, nextRefreshAt: null };
     }),
 
   search: publicProcedure

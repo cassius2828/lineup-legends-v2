@@ -39,6 +39,10 @@ interface PlayerSelectorProps {
   isSubmitting?: boolean;
   isAuthenticated?: boolean;
   isLoading?: boolean;
+  onRefresh: () => void;
+  canRefresh: boolean;
+  isRefreshing: boolean;
+  nextRefreshAt: string | null;
 }
 
 export function PlayerSelector({
@@ -47,6 +51,10 @@ export function PlayerSelector({
   isSubmitting = false,
   isAuthenticated = true,
   isLoading = false,
+  onRefresh,
+  canRefresh,
+  isRefreshing,
+  nextRefreshAt,
 }: PlayerSelectorProps) {
   const [positionSlots, setPositionSlots] = useState<PositionSlots>(
     INITIAL_POSITION_SLOTS,
@@ -229,6 +237,11 @@ export function PlayerSelector({
     setPlayerDetailOpen(false);
   };
 
+  const handleRefreshClick = () => {
+    clearSelection();
+    onRefresh();
+  };
+
   const allPlayers = [
     { label: "$5", value: 5, players: playersByValue.value5Players },
     { label: "$4", value: 4, players: playersByValue.value4Players },
@@ -250,6 +263,10 @@ export function PlayerSelector({
           <CreateLineupHeader
             remainingBudget={remainingBudget}
             activePlayer={!!activePlayer}
+            onRefresh={handleRefreshClick}
+            canRefresh={canRefresh}
+            isRefreshing={isRefreshing}
+            isAuthenticated={isAuthenticated}
           />
 
           {/* Player Grid - Rows by Value */}

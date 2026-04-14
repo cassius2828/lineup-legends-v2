@@ -1,15 +1,10 @@
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import { useLineupBuilderStore } from "~/stores/lineupBuilder";
 import type { PlayerOutput } from "~/server/api/schemas/output";
-
-const RANDOM_PLAYERS_QUERY_OPTS = {
-  staleTime: Infinity,
-  gcTime: Infinity,
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
-} as const;
 
 function makeSkeletonPlayer(value: number, index: number): PlayerOutput {
   return {
@@ -35,17 +30,81 @@ export function useNewLineupPage() {
   const isAuthenticated = status === "authenticated";
   const utils = api.useUtils();
 
+  const { playerPool, setPlayerPool, clearPlayerPool } =
+    useLineupBuilderStore();
+  const hasPersistedPool = playerPool !== null;
+
   const {
-    data: playersByValue,
-    isLoading,
+    data: fetchedPool,
+    isLoading: isFetchLoading,
     isError,
-  } = api.player.getRandomByValue.useQuery(
+  } = api.player.getRandomByValue.useQuery(undefined, {
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    enabled: !hasPersistedPool,
+    initialData: hasPersistedPool ? playerPool : undefined,
+  });
+
+  // Persist fetched data to Zustand when it arrives from the server
+  const resolvedPool = hasPersistedPool ? playerPool : fetchedPool;
+  if (resolvedPool && !hasPersistedPool && fetchedPool) {
+    setPlayerPool(fetchedPool);
+  }
+
+  const isLoading = !hasPersistedPool && isFetchLoading;
+
+  // --- Refresh logic ---
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const { data: refreshStatus } = api.player.canRefreshPool.useQuery(
     undefined,
-    RANDOM_PLAYERS_QUERY_OPTS,
+    { enabled: isAuthenticated },
   );
 
+  const canRefresh = !isAuthenticated || (refreshStatus?.canRefresh ?? false);
+  const nextRefreshAt = refreshStatus?.nextRefreshAt ?? null;
+
+  const refreshMutation = api.player.refreshRandomByValue.useMutation();
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      if (isAuthenticated) {
+        const newPool = await refreshMutation.mutateAsync();
+        if (newPool) {
+          setPlayerPool(newPool);
+          utils.player.getRandomByValue.setData(undefined, newPool);
+        }
+        void utils.player.canRefreshPool.invalidate();
+      } else {
+        const newPool = await utils.player.getRandomByValue.fetch(undefined, {
+          staleTime: 0,
+        });
+        if (newPool) {
+          setPlayerPool(newPool);
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      }
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [
+    isAuthenticated,
+    refreshMutation,
+    setPlayerPool,
+    utils.player.getRandomByValue,
+    utils.player.canRefreshPool,
+  ]);
+
+  // --- Create lineup ---
   const createLineup = api.lineup.create.useMutation({
     onSuccess: () => {
+      clearPlayerPool();
       void utils.player.getRandomByValue.invalidate();
       router.push("/lineups");
     },
@@ -68,7 +127,7 @@ export function useNewLineupPage() {
     });
   };
 
-  const displayData = playersByValue ?? SKELETON_PLAYERS_BY_VALUE;
+  const displayData = resolvedPool ?? SKELETON_PLAYERS_BY_VALUE;
 
   return {
     playersByValue: displayData,
@@ -77,5 +136,9 @@ export function useNewLineupPage() {
     isAuthenticated,
     isSubmitting: createLineup.isPending,
     handleSubmit,
+    handleRefresh,
+    canRefresh,
+    nextRefreshAt,
+    isRefreshing,
   };
 }
