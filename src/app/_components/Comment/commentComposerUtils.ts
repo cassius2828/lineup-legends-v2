@@ -22,9 +22,16 @@ export function handleComposerMetaEnter(
   opts.onSubmit();
 }
 
-/** Collapse mobile composer when focus leaves the container and draft is empty. */
+/**
+ * Collapse mobile composer when focus leaves the container and draft is empty.
+ *
+ * iOS Safari does not set `relatedTarget` when a `<button>` is tapped,
+ * so we defer the collapse check to let the tap's click handler fire first.
+ * If the active element ends up inside the composer container we skip the
+ * collapse — the user tapped toolbar buttons (image / GIF), not outside.
+ */
 export function applyMobileComposerBlur(
-  e: FocusEvent,
+  _e: FocusEvent,
   opts: {
     isDesktop: boolean;
     containerRef: RefObject<HTMLElement | null>;
@@ -33,7 +40,12 @@ export function applyMobileComposerBlur(
   },
 ): void {
   if (opts.isDesktop) return;
-  const next = e.relatedTarget;
-  if (next instanceof Node && opts.containerRef.current?.contains(next)) return;
-  if (!opts.hasContent) opts.onCollapse();
+
+  requestAnimationFrame(() => {
+    const active = document.activeElement;
+    if (active instanceof Node && opts.containerRef.current?.contains(active)) {
+      return;
+    }
+    if (!opts.hasContent) opts.onCollapse();
+  });
 }
