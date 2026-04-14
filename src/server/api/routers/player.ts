@@ -7,7 +7,8 @@ import {
   publicProcedure,
   rateLimitMiddleware,
 } from "~/server/api/trpc";
-import { PlayerModel, UserModel } from "~/server/models";
+import { PlayerModel, PlayerAuditLogModel, UserModel } from "~/server/models";
+import type { PlayerSnapshot } from "~/server/models";
 import { escapeRegex } from "~/server/lib/escape-regex";
 import {
   getPlayersFromCacheOrDb,
@@ -85,6 +86,20 @@ async function getRefreshEligibility(userId: string) {
   );
 
   return { usedToday, todayStart };
+}
+
+function toSnapshot(doc: {
+  firstName: string;
+  lastName: string;
+  value: number;
+  imgUrl: string;
+}): PlayerSnapshot {
+  return {
+    firstName: doc.firstName,
+    lastName: doc.lastName,
+    value: doc.value,
+    imgUrl: doc.imgUrl,
+  };
 }
 
 export const playerRouter = createTRPCRouter({
@@ -370,8 +385,18 @@ export const playerRouter = createTRPCRouter({
       }),
     )
     .output(playerOutput)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { id, ...updateData } = input;
+
+      const existing = await PlayerModel.findById(id).lean();
+      if (!existing) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found",
+        });
+      }
+
+      const beforeSnap = toSnapshot(existing);
 
       const updatedPlayer = await PlayerModel.findByIdAndUpdate(
         id,
@@ -385,6 +410,16 @@ export const playerRouter = createTRPCRouter({
           message: "Player not found",
         });
       }
+
+      await PlayerAuditLogModel.create({
+        playerId: existing._id,
+        action: "update",
+        performedBy: ctx.session.user.id,
+        performedByEmail: ctx.session.user.email ?? "unknown",
+        before: beforeSnap,
+        after: toSnapshot(updatedPlayer),
+      });
+
       await invalidatePlayersCache();
       return populated(updatedPlayer.toObject());
     }),
@@ -399,7 +434,7 @@ export const playerRouter = createTRPCRouter({
       }),
     )
     .output(playerOutput)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const firstName = input.firstName.trim();
       const lastName = input.lastName.trim();
 
@@ -422,14 +457,74 @@ export const playerRouter = createTRPCRouter({
         imgUrl: input.imgUrl,
       });
 
+      await PlayerAuditLogModel.create({
+        playerId: newPlayer._id,
+        action: "create",
+        performedBy: ctx.session.user.id,
+        performedByEmail: ctx.session.user.email ?? "unknown",
+        before: null,
+        after: toSnapshot(newPlayer),
+      });
+
       await invalidatePlayersCache();
       return populated(newPlayer.toObject());
+    }),
+
+  auditLog: adminProcedure
+    .input(
+      z.object({
+        playerId: z.string().optional(),
+        limit: z.number().min(1).max(100).default(50),
+        cursor: z.string().nullish(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const limit = input.limit;
+      const filter: Record<string, unknown> = {};
+      if (input.playerId) {
+        filter.playerId = input.playerId;
+      }
+      if (input.cursor) {
+        filter._id = { $lt: input.cursor };
+      }
+
+      const entries = await PlayerAuditLogModel.find(filter)
+        .sort({ _id: -1 })
+        .limit(limit + 1)
+        .lean();
+
+      const hasMore = entries.length > limit;
+      const items = hasMore ? entries.slice(0, limit) : entries;
+
+      return {
+        items: items.map((e) => ({
+          id: String(e._id),
+          playerId: String(e.playerId),
+          action: e.action,
+          performedByEmail: e.performedByEmail,
+          before: e.before,
+          after: e.after,
+          timestamp: e.timestamp.toISOString(),
+        })),
+        cursor: hasMore ? String(items[items.length - 1]!._id) : null,
+      };
     }),
 
   delete: adminProcedure
     .input(z.object({ id: z.string() }))
     .output(z.object({ success: z.boolean() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const existing = await PlayerModel.findById(input.id).lean();
+      if (existing) {
+        await PlayerAuditLogModel.create({
+          playerId: existing._id,
+          action: "delete",
+          performedBy: ctx.session.user.id,
+          performedByEmail: ctx.session.user.email ?? "unknown",
+          before: toSnapshot(existing),
+          after: null,
+        });
+      }
       await PlayerModel.findByIdAndDelete(input.id);
       await invalidatePlayersCache();
       return { success: true };

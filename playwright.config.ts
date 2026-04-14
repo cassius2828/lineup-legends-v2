@@ -9,6 +9,7 @@ export default defineConfig({
   reporter: "html",
 
   globalSetup: "./e2e/seed-test-user.ts",
+  globalTeardown: "./e2e/global-teardown.ts",
 
   use: {
     baseURL: "http://localhost:3000",

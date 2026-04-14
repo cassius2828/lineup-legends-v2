@@ -10,6 +10,22 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
+function isRemoteUri(uri: string): boolean {
+  return /mongodb\+srv|\.mongodb\.net/i.test(uri);
+}
+
+if (isRemoteUri(MONGODB_URI) && !process.env.E2E_ALLOW_REMOTE_DB) {
+  console.error(
+    "\n🚨 SAFETY: MONGODB_URI points to a remote/Atlas database.\n" +
+      "E2E seed would overwrite production player data.\n\n" +
+      "Options:\n" +
+      "  1. Run a local MongoDB (mongodb://localhost:27017/lineup-legends-e2e)\n" +
+      "  2. Set MONGODB_URI to a dedicated test database\n" +
+      "  3. Set E2E_ALLOW_REMOTE_DB=1 if you are certain this is a test cluster\n",
+  );
+  process.exit(1);
+}
+
 // ── Schemas (standalone — avoids importing app code that needs full env) ──
 
 const UserSchema = new mongoose.Schema({
@@ -69,23 +85,27 @@ const CASSIUS_USER = {
   followingCount: 10,
 };
 
-// ── Players — one per tier, Curry has full wiki data ──
+// ── Players — synthetic names that cannot collide with real production data ──
+// Previous versions used real NBA player names (Curry, Durant, etc.) which
+// overwrote production documents when the seed ran against the live DB.
 
-const PLACEHOLDER_IMG =
-  "https://cdn.nba.com/headshots/nba/latest/1040x760/201939.png";
+const E2E_IMG =
+  "https://cdn.nba.com/headshots/nba/latest/1040x760/fallback.png";
+
+const E2E_PLAYER_PREFIX = "E2EPlayer";
 
 const PLAYERS = [
   {
-    firstName: "Stephen",
+    firstName: E2E_PLAYER_PREFIX,
     lastName: "Curry",
-    imgUrl: PLACEHOLDER_IMG,
+    imgUrl: E2E_IMG,
     value: 5,
     wikiPageTitle: "Stephen Curry",
     wikiSummaryExtract:
-      "Wardell Stephen Curry II (born March 14, 1988) is an American professional basketball player for the Golden State Warriors of the National Basketball Association (NBA). Widely regarded as the greatest shooter in NBA history, Curry has revolutionized the sport by inspiring teams and players to shoot three-pointers more frequently. He is a four-time NBA champion, a two-time NBA Most Valuable Player, and an NBA Finals MVP.",
+      "Wardell Stephen Curry II is an American professional basketball player. Widely regarded as the greatest shooter in NBA history, Curry has revolutionized the sport. He is a four-time NBA champion, a two-time NBA Most Valuable Player, and an NBA Finals MVP.",
     wikiSummaryFetchedAt: new Date(),
     wikiAwardsHonorsText:
-      "4× NBA champion (2015, 2017, 2018, 2022)\n2× NBA Most Valuable Player (2015, 2016)\nNBA Finals MVP (2022)\n10× NBA All-Star (2014–2019, 2021–2024)\n4× All-NBA First Team (2015, 2016, 2021, 2024)\n2× NBA scoring champion (2016, 2021)\nNBA Three-Point Contest champion (2015)\nNBA Sportsmanship Award (2011)\nOlympic gold medalist (2024)",
+      "4× NBA champion\n2× NBA MVP\nNBA Finals MVP\n10× NBA All-Star",
     wikiCareerRegularSeason: {
       GP: "956",
       GS: "944",
@@ -110,27 +130,33 @@ const PLAYERS = [
     wikiListedWeight: "185 lb (84 kg)",
   },
   {
-    firstName: "Kevin",
-    lastName: "Durant",
-    imgUrl: "https://cdn.nba.com/headshots/nba/latest/1040x760/201142.png",
+    firstName: E2E_PLAYER_PREFIX,
+    lastName: "Diamond",
+    imgUrl: E2E_IMG,
+    value: 5,
+  },
+  {
+    firstName: E2E_PLAYER_PREFIX,
+    lastName: "Amethyst",
+    imgUrl: E2E_IMG,
     value: 4,
   },
   {
-    firstName: "Damian",
-    lastName: "Lillard",
-    imgUrl: "https://cdn.nba.com/headshots/nba/latest/1040x760/203081.png",
+    firstName: E2E_PLAYER_PREFIX,
+    lastName: "GoldTier",
+    imgUrl: E2E_IMG,
     value: 3,
   },
   {
-    firstName: "Jaylen",
-    lastName: "Brown",
-    imgUrl: "https://cdn.nba.com/headshots/nba/latest/1040x760/1627759.png",
+    firstName: E2E_PLAYER_PREFIX,
+    lastName: "Silver",
+    imgUrl: E2E_IMG,
     value: 2,
   },
   {
-    firstName: "Tyler",
-    lastName: "Herro",
-    imgUrl: "https://cdn.nba.com/headshots/nba/latest/1040x760/1629639.png",
+    firstName: E2E_PLAYER_PREFIX,
+    lastName: "Bronze",
+    imgUrl: E2E_IMG,
     value: 1,
   },
 ];
@@ -170,7 +196,7 @@ async function seedPlayers() {
     );
   }
   console.log(
-    `E2E players seeded: ${PLAYERS.length} players across tiers $1–$5`,
+    `E2E players seeded: ${PLAYERS.length} synthetic players across tiers $1–$5`,
   );
 }
 
@@ -179,6 +205,18 @@ async function seed() {
   await seedTestUser();
   await seedCassiusUser();
   await seedPlayers();
+  await mongoose.disconnect();
+}
+
+export async function teardown() {
+  await mongoose.connect(MONGODB_URI!);
+
+  await User.deleteMany({
+    email: { $in: [TEST_USER.email, CASSIUS_USER.email] },
+  });
+  await Player.deleteMany({ firstName: E2E_PLAYER_PREFIX });
+
+  console.log("E2E teardown: removed seed users and players");
   await mongoose.disconnect();
 }
 
