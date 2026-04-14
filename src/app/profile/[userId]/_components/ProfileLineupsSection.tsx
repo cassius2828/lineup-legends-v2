@@ -58,7 +58,11 @@ export function ProfileLineupsSection({
 
   const loadingContent =
     lastCountRef.current != null ? (
-      <LineupListSkeleton view={view} count={lastCountRef.current} />
+      <LineupListSkeleton
+        view={view}
+        count={lastCountRef.current}
+        showOwner={false}
+      />
     ) : (
       <GoldCircleSpinnerLoader />
     );

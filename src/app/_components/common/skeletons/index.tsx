@@ -45,7 +45,14 @@ export function LineupCardCompactSkeleton() {
 export function LineupListSkeleton({
   count,
   view = "list",
-}: { count?: number; view?: ViewMode } = {}) {
+  showOwner = true,
+  isOwner = false,
+}: {
+  count?: number;
+  view?: ViewMode;
+  showOwner?: boolean;
+  isOwner?: boolean;
+} = {}) {
   const effectiveCount = count ?? (view === "grid" ? 12 : 4);
 
   if (view === "grid") {
@@ -61,8 +68,34 @@ export function LineupListSkeleton({
   return (
     <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
       {Array.from({ length: effectiveCount }).map((_, i) => (
-        <LineupCardSkeleton key={i} />
+        <LineupCardSkeleton key={i} showOwner={showOwner} isOwner={isOwner} />
       ))}
+    </div>
+  );
+}
+
+// ─── Lineup Detail ───────────────────────────────────────────────────────────
+
+/** Skeleton for /lineups/[id]: back link + card + composer placeholder. */
+export function LineupDetailSkeleton() {
+  return (
+    <div className="animate-pulse">
+      <div className="bg-foreground/10 mb-6 h-4 w-14 rounded" />
+
+      <LineupCardSkeleton showOwner={true} />
+
+      <div className="border-foreground/10 mt-4 rounded-xl border p-4">
+        <div className="flex gap-3">
+          <div className="bg-foreground/10 h-10 w-10 shrink-0 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <div className="bg-foreground/10 h-16 w-full rounded-lg" />
+            <div className="flex items-center justify-between">
+              <div className="bg-foreground/10 h-3 w-12 rounded" />
+              <div className="bg-foreground/10 h-8 w-20 rounded-lg" />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -72,15 +105,22 @@ export function LineupListSkeleton({
 const wikiInsetCardClass =
   "border-foreground/10 bg-foreground/5 space-y-2 rounded-lg border p-3";
 
-export function LineupCardSkeleton() {
+export function LineupCardSkeleton({
+  showOwner = true,
+  isOwner = false,
+}: { showOwner?: boolean; isOwner?: boolean } = {}) {
   return (
     <div className="from-surface-800/90 to-surface-950/90 rounded-2xl bg-gradient-to-br p-6 shadow-xl">
-      {/* Header — matches LineupCardHeader: avatar + name + time/value pill */}
+      {/* Header — matches LineupCardHeader: conditionally show avatar + name */}
       <div className="mb-4 flex animate-pulse items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-foreground/10 h-8 w-8 rounded-full" />
-          <div className="bg-foreground/10 h-3.5 w-24 rounded" />
-        </div>
+        {showOwner ? (
+          <div className="flex items-center gap-3">
+            <div className="bg-foreground/10 h-8 w-8 rounded-full" />
+            <div className="bg-foreground/10 h-3.5 w-24 rounded" />
+          </div>
+        ) : (
+          <div />
+        )}
         <div className="flex items-center gap-1.5">
           <div className="bg-foreground/10 h-3 w-16 rounded" />
           <div className="bg-foreground/10 h-6 w-20 rounded-full" />
@@ -107,6 +147,24 @@ export function LineupCardSkeleton() {
           </div>
         ))}
       </div>
+
+      {/* Owner actions — matches LineupCardOwnerActions: 4 button placeholders */}
+      {isOwner && (
+        <div className="mt-4 flex animate-pulse flex-wrap justify-end gap-2">
+          <div className="bg-foreground/10 rounded-lg px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm">
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          </div>
+          <div className="bg-foreground/10 rounded-lg px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm">
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          </div>
+          <div className="bg-foreground/10 rounded-lg px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm">
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          </div>
+          <div className="bg-foreground/10 rounded-lg px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm">
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          </div>
+        </div>
+      )}
 
       {/* Footer — matches LineupCardFooter: icons left + right */}
       <div className="border-foreground/10 mt-4 flex animate-pulse items-center justify-between border-t pt-3">

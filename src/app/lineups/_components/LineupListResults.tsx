@@ -55,7 +55,14 @@ export function LineupListResults({
 
   if (isLoading) {
     if (lastCountRef.current != null) {
-      return <LineupListSkeleton view={view} count={lastCountRef.current} />;
+      return (
+        <LineupListSkeleton
+          view={view}
+          count={lastCountRef.current}
+          showOwner={showOwner}
+          isOwner={isOwner}
+        />
+      );
     }
     return <GoldCircleSpinnerLoader />;
   }
