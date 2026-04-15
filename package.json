@@ -9,6 +9,7 @@
     "install:clean": "rm -rf node_modules && rm -rf package-lock.json && npm install",
     "db:seed": "tsx src/server/seed.ts",
     "db:migrate-images": "tsx scripts/migrate-player-images.ts",
+    "db:sync-player-cdn": "tsx scripts/sync-one-player-cdn.ts",
     "dev": "next dev --turbo",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
     "format:write": "prettier --write \"**/*.{ts,tsx,js,jsx,mdx}\" --cache",
