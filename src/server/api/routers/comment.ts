@@ -381,7 +381,7 @@ export const commentRouter = createTRPCRouter({
         {
           $inc: { totalVotes: voteDelta },
         },
-        { new: true, projection: { totalVotes: 1 } },
+        { returnDocument: "after", projection: { totalVotes: 1 } },
       );
 
       return { totalVotes: updatedComment?.totalVotes ?? 0 };
@@ -446,7 +446,7 @@ export const commentRouter = createTRPCRouter({
         {
           $inc: { totalVotes: voteDelta },
         },
-        { new: true, projection: { totalVotes: 1 } },
+        { returnDocument: "after", projection: { totalVotes: 1 } },
       );
 
       return { totalVotes: updatedThread?.totalVotes ?? 0 };

@@ -404,7 +404,7 @@ export const playerRouter = createTRPCRouter({
       const beforeSnap = toSnapshot(existing);
 
       let updatedPlayer = await PlayerModel.findByIdAndUpdate(id, updateData, {
-        new: true,
+        returnDocument: "after",
       });
 
       if (!updatedPlayer) {
@@ -425,7 +425,7 @@ export const playerRouter = createTRPCRouter({
           const withCdn = await PlayerModel.findByIdAndUpdate(
             id,
             { $set: { imgUrl: cdnUrl } },
-            { new: true },
+            { returnDocument: "after" },
           );
           if (withCdn) updatedPlayer = withCdn;
         }
@@ -499,7 +499,7 @@ export const playerRouter = createTRPCRouter({
           const updated = await PlayerModel.findByIdAndUpdate(
             newPlayer._id,
             { $set: { imgUrl: cdnUrl } },
-            { new: true },
+            { returnDocument: "after" },
           );
           if (updated) finalPlayer = updated;
         }
@@ -556,7 +556,7 @@ export const playerRouter = createTRPCRouter({
         const updated = await PlayerModel.findByIdAndUpdate(
           input.id,
           { $set: { imgUrl: cdnUrl } },
-          { new: true },
+          { returnDocument: "after" },
         );
         if (!updated) {
           throw new TRPCError({

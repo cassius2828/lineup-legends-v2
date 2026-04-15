@@ -51,6 +51,7 @@ export default function AdminPlayersPage() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               setSearchQuery(e.target.value)
             }
+            onClear={() => setSearchQuery("")}
           />
         </div>
 

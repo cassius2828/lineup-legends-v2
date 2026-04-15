@@ -178,7 +178,7 @@ export const requestedPlayerRouter = createTRPCRouter({
             },
           },
         },
-        { upsert: true, new: true },
+        { upsert: true, returnDocument: "after" },
       );
 
       if (noteCensored && rawNote) {

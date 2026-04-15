@@ -254,7 +254,7 @@ export const lineupRouter = createTRPCRouter({
         await LineupModel.findByIdAndUpdate(
           input.id,
           { featured: !lineup.featured },
-          { new: true },
+          { returnDocument: "after" },
         )
           .populate(lineupPopulateFields)
           .lean(),
@@ -351,8 +351,7 @@ export const lineupRouter = createTRPCRouter({
             },
           },
         ],
-        // { new: true },
-        { updatePipeline: true, new: true },
+        { updatePipeline: true, returnDocument: "after" },
       );
       log.debug({ updatedLineup }, "updatedLineup");
       return { avgRating: updatedLineup?.avgRating ?? 0 };
@@ -443,7 +442,7 @@ export const lineupRouter = createTRPCRouter({
               c: input.players.c,
             },
           },
-          { new: true },
+          { returnDocument: "after" },
         )
           .populate(lineupPopulateFields)
           .lean(),
@@ -601,7 +600,7 @@ export const lineupRouter = createTRPCRouter({
             gambleStreak: newStreak,
           },
         },
-        { new: true },
+        { returnDocument: "after" },
       ).populate(lineupPopulateFields);
 
       return populated({

@@ -121,7 +121,7 @@ export const feedbackRouter = createTRPCRouter({
       const feedback = await FeedbackModel.findByIdAndUpdate(
         input.id,
         { status: input.status },
-        { new: true },
+        { returnDocument: "after" },
       );
 
       if (!feedback) {
