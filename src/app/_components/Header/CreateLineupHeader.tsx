@@ -31,7 +31,7 @@ const CreateLineupHeader = ({
   const disabled = (isAuthenticated && !canRefresh) || isRefreshing;
 
   return (
-    <header className="mb-4 flex flex-col items-center justify-center">
+    <header className="relative mb-20 flex flex-col items-center justify-center md:mb-16">
       <div className="flex items-center gap-2">
         <h1 className="text-foreground font-bold tracking-wide uppercase md:text-2xl">
           Build Your Starting 5
@@ -67,6 +67,10 @@ const CreateLineupHeader = ({
       >
         ${remainingBudget}
       </span>
+      <p className="text-foreground/60 absolute top-16 mt-1 max-w-sm px-2 text-center text-sm leading-snug md:top-20">
+        Drag a player onto a position, or click to fill the next open slot in
+        order.
+      </p>
       {activePlayer && (
         <span className="text-foreground/60 mt-1 animate-pulse text-sm">
           Drag to a position slot...
