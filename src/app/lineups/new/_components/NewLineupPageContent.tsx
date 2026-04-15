@@ -13,7 +13,7 @@ export function NewLineupPageContent() {
     handleSubmit,
     handleRefresh,
     canRefresh,
-    isRefreshing,
+    isRefreshPending,
   } = useNewLineupPage();
 
   if (isError && !isLoading) {
@@ -35,7 +35,7 @@ export function NewLineupPageContent() {
       isLoading={isLoading}
       onRefresh={handleRefresh}
       canRefresh={canRefresh}
-      isRefreshing={isRefreshing}
+      isRefreshing={isRefreshPending}
     />
   );
 }

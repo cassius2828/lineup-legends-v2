@@ -195,7 +195,7 @@ export const profileRouter = createTRPCRouter({
       const updatedUser = await UserModel.findByIdAndUpdate(
         ctx.session.user.id,
         updateData,
-        { new: true },
+        { returnDocument: "after" },
       );
       await redis.del(`user:${ctx.session.user.id}`);
       return populated(updatedUser ?? null);

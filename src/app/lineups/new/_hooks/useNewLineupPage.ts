@@ -1,28 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { api } from "~/trpc/react";
+import { SKELETON_PLAYERS_BY_VALUE } from "~/lib/skeletons";
 import { useLineupBuilderStore } from "~/stores/lineupBuilder";
 import type { PlayerOutput } from "~/server/api/schemas/output";
-
-function makeSkeletonPlayer(value: number, index: number): PlayerOutput {
-  return {
-    _id: `skeleton-${value}-${index}`,
-    firstName: "--",
-    lastName: "--",
-    imgUrl: "",
-    value,
-  };
-}
-
-const SKELETON_PLAYERS_BY_VALUE = {
-  value1Players: Array.from({ length: 5 }, (_, i) => makeSkeletonPlayer(1, i)),
-  value2Players: Array.from({ length: 5 }, (_, i) => makeSkeletonPlayer(2, i)),
-  value3Players: Array.from({ length: 5 }, (_, i) => makeSkeletonPlayer(3, i)),
-  value4Players: Array.from({ length: 5 }, (_, i) => makeSkeletonPlayer(4, i)),
-  value5Players: Array.from({ length: 5 }, (_, i) => makeSkeletonPlayer(5, i)),
-};
 
 export function useNewLineupPage() {
   const router = useRouter();
@@ -32,31 +15,31 @@ export function useNewLineupPage() {
 
   const { playerPool, setPlayerPool, clearPlayerPool } =
     useLineupBuilderStore();
-  const hasPersistedPool = playerPool !== null;
 
+  // React Query is a fetch-only mechanism here — disabled once Zustand has data.
   const {
     data: fetchedPool,
     isLoading: isFetchLoading,
     isError,
   } = api.player.getRandomByValue.useQuery(undefined, {
-    staleTime: Infinity,
-    gcTime: Infinity,
+    enabled: playerPool === null,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
-    enabled: !hasPersistedPool,
-    initialData: hasPersistedPool ? playerPool : undefined,
   });
 
-  // Persist fetched data to Zustand when it arrives from the server
-  const resolvedPool = hasPersistedPool ? playerPool : fetchedPool;
-  if (resolvedPool && !hasPersistedPool && fetchedPool) {
-    setPlayerPool(fetchedPool);
-  }
+  // Persist fetched data to Zustand after the network response arrives.
+  // useEffect (not render-path) prevents stale RQ cache from writing back
+  // after clearPlayerPool().
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (fetchedPool && playerPool === null) {
+      setPlayerPool(fetchedPool);
+    }
+  }, [fetchedPool]); // playerPool/setPlayerPool intentionally excluded
 
-  const isLoading = !hasPersistedPool && isFetchLoading;
+  const isLoading = playerPool === null && isFetchLoading;
 
   // --- Refresh logic ---
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { data: refreshStatus } = api.player.canRefreshPool.useQuery(
     undefined,
@@ -66,46 +49,35 @@ export function useNewLineupPage() {
   const canRefresh = !isAuthenticated || (refreshStatus?.canRefresh ?? false);
   const nextRefreshAt = refreshStatus?.nextRefreshAt ?? null;
 
-  const refreshMutation = api.player.refreshRandomByValue.useMutation();
+  const { mutateAsync: refreshMutationAsync, isPending: isRefreshPending } =
+    api.player.refreshRandomByValue.useMutation();
 
   const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
     try {
       if (isAuthenticated) {
-        const newPool = await refreshMutation.mutateAsync();
-        if (newPool) {
-          setPlayerPool(newPool);
-          utils.player.getRandomByValue.setData(undefined, newPool);
-        }
+        const newPool = await refreshMutationAsync();
+        if (newPool) setPlayerPool(newPool);
         void utils.player.canRefreshPool.invalidate();
       } else {
-        const newPool = await utils.player.getRandomByValue.fetch(undefined, {
-          staleTime: 0,
-        });
-        if (newPool) {
-          setPlayerPool(newPool);
-        }
+        clearPlayerPool();
       }
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      }
-    } finally {
-      setIsRefreshing(false);
+      if (error instanceof Error) toast.error(error.message);
     }
   }, [
     isAuthenticated,
-    refreshMutation,
+    refreshMutationAsync,
     setPlayerPool,
-    utils.player.getRandomByValue,
+    clearPlayerPool,
     utils.player.canRefreshPool,
   ]);
 
   // --- Create lineup ---
   const createLineup = api.lineup.create.useMutation({
     onSuccess: () => {
-      clearPlayerPool();
       void utils.player.getRandomByValue.invalidate();
+      clearPlayerPool();
+      void utils.lineup.getLineupsByCurrentUser.invalidate();
       router.push("/lineups");
     },
     onError: (error) => {
@@ -127,7 +99,7 @@ export function useNewLineupPage() {
     });
   };
 
-  const displayData = resolvedPool ?? SKELETON_PLAYERS_BY_VALUE;
+  const displayData = playerPool ?? SKELETON_PLAYERS_BY_VALUE;
 
   return {
     playersByValue: displayData,
@@ -139,6 +111,6 @@ export function useNewLineupPage() {
     handleRefresh,
     canRefresh,
     nextRefreshAt,
-    isRefreshing,
+    isRefreshPending,
   };
 }

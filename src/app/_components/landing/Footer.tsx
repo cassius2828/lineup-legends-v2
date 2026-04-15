@@ -3,13 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Coffee } from "lucide-react";
-import {
-  InstagramIcon,
-  FacebookIcon,
-  XTwitterIcon,
-  LinkedInIcon,
-  GitHubIcon,
-} from "~/app/_components/common/icons";
+import { LinkedInIcon, GitHubIcon } from "~/app/_components/common/icons";
 import {
   Tooltip,
   TooltipContent,
@@ -124,15 +118,6 @@ export function Footer() {
           whileInView="visible"
           viewport={{ once: true }}
         >
-          <SocialLink href="https://instagram.com" label="Instagram">
-            <InstagramIcon className="h-6 w-6" />
-          </SocialLink>
-          <SocialLink href="https://facebook.com" label="Facebook">
-            <FacebookIcon className="h-6 w-6" />
-          </SocialLink>
-          <SocialLink href="https://x.com" label="X (Twitter)">
-            <XTwitterIcon className="h-6 w-6" />
-          </SocialLink>
           <SocialLink
             href="https://www.linkedin.com/in/cassius-reynolds/"
             label="LinkedIn"

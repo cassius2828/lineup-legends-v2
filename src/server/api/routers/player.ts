@@ -14,6 +14,7 @@ import {
   getPlayersFromCacheOrDb,
   invalidatePlayersCache,
 } from "~/server/services/player-cache";
+import { syncPlayerImageToCdn } from "~/server/services/player-image-cdn";
 import {
   playerOutput,
   playersByValueOutput,
@@ -30,7 +31,9 @@ import {
 import { extractAwardsFromHtml } from "~/server/lib/ai-awards";
 
 const REFRESH_TIMEZONE = "America/New_York";
-
+// --------------------
+// * HELPERS
+// --------------------
 /**
  * Returns midnight today in ET as a UTC Date.
  * Works by reading the current hour/min/sec in ET via Intl and subtracting
@@ -101,7 +104,9 @@ function toSnapshot(doc: {
     imgUrl: doc.imgUrl,
   };
 }
-
+// --------------------
+// * QUERIES + MUTATIONS
+// --------------------
 export const playerRouter = createTRPCRouter({
   getAll: publicProcedure
     .input(z.object({ value: z.number().min(1).max(5).optional() }).optional())
@@ -398,16 +403,41 @@ export const playerRouter = createTRPCRouter({
 
       const beforeSnap = toSnapshot(existing);
 
-      const updatedPlayer = await PlayerModel.findByIdAndUpdate(
-        id,
-        updateData,
-        { new: true },
-      );
+      let updatedPlayer = await PlayerModel.findByIdAndUpdate(id, updateData, {
+        returnDocument: "after",
+      });
 
       if (!updatedPlayer) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: "Player not found",
+        });
+      }
+
+      try {
+        const { imgUrl: cdnUrl, migrated } = await syncPlayerImageToCdn({
+          firstName: updatedPlayer.firstName,
+          lastName: updatedPlayer.lastName,
+          idHex: updatedPlayer._id.toHexString(),
+          imgUrl: updatedPlayer.imgUrl,
+        });
+        if (migrated) {
+          const withCdn = await PlayerModel.findByIdAndUpdate(
+            id,
+            { $set: { imgUrl: cdnUrl } },
+            { returnDocument: "after" },
+          );
+          if (withCdn) updatedPlayer = withCdn;
+        }
+      } catch (e) {
+        console.error("[player.update] CDN image sync failed", e);
+        await PlayerModel.findByIdAndUpdate(id, {
+          $set: { imgUrl: existing.imgUrl },
+        });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Could not copy the player image to our CDN. The image URL was reverted. Use a direct, publicly reachable HTTPS image URL.",
         });
       }
 
@@ -457,17 +487,94 @@ export const playerRouter = createTRPCRouter({
         imgUrl: input.imgUrl,
       });
 
+      let finalPlayer = newPlayer;
+      try {
+        const { imgUrl: cdnUrl, migrated } = await syncPlayerImageToCdn({
+          firstName: newPlayer.firstName,
+          lastName: newPlayer.lastName,
+          idHex: newPlayer._id.toHexString(),
+          imgUrl: newPlayer.imgUrl,
+        });
+        if (migrated) {
+          const updated = await PlayerModel.findByIdAndUpdate(
+            newPlayer._id,
+            { $set: { imgUrl: cdnUrl } },
+            { returnDocument: "after" },
+          );
+          if (updated) finalPlayer = updated;
+        }
+      } catch (e) {
+        console.error("[player.create] CDN image sync failed", e);
+        await PlayerModel.findByIdAndDelete(newPlayer._id);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Could not copy the player image to our CDN. Player was not saved. Use a direct, publicly reachable HTTPS image URL.",
+        });
+      }
+
       await PlayerAuditLogModel.create({
-        playerId: newPlayer._id,
+        playerId: finalPlayer._id,
         action: "create",
         performedBy: ctx.session.user.id,
         performedByEmail: ctx.session.user.email ?? "unknown",
         before: null,
-        after: toSnapshot(newPlayer),
+        after: toSnapshot(finalPlayer),
       });
 
       await invalidatePlayersCache();
-      return populated(newPlayer.toObject());
+      return populated(finalPlayer.toObject());
+    }),
+
+  /**
+   * Re-fetch remote image, upload to S3, set canonical CloudFront player URL.
+   * Use when a player still has an external imgUrl (e.g. ESPN/NBA CDN).
+   */
+  syncPlayerImageToCdn: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .output(playerOutput)
+    .mutation(async ({ input }) => {
+      const p = await PlayerModel.findById(input.id);
+      if (!p) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Player not found",
+        });
+      }
+
+      try {
+        const { imgUrl: cdnUrl, migrated } = await syncPlayerImageToCdn({
+          firstName: p.firstName,
+          lastName: p.lastName,
+          idHex: p._id.toHexString(),
+          imgUrl: p.imgUrl,
+        });
+        if (!migrated) {
+          await invalidatePlayersCache();
+          return populated(p.toObject());
+        }
+        const updated = await PlayerModel.findByIdAndUpdate(
+          input.id,
+          { $set: { imgUrl: cdnUrl } },
+          { returnDocument: "after" },
+        );
+        if (!updated) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Player not found",
+          });
+        }
+        await invalidatePlayersCache();
+        return populated(updated.toObject());
+      } catch (e) {
+        if (e instanceof TRPCError) throw e;
+        console.error("[player.syncPlayerImageToCdn]", e);
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            "Could not copy the player image to our CDN. Check that the URL is publicly reachable.",
+        });
+      }
     }),
 
   auditLog: adminProcedure
