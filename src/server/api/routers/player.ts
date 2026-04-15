@@ -31,7 +31,9 @@ import {
 import { extractAwardsFromHtml } from "~/server/lib/ai-awards";
 
 const REFRESH_TIMEZONE = "America/New_York";
-
+// --------------------
+// * HELPERS
+// --------------------
 /**
  * Returns midnight today in ET as a UTC Date.
  * Works by reading the current hour/min/sec in ET via Intl and subtracting
@@ -102,7 +104,9 @@ function toSnapshot(doc: {
     imgUrl: doc.imgUrl,
   };
 }
-
+// --------------------
+// * QUERIES + MUTATIONS
+// --------------------
 export const playerRouter = createTRPCRouter({
   getAll: publicProcedure
     .input(z.object({ value: z.number().min(1).max(5).optional() }).optional())
