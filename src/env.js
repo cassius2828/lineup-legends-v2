@@ -39,6 +39,9 @@ export const env = createEnv({
 
     // MFA
     MFA_ENCRYPTION_KEY: z.string().length(64),
+
+    // Vercel Cron (auto-injected in production when crons are configured)
+    CRON_SECRET: z.string().optional(),
   },
 
   /**
@@ -86,6 +89,8 @@ export const env = createEnv({
 
     // MFA (server-only)
     MFA_ENCRYPTION_KEY: process.env.MFA_ENCRYPTION_KEY,
+
+    CRON_SECRET: process.env.CRON_SECRET,
 
     // Public (safe for client exposure)
     NEXT_PUBLIC_CLOUDFRONT_URL: process.env.NEXT_PUBLIC_CLOUDFRONT_URL,
