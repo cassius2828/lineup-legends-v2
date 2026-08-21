@@ -6,12 +6,14 @@ type OtpCodeInputProps = Omit<
 > & {
   value: string;
   onChange: (digits: string) => void;
+  onComplete?: (digits: string) => void;
   variant?: "default" | "large";
 };
 
 export default function OtpCodeInput({
   value,
   onChange,
+  onComplete,
   variant = "default",
   className = "",
   ...rest
@@ -25,9 +27,16 @@ export default function OtpCodeInput({
     <input
       type="text"
       inputMode="numeric"
+      autoComplete="one-time-code"
       maxLength={6}
       value={value}
-      onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 6))}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, "").slice(0, 6);
+        onChange(digits);
+        if (digits.length === 6) {
+          onComplete?.(digits);
+        }
+      }}
       className={`border-foreground/20 bg-foreground/5 text-foreground placeholder-foreground/30 focus:border-gold focus:ring-gold w-full rounded-lg border px-4 ${sizeClass} transition-colors focus:ring-1 focus:outline-none ${className}`}
       {...rest}
     />

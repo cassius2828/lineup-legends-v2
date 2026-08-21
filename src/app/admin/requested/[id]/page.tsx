@@ -22,7 +22,7 @@ export default function RequestedPlayerDetailPage() {
   const requestId = params.id as string;
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [playerValue, setPlayerValue] = useState(3);
+  const [playerValue, setPlayerValue] = useState<number | null>(null);
   const [playerImgUrl, setPlayerImgUrl] = useState("");
   const [imgPreviewError, setImgPreviewError] = useState(false);
   const [playerCreated, setPlayerCreated] = useState(false);
@@ -72,7 +72,7 @@ export default function RequestedPlayerDetailPage() {
     createPlayer.mutate({
       firstName: requestedPlayer.firstName,
       lastName: requestedPlayer.lastName,
-      value: playerValue,
+      value: selectedValue,
       imgUrl: playerImgUrl.trim(),
     });
   };
@@ -101,6 +101,7 @@ export default function RequestedPlayerDetailPage() {
           ) / requestedPlayer.descriptions.length,
         )
       : 3;
+  const selectedValue = playerValue ?? avgSuggestedValue;
 
   if (isLoading) {
     return <GoldCircleSpinnerLoader />;
@@ -280,7 +281,7 @@ export default function RequestedPlayerDetailPage() {
                 Value (1-5)
               </label>
               <ValuePicker
-                value={playerValue}
+                value={selectedValue}
                 onChange={setPlayerValue}
                 size="square"
               />
