@@ -32,3 +32,6 @@ export function redisMfaVerifiedKey(userId: string): string {
 export function redisUserProfileCacheKey(userId: string): string {
   return `user:${userId}`;
 }
+
+/** Written by the weekly cron so Redis Cloud free DBs are not deleted for inactivity */
+export const REDIS_KEEPALIVE_KEY = "keepalive:prod";
