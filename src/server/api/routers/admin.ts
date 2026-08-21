@@ -14,7 +14,7 @@ import {
   ContentFlagModel,
   BannedEmailModel,
 } from "~/server/models";
-import { redis } from "~/server/redis";
+import { cacheGet, cacheSetex } from "~/server/redis";
 import { objectIdFromDate } from "~/server/lib/objectId";
 import {
   adminStatsOutput,
@@ -30,7 +30,7 @@ import { escapeRegex } from "~/server/lib/escape-regex";
 
 export const adminRouter = createTRPCRouter({
   getStats: adminProcedure.output(adminStatsOutput).query(async () => {
-    const cachedStats = await redis.get("admin:stats");
+    const cachedStats = await cacheGet("admin:stats");
     if (cachedStats) {
       try {
         const parsed = adminStatsOutput.safeParse(JSON.parse(cachedStats));
@@ -114,7 +114,7 @@ export const adminRouter = createTRPCRouter({
       })),
     };
 
-    void redis.setex("admin:stats", 300, JSON.stringify(stats));
+    void cacheSetex("admin:stats", 300, JSON.stringify(stats));
 
     return populated(stats);
   }),

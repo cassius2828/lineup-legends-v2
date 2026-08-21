@@ -1,21 +1,24 @@
 import { PlayerModel, type PlayerDoc } from "~/server/models";
-import { redis } from "~/server/redis";
+import { cacheDel, cacheGet, cacheSetex } from "~/server/redis";
 
 const PLAYERS_CACHE_KEY = "players";
 const PLAYERS_CACHE_TTL = 86400; // 24 hours
 
 export async function getPlayersFromCacheOrDb(): Promise<PlayerDoc[]> {
-  const cached = await redis.get(PLAYERS_CACHE_KEY);
+  const cached = await cacheGet(PLAYERS_CACHE_KEY);
   if (cached) {
     return JSON.parse(cached) as PlayerDoc[];
   }
 
   const players = await PlayerModel.find().sort({ value: -1 }).lean();
-  await redis.set(PLAYERS_CACHE_KEY, JSON.stringify(players));
-  await redis.expire(PLAYERS_CACHE_KEY, PLAYERS_CACHE_TTL);
+  await cacheSetex(
+    PLAYERS_CACHE_KEY,
+    PLAYERS_CACHE_TTL,
+    JSON.stringify(players),
+  );
   return players;
 }
 
 export async function invalidatePlayersCache() {
-  await redis.del(PLAYERS_CACHE_KEY);
+  await cacheDel(PLAYERS_CACHE_KEY);
 }

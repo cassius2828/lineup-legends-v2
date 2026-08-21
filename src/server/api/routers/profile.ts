@@ -9,7 +9,7 @@ import {
   publicProcedure,
 } from "~/server/api/trpc";
 import { LineupModel, UserModel } from "~/server/models";
-import { redis } from "~/server/redis";
+import { cacheDel, cacheGet } from "~/server/redis";
 import { censorText, flagContent } from "~/server/lib/censor";
 import {
   profileOutput,
@@ -25,7 +25,7 @@ export const profileRouter = createTRPCRouter({
     .input(z.object({ userId: z.string() }))
     .output(profileOutput.nullable())
     .query(async ({ input }) => {
-      const cachedUser = await redis.get(`user:${input.userId}`);
+      const cachedUser = await cacheGet(`user:${input.userId}`);
       if (cachedUser) {
         return JSON.parse(cachedUser);
       }
@@ -97,7 +97,7 @@ export const profileRouter = createTRPCRouter({
   getMe: protectedProcedure
     .output(profileMeOutput.nullable())
     .query(async ({ ctx }) => {
-      const cachedUser = await redis.get(`user:${ctx.session.user.id}`);
+      const cachedUser = await cacheGet(`user:${ctx.session.user.id}`);
       if (cachedUser) {
         return JSON.parse(cachedUser);
       }
@@ -197,7 +197,7 @@ export const profileRouter = createTRPCRouter({
         updateData,
         { returnDocument: "after" },
       );
-      await redis.del(`user:${ctx.session.user.id}`);
+      await cacheDel(`user:${ctx.session.user.id}`);
       return populated(updatedUser ?? null);
     }),
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "~/server/db";
 import { UserModel } from "~/server/models";
-import { redis } from "~/server/redis";
+import { cacheDel } from "~/server/redis";
 import { redisUserProfileCacheKey } from "~/server/constants";
 import { env } from "~/env";
 import { logger } from "~/lib/logger";
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     user.emailConfirmationExpiresAt = null;
     await user.save();
 
-    await redis.del(redisUserProfileCacheKey(user._id.toString()));
+    await cacheDel(redisUserProfileCacheKey(user._id.toString()));
 
     return NextResponse.redirect(
       `${env.NEXT_PUBLIC_APP_URL}/profile/settings?email-updated=true`,
