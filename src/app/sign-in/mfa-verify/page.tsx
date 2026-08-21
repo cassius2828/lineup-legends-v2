@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -36,6 +36,7 @@ export default function MfaVerifyPage() {
   const [error, setError] = useState<string | null>(null);
   const [codeSent, setCodeSent] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const verifyingRef = useRef(false);
 
   const shouldRedirectHome =
     session?.user != null && session.user.mfaPending !== true;
@@ -79,12 +80,16 @@ export default function MfaVerifyPage() {
     }
   }, [activeMethod, codeSent, isSending, session?.user, handleSendCode]);
 
-  const handleVerify = useCallback(async () => {
-    if (activeMethod !== "passkey" && !code.trim()) {
+  const handleVerify = useCallback(async (submittedCode?: string) => {
+    if (verifyingRef.current) return;
+
+    const otp = submittedCode ?? code;
+    if (activeMethod !== "passkey" && !otp.trim()) {
       setError("Please enter a verification code");
       return;
     }
 
+    verifyingRef.current = true;
     setIsLoading(true);
     setError(null);
 
@@ -97,7 +102,6 @@ export default function MfaVerifyPage() {
 
         if (!optionsResult.ok) {
           setError(optionsResult.error ?? "Failed to get passkey options");
-          setIsLoading(false);
           return;
         }
 
@@ -111,20 +115,18 @@ export default function MfaVerifyPage() {
 
         if (!verifyResult.ok) {
           setError(verifyResult.error ?? "Passkey verification failed");
-          setIsLoading(false);
           return;
         }
       } else {
         const body: VerifyMfaRequestBody =
           activeMethod === "totp"
-            ? { method: "totp", code }
-            : { method: "email", code };
+            ? { method: "totp", code: otp }
+            : { method: "email", code: otp };
 
         const verifyResult = await postJson("/api/auth/verify-mfa", body);
 
         if (!verifyResult.ok) {
           setError(verifyResult.error ?? "Invalid verification code");
-          setIsLoading(false);
           return;
         }
       }
@@ -134,6 +136,7 @@ export default function MfaVerifyPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification failed");
     } finally {
+      verifyingRef.current = false;
       setIsLoading(false);
     }
   }, [activeMethod, code, router, updateSession]);
@@ -206,7 +209,7 @@ export default function MfaVerifyPage() {
             </p>
             <PrimaryLoadingButton
               type="button"
-              onClick={handleVerify}
+              onClick={() => void handleVerify()}
               isLoading={isLoading}
               loadingLabel="Verifying..."
             >
@@ -236,6 +239,7 @@ export default function MfaVerifyPage() {
                 variant="large"
                 value={code}
                 onChange={setCode}
+                onComplete={(digits) => void handleVerify(digits)}
                 placeholder="000000"
                 autoFocus={activeMethod === "totp"}
               />
@@ -243,7 +247,7 @@ export default function MfaVerifyPage() {
 
             <PrimaryLoadingButton
               type="button"
-              onClick={handleVerify}
+              onClick={() => void handleVerify()}
               disabled={code.length !== 6}
               isLoading={isLoading}
               loadingLabel="Verifying..."

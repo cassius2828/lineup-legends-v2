@@ -102,6 +102,11 @@ function TotpSetup() {
           variant="default"
           value={code}
           onChange={setCode}
+          onComplete={(digits) => {
+            if (!verifyTotp.isPending) {
+              verifyTotp.mutate({ code: digits });
+            }
+          }}
           placeholder="000000"
         />
       </div>
